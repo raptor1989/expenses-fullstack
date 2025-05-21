@@ -1,0 +1,10 @@
+{
+  "name": "household-expenses-scripts",
+  "version": "1.0.0",
+  "description": "Utility scripts for household expenses app",
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "mongoose": "^7.6.3"
+  }
+}

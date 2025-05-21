@@ -33,8 +33,10 @@ export class AuthService {
                     id: userObj._id.toString(),
                     username: userObj.username,
                     email: userObj.email,
-                    createdAt: userObj.createdAt instanceof Date ? userObj.createdAt.toISOString() : String(userObj.createdAt),
-                    updatedAt: userObj.updatedAt instanceof Date ? userObj.updatedAt.toISOString() : String(userObj.updatedAt)
+                    createdAt:
+                        userObj.createdAt instanceof Date ? userObj.createdAt.toISOString() : String(userObj.createdAt),
+                    updatedAt:
+                        userObj.updatedAt instanceof Date ? userObj.updatedAt.toISOString() : String(userObj.updatedAt)
                 };
             }
 
