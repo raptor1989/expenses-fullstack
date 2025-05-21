@@ -1,17 +1,23 @@
 {
   "name": "expenses-fullstack-js",
+  "description": "A fullstack TypeScript application for managing household expenses. Built with NestJS (backend) and NextJS (frontend) in a Turborepo monorepo structure. Use 'npm run dev' to start development servers, 'npm run build' for production builds, and 'npm run lint' for code linting.",
   "private": true,
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format": "prettier --config ./.prettierrc --write \"**/*.{ts,tsx}\"",
     "check-types": "turbo run check-types"
   },
   "devDependencies": {
+    "@eslint/js": "^9.27.0",
+    "eslint": "^9.27.0",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^16.1.0",
     "prettier": "^3.5.3",
     "turbo": "^2.5.3",
-    "typescript": "5.8.2"
+    "typescript": "5.8.2",
+    "typescript-eslint": "^8.32.1"
   },
   "engines": {
     "node": ">=18"

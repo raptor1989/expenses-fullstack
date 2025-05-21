@@ -1,54 +1,82 @@
-# Turborepo starter
+# Household Expenses Manager
 
-This Turborepo starter is maintained by the Turborepo core team.
+A fullstack TypeScript application for managing household expenses. Built with NestJS (backend) and NextJS (frontend) in a Turborepo monorepo structure.
 
-## Using this example
-
-Run the following command:
-
-```sh
-npx create-turbo@latest
-```
-
-## What's inside?
-
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
+## Project Structure
 
 ```
-cd my-turborepo
-pnpm build
+expenses-fullstack-js/
+├── apps/
+│   ├── api/            # NestJS backend
+│   └── frontend/       # NextJS frontend
+├── packages/
+│   ├── database/       # Mongoose database package
+│   └── shared-types/   # Shared TypeScript interfaces
+├── package.json
+└── turbo.json
 ```
 
-### Develop
+## Features
 
-To develop all apps and packages, run the following command:
+- **User Authentication**: Register, login, and JWT-based auth
+- **Expense Management**: Create, read, update, and delete expenses
+- **Categorization**: Organize expenses by categories
+- **Reporting**: Get summaries and visualize expense data
+- **TypeScript**: End-to-end type safety
 
+## Technology Stack
+
+- **Frontend**: NextJS, React, TailwindCSS, Zustand (state management)
+- **Backend**: NestJS, Mongoose, MongoDB database
+- **Infrastructure**: Turborepo (monorepo management)
+- **Authentication**: JWT-based authentication
+- **Shared**: TypeScript for end-to-end type safety
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18.x or later
+- npm 9.x or later
+
+### Installation
+
+```bash
+# Install dependencies
+npm install --legacy-peer-deps
 ```
-cd my-turborepo
-pnpm dev
+
+### Development
+
+```bash
+# Start all services in development mode
+npm run dev
+
+# Backend will run on http://localhost:3001/api
+# Frontend will run on http://localhost:3000
 ```
+
+### Building for Production
+
+```bash
+# Build all packages and applications
+npm run build
+```
+
+## API Routes
+
+- **Authentication**
+
+  - POST `/api/auth/login` - User login
+  - POST `/api/users` - User registration
+
+- **Expenses**
+  - GET `/api/expenses` - List all expenses for current user
+  - GET `/api/expenses/:id` - Get specific expense
+  - POST `/api/expenses` - Create new expense
+  - PATCH `/api/expenses/:id` - Update expense
+  - DELETE `/api/expenses/:id` - Delete expense
+  - GET `/api/expenses/summary` - Get expense summary with date range
 
 ### Remote Caching
 
