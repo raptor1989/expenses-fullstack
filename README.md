@@ -113,13 +113,73 @@ npm run build:frontend  # Build frontend only
 
 ### Production Deployment
 
-For production deployment, make sure to set appropriate environment variables for:
+This project includes deployment scripts to help you deploy to production environments using PM2 process manager.
 
-1. MongoDB connection string (production database)
-2. JWT secret (unique, secure random string)
-3. Frontend API URL (production API endpoint)
+#### Production Environment Setup
 
-You can deploy the frontend and backend separately to platforms like Vercel, Netlify, or any cloud provider of your choice.
+1. **API Production Configuration**:
+
+Create a `.env.production` file in the `apps/api` directory:
+```
+PORT=3001
+JWT_SECRET=${JWT_SECRET}
+MONGODB_URI=${MONGODB_URI}
+NODE_ENV=production
+```
+
+2. **Frontend Production Configuration**:
+
+Create a `.env.production` file in the `apps/frontend` directory:
+```
+NEXT_PUBLIC_API_URL=${API_URL}
+```
+
+#### Deploy Using Scripts
+
+For Linux/Mac:
+```bash
+# Set required environment variables
+export MONGODB_URI="mongodb://username:password@your-production-mongodb/household-expenses"
+export JWT_SECRET="your-secure-production-secret-key"
+export API_URL="https://your-api-domain.com"
+
+# Run the deployment script
+./deploy.sh
+```
+
+For Windows (PowerShell):
+```powershell
+# Set required environment variables
+$env:MONGODB_URI="mongodb://username:password@your-production-mongodb/household-expenses"
+$env:JWT_SECRET="your-secure-production-secret-key"
+$env:API_URL="https://your-api-domain.com"
+
+# Run the deployment script
+.\deploy.ps1
+```
+
+#### PM2 Process Management
+
+This project uses PM2 for production process management:
+
+```powershell
+# Start all applications with PM2
+npm run pm2:start
+
+# View application logs
+npm run pm2:logs
+
+# Monitor application performance
+npm run pm2:monit
+
+# Restart all applications
+npm run pm2:restart
+
+# Stop all applications
+npm run pm2:stop
+```
+
+For detailed deployment instructions, see the [Production Deployment Guide](./docs/production-deployment.md).
 
 ## API Routes
 
@@ -156,6 +216,10 @@ You can deploy the frontend and backend separately to platforms like Vercel, Net
 - If you encounter "Module not found" errors, try running `npm install` again
 - For TypeScript errors, ensure you're using a compatible version of Node.js
 - When switching branches or pulling updates, rebuild the application with `npm run build`
+
+## Production Deployment
+
+For detailed instructions on deploying this application to production environments using PM2, see the [Production Deployment Guide](./docs/production-deployment.md).
 
 ## Planned Future Improvements
 
