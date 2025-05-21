@@ -8,7 +8,7 @@ import {
     ExpenseCategory,
     ExpenseSummary
 } from 'shared-types';
-import { Expense, ExpenseDocument } from '../schemas/expense.schema';
+import { Expense, ExpenseDocument } from './expense.schema';
 
 @Injectable()
 export class ExpensesService {
