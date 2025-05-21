@@ -21,12 +21,17 @@ async function bootstrap() {
     );
 
     // Set global prefix for API
-    app.setGlobalPrefix('api');
+    //app.setGlobalPrefix('api');
 
     await app.listen(process.env.PORT || 3001);
 }
 
-bootstrap().catch((err) => {
-    console.error('Error during bootstrap:', err);
-    process.exit(1);
-});
+bootstrap()
+    .then(() => {
+        console.log(`Application is running on: http://localhost:${process.env.PORT || 3001}`);
+        console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+    })
+    .catch((err) => {
+        console.error('Error during bootstrap:', err);
+        process.exit(1);
+    });
