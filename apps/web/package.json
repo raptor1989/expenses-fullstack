@@ -1,0 +1,52 @@
+{
+  "name": "@expenses/web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "React frontend for the household expenses management app",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "format": "prettier --config ./.prettierrc --write \"**/*.{ts,tsx}\"",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.0",
+    "@expenses/shared": "*",
+    "@mui/icons-material": "5.14.16",
+    "@mui/material": "5.14.16",
+    "@mui/x-date-pickers": "6.18.0",
+    "@nivo/core": "0.98.0",
+    "@nivo/line": "0.98.0",
+    "@nivo/pie": "0.98.0",
+    "axios": "1.9.0",
+    "chart.js": "4.4.9",
+    "dayjs": "1.11.13",
+    "formik": "2.4.6",
+    "react": "19.1.0",
+    "react-chartjs-2": "5.3.0",
+    "react-dom": "19.1.0",
+    "react-router-dom": "7.6.0",
+    "yup": "1.6.1",
+    "zustand": "5.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.21",
+    "@types/react": "19.1.5",
+    "@types/react-dom": "19.1.5",
+    "@typescript-eslint/eslint-plugin": "8.32.1",
+    "@typescript-eslint/parser": "8.32.1",
+    "@vitejs/plugin-react": "4.4.1",
+    "eslint": "9.27.0",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "eslint-plugin-react-refresh": "0.4.20",
+    "prettier": "^3.5.3",
+    "rimraf": "6.0.1",
+    "typescript": "5.8.3",
+    "vite": "6.3.5"
+  }
+}

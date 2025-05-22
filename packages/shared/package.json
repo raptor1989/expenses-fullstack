@@ -1,0 +1,27 @@
+{
+  "name": "@expenses/shared",
+  "version": "1.0.0",
+  "description": "Shared types and utilities for the Expenses Management app",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "lint": "eslint \"src/**/*.ts\"",
+    "test": "jest"
+  },
+  "keywords": [
+    "expenses",
+    "types",
+    "shared"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "5.8.3",
+    "rimraf": "5.0.5",
+    "eslint": "8.28.0"
+  }
+}
