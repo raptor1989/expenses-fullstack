@@ -1,5 +1,5 @@
 import { Expense, ExpenseCreateInput, ExpenseUpdateInput } from '@expenses/shared';
-import pool from '../db/index.js';
+import pool from '../db/index';
 
 export class ExpenseModel {
     // Create a new expense

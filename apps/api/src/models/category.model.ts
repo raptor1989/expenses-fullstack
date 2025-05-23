@@ -1,5 +1,5 @@
 import { Category } from '@expenses/shared';
-import pool from '../db/index.js';
+import pool from '../db/index';
 
 export class CategoryModel {
     // Create a new category

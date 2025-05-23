@@ -1,5 +1,5 @@
 import { Budget } from '@expenses/shared';
-import pool from '../db/index.js';
+import pool from '../db/index';
 
 export class BudgetModel {
     // Create a new budget

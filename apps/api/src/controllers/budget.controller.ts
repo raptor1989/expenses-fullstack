@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { BudgetModel } from '../models/budget.model.js';
+import { BudgetModel } from '../models/budget.model';
 
 export class BudgetController {
     // Create a new budget

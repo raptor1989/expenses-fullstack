@@ -1,12 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { userRoutes } from './routes/user.routes.js';
-import { expenseRoutes } from './routes/expense.routes.js';
-import { categoryRoutes } from './routes/category.routes.js';
-import { budgetRoutes } from './routes/budget.routes.js';
-import { errorHandler } from './middlewares/error.middleware.js';
-import { notFound } from './middlewares/notFound.middleware.js';
+import { userRoutes } from './routes/user.routes';
+import { expenseRoutes } from './routes/expense.routes';
+import { categoryRoutes } from './routes/category.routes';
+import { budgetRoutes } from './routes/budget.routes';
+import { errorHandler } from './middlewares/error.middleware';
+import { notFound } from './middlewares/notFound.middleware';
 
 // Load environment variables
 dotenv.config();

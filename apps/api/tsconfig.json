@@ -1,20 +1,21 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "target": "ES2020",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "sourceMap": true,
-    "esModuleInterop": true,
-    "types": ["node", "jest"]
-  },
+ "compilerOptions": {
+        "target": "es6",
+        "lib": [
+            "es2015",
+            "es2017",
+            "dom"
+        ],
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "downlevelIteration": true,
+        "noUnusedLocals": false,
+        "outDir": "./dist",
+        "allowSyntheticDefaultImports": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "allowJs": true,
+    },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"],
-  "references": [
-    { "path": "../../packages/shared" }
-  ],
-  "typescript.tsdk": "./node_modules/typescript/lib",
-  "typescript.tsserver.log": "verbose"
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

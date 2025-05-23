@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { CategoryModel } from '../models/category.model.js';
+import { CategoryModel } from '../models/category.model';
 
 export class CategoryController {
     // Create a new category

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ExpenseModel } from '../models/expense.model.js';
+import { ExpenseModel } from '../models/expense.model';
 
 export class ExpenseController {
     // Create a new expense

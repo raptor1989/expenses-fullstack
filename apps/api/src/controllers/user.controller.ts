@@ -1,10 +1,8 @@
 import { Request, Response } from 'express';
-import { UserModel } from '../models/user.model.js';
+import { UserModel } from '../models/user.model';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
-
-dotenv.config();
 
 export class UserController {
     // Register new user
