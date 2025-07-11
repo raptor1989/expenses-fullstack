@@ -69,11 +69,11 @@ const runMigrations = async () => {
         BEGIN
           INSERT INTO categories (name, color, icon, user_id)
           VALUES 
-            ('Food', '#FF5733', 'food', NEW.id),
-            ('Transportation', '#33FF57', 'car', NEW.id),
-            ('Utilities', '#3357FF', 'utility', NEW.id),
+            ('General', '#FF5733', 'general', NEW.id),
+            ('Bill payments', '#33FF57', 'bills', NEW.id),
+            ('Fuel', '#3357FF', 'fuel', NEW.id),
             ('Entertainment', '#FF33A8', 'entertainment', NEW.id),
-            ('Healthcare', '#33FFF6', 'health', NEW.id);
+            ('Other', '#33FFF6', 'other', NEW.id);
           RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;

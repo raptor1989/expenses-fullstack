@@ -34,10 +34,7 @@ const ExpenseSchema = Yup.object().shape({
         .required('Amount is required')
         .positive('Amount must be positive')
         .min(0.01, 'Amount must be at least 0.01'),
-    description: Yup.string()
-        .required('Description is required')
-        .min(3, 'Description is too short')
-        .max(100, 'Description is too long'),
+    description: Yup.string().max(100, 'Description is too long'),
     categoryId: Yup.string().required('Category is required'),
     date: Yup.date().required('Date is required').max(new Date(), 'Date cannot be in the future')
 });
@@ -109,15 +106,45 @@ export default function ExpenseForm({
                     <Form>
                         <DialogContent>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-                                <Field name="description">
-                                    {({ field }: FieldProps) => (
-                                        <TextField
-                                            {...field}
-                                            label="Description"
-                                            fullWidth
-                                            error={touched.description && Boolean(errors.description)}
-                                            helperText={touched.description && errors.description}
+                                <Field name="date">
+                                    {({ field, form }: FieldProps) => (
+                                        <DatePicker
+                                            label="Date"
+                                            value={dayjs(field.value)}
+                                            onChange={(newValue) => {
+                                                form.setFieldValue(
+                                                    'date',
+                                                    newValue ? newValue.format('YYYY-MM-DD') : null
+                                                );
+                                            }}
+                                            format="DD.MM.YYYY"
+                                            disableFuture
+                                            slotProps={{
+                                                textField: {
+                                                    fullWidth: true,
+                                                    error: touched.date && Boolean(errors.date),
+                                                    helperText: touched.date && (errors.date as string)
+                                                }
+                                            }}
                                         />
+                                    )}
+                                </Field>
+
+                                <Field name="categoryId">
+                                    {({ field }: FieldProps) => (
+                                        <FormControl fullWidth error={touched.categoryId && Boolean(errors.categoryId)}>
+                                            <InputLabel id="category-label">Category</InputLabel>
+                                            <Select {...field} labelId="category-label" label="Category">
+                                                {categories.map((category) => (
+                                                    <MenuItem key={category.id} value={category.id}>
+                                                        {category.name}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                            {touched.categoryId && errors.categoryId && (
+                                                <FormHelperText>{errors.categoryId as string}</FormHelperText>
+                                            )}
+                                        </FormControl>
                                     )}
                                 </Field>
 
@@ -142,43 +169,14 @@ export default function ExpenseForm({
                                     )}
                                 </Field>
 
-                                <Field name="categoryId">
+                                <Field name="description">
                                     {({ field }: FieldProps) => (
-                                        <FormControl fullWidth error={touched.categoryId && Boolean(errors.categoryId)}>
-                                            <InputLabel id="category-label">Category</InputLabel>
-                                            <Select {...field} labelId="category-label" label="Category">
-                                                {categories.map((category) => (
-                                                    <MenuItem key={category.id} value={category.id}>
-                                                        {category.name}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                            {touched.categoryId && errors.categoryId && (
-                                                <FormHelperText>{errors.categoryId as string}</FormHelperText>
-                                            )}
-                                        </FormControl>
-                                    )}
-                                </Field>
-
-                                <Field name="date">
-                                    {({ field, form }: FieldProps) => (
-                                        <DatePicker
-                                            label="Date"
-                                            value={dayjs(field.value)}
-                                            onChange={(newValue) => {
-                                                form.setFieldValue(
-                                                    'date',
-                                                    newValue ? newValue.format('YYYY-MM-DD') : null
-                                                );
-                                            }}
-                                            disableFuture
-                                            slotProps={{
-                                                textField: {
-                                                    fullWidth: true,
-                                                    error: touched.date && Boolean(errors.date),
-                                                    helperText: touched.date && (errors.date as string)
-                                                }
-                                            }}
+                                        <TextField
+                                            {...field}
+                                            label="Description"
+                                            fullWidth
+                                            error={touched.description && Boolean(errors.description)}
+                                            helperText={touched.description && errors.description}
                                         />
                                     )}
                                 </Field>

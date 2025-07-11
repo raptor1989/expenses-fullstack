@@ -19,9 +19,11 @@ import { getExpenseSummary } from '../services/expenseService';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { formatCurrency } from '@/helpers/formatHelpers';
+import { useThemeMode } from '@/theme/ThemeProvider';
 
 export default function Dashboard() {
     const navigate = useNavigate();
+    const { mode } = useThemeMode();
     const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState<any>(null);
     const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
@@ -158,13 +160,22 @@ export default function Dashboard() {
                                     cornerRadius={3}
                                     activeOuterRadiusOffset={8}
                                     borderWidth={1}
-                                    borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
+                                    borderColor={{
+                                        from: 'color',
+                                        modifiers: [[mode === 'dark' ? 'brighter' : 'darker', 0.2]]
+                                    }}
                                     arcLinkLabelsSkipAngle={10}
-                                    arcLinkLabelsTextColor="#333333"
+                                    arcLinkLabelsTextColor={{
+                                        from: 'color',
+                                        modifiers: [[mode === 'dark' ? 'brighter' : 'darker', 2]]
+                                    }}
                                     arcLinkLabelsThickness={2}
                                     arcLinkLabelsColor={{ from: 'color' }}
                                     arcLabelsSkipAngle={10}
-                                    arcLabelsTextColor={{ from: 'color', modifiers: [['darker', 2]] }}
+                                    arcLabelsTextColor={{
+                                        from: 'color',
+                                        modifiers: [[mode === 'dark' ? 'brighter' : 'darker', 2]]
+                                    }}
                                 />
                             ) : (
                                 <Box
