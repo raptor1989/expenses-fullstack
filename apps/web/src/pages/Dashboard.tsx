@@ -6,20 +6,14 @@ import {
     Grid,
     Card,
     CardContent,
-    CardHeader,
-    Divider,
     List,
     ListItem,
     ListItemText,
     LinearProgress,
     CircularProgress,
-    IconButton,
-    Button,
-    Chip
+    Button
 } from '@mui/material';
 import {
-    TrendingUp as TrendingUpIcon,
-    TrendingDown as TrendingDownIcon,
     AttachMoney as MoneyIcon,
     Receipt as ReceiptIcon,
     Category as CategoryIcon,
@@ -37,7 +31,6 @@ export default function Dashboard() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState<any>(null);
-    const [recentExpenses, setRecentExpenses] = useState([]);
     const [budgetProgress, setBudgetProgress] = useState<any[]>([]);
     const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
     const [expensesTrend, setExpensesTrend] = useState<any[]>([]);
@@ -59,8 +52,8 @@ export default function Dashboard() {
                 const categoryData = summaryData.categoryBreakdown.map((item: any) => ({
                     id: item.categoryName,
                     label: item.categoryName,
-                    value: item.amount,
-                    color: `hsl(${Math.random() * 360}, 70%, 50%)`
+                    value: item.totalAmount,
+                    color: item.color || `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`
                 }));
                 setExpensesByCategory(categoryData);
 
@@ -381,7 +374,7 @@ export default function Dashboard() {
                                         key={index}
                                         secondaryAction={
                                             <Typography variant="body2" fontWeight="bold">
-                                                ${category.value.toFixed(2)}
+                                                ${parseFloat(category.value).toFixed(2)}
                                             </Typography>
                                         }
                                     >

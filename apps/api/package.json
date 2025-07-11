@@ -11,7 +11,7 @@
     "lint": "eslint \"src/**/*.ts\"",
     "format": "prettier --config ./.prettierrc --write \"**/*.{ts,tsx}\"",
     "test": "jest",
-    "db:migrate": "ts-node --esm src/db/migrate.ts"
+    "db:migrate": "ts-node src/db/migrate.ts"
   },
   "keywords": [
     "expenses",

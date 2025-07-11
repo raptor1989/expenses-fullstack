@@ -143,7 +143,7 @@ export default function ExpenseForm({
                                 </Field>
 
                                 <Field name="categoryId">
-                                    {({ field, form }: FieldProps) => (
+                                    {({ field }: FieldProps) => (
                                         <FormControl fullWidth error={touched.categoryId && Boolean(errors.categoryId)}>
                                             <InputLabel id="category-label">Category</InputLabel>
                                             <Select {...field} labelId="category-label" label="Category">

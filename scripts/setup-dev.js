@@ -53,13 +53,33 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-// Check if PostgreSQL is installed and running
 async function checkPostgreSQL() {
   log('Checking PostgreSQL...', colors.cyan);
   try {
-    execSync('pg_isready', { stdio: 'ignore' });
-    log('PostgreSQL is running ✓', colors.green);
-    return true;
+    if (process.platform === 'win32') {
+      // Windows-specific check using sc query (Windows service controller)
+      try {
+        execSync('sc query postgresql', { stdio: 'ignore' });
+        log('PostgreSQL service is running ✓', colors.green);
+        return true;
+      } catch (error) {
+        // Try checking using a direct connection test
+        try {
+          execSync('powershell -Command "Test-NetConnection -ComputerName localhost -Port 5432 | Out-Null"', { stdio: 'ignore' });
+          log('PostgreSQL is running ✓', colors.green);
+          return true;
+        } catch (connError) {
+          log('PostgreSQL is not running or not installed ✗', colors.red);
+          log('Please make sure PostgreSQL is installed and running', colors.yellow);
+          return false;
+        }
+      }
+    } else {
+      // Unix-based check
+      execSync('pg_isready', { stdio: 'ignore' });
+      log('PostgreSQL is running ✓', colors.green);
+      return true;
+    }
   } catch (error) {
     log('PostgreSQL is not running or not installed ✗', colors.red);
     log('Please make sure PostgreSQL is installed and running', colors.yellow);
@@ -71,11 +91,33 @@ async function checkPostgreSQL() {
 async function checkDatabase() {
   log(`Checking if database '${DB_NAME}' exists...`, colors.cyan);
   try {
-    execSync(`psql -lqt | cut -d \\| -f 1 | grep -qw ${DB_NAME}`, { stdio: 'ignore' });
-    log(`Database '${DB_NAME}' exists ✓`, colors.green);
-    return true;
+    if (process.platform === 'win32') {
+      // Windows-specific check using psql directly
+      // Just check if the database exists without trying to cause an error
+      const output = execSync(
+        `psql -U postgres -t -c "SELECT COUNT(*) FROM pg_database WHERE datname='${DB_NAME}'"`, 
+        {
+          env: { ...process.env, PGPASSWORD: 'postgres' } // Assumes postgres password is 'postgres'
+        }
+      ).toString().trim();
+      
+      // If the count is 0, the database doesn't exist
+      if (output === '0') {
+        log(`Database '${DB_NAME}' does not exist ✗`, colors.yellow);
+        return false;
+      } else {
+        log(`Database '${DB_NAME}' exists ✓`, colors.green);
+        return true;
+      }
+    } else {
+      // Unix-based check
+      execSync(`psql -lqt | cut -d \\| -f 1 | grep -qw ${DB_NAME}`, { stdio: 'ignore' });
+      log(`Database '${DB_NAME}' exists ✓`, colors.green);
+      return true;
+    }
   } catch (error) {
-    log(`Database '${DB_NAME}' does not exist ✗`, colors.yellow);
+    log(`Error checking if database exists: ${error.message}`, colors.red);
+    log(`Assuming database '${DB_NAME}' does not exist ✗`, colors.yellow);
     return false;
   }
 }
@@ -84,7 +126,15 @@ async function checkDatabase() {
 async function createDatabase() {
   log(`Creating database '${DB_NAME}'...`, colors.cyan);
   try {
-    execSync(`createdb ${DB_NAME}`);
+    if (process.platform === 'win32') {
+      // Windows-specific command
+      execSync(`psql -U postgres -c "CREATE DATABASE ${DB_NAME}"`, {
+        env: { ...process.env, PGPASSWORD: 'postgres' } // Assumes postgres password is 'postgres'
+      });
+    } else {
+      // Unix-based command
+      execSync(`createdb ${DB_NAME}`);
+    }
     log(`Database '${DB_NAME}' created successfully ✓`, colors.green);
     return true;
   } catch (error) {
@@ -125,7 +175,7 @@ JWT_EXPIRES_IN=7d`;
 async function runMigrations() {
   log('Running database migrations...', colors.cyan);
   try {
-    await runCommand('npm', ['run', 'db:migrate'], API_DIR);
+    execSync('ts-node .\\apps\\api\\src\\db\\migrate.ts', { stdio: 'ignore' });
     log('Database migrations completed successfully ✓', colors.green);
     return true;
   } catch (error) {
@@ -172,7 +222,7 @@ async function main() {
   log('Starting development server...', colors.cyan);
 
   // Start the development server
-  await runCommand('turbo', ['run', 'dev']);
+  execSync('npm run dev', { stdio: 'ignore' });
 }
 
 // Run the script

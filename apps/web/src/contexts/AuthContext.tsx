@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, ReactNode } from 'react';
-import { AuthResponse, User } from '@expenses/shared';
+import { User } from '@expenses/shared';
 import { loginUser, registerUser, fetchCurrentUser } from '../services/authService';
 
 interface AuthContextType {
