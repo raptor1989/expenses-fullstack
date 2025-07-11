@@ -25,7 +25,7 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /api/expenses - Create a new expense
-router.post('/',(req, res) => {
+router.post('/', (req, res) => {
     ExpenseController.createExpense(req, res);
 });
 

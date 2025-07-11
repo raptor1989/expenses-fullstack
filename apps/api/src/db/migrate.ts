@@ -62,22 +62,6 @@ const runMigrations = async () => {
         )
       `);
 
-            // Create budgets table
-            await client.query(`
-        CREATE TABLE IF NOT EXISTS budgets (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          amount DECIMAL(12, 2) NOT NULL,
-          start_date DATE NOT NULL,
-          end_date DATE NOT NULL,
-          category_id UUID NOT NULL,
-          user_id UUID NOT NULL,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-      `);
-
             // Create a few default categories for new users
             await client.query(`
         CREATE OR REPLACE FUNCTION create_default_categories()
@@ -105,7 +89,7 @@ const runMigrations = async () => {
       `);
 
             // Create updated_at triggers
-            const tables = ['users', 'categories', 'expenses', 'budgets'];
+            const tables = ['users', 'categories', 'expenses'];
 
             for (const table of tables) {
                 await client.query(`

@@ -82,12 +82,11 @@ export class UserController {
 
             // Generate JWT token
             const secretKey = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
-                        const expiresIn: any = process.env.JWT_EXPIRES_IN || '7d';
+            const expiresIn: any = process.env.JWT_EXPIRES_IN || '7d';
 
             const signOption: jwt.SignOptions = {
                 expiresIn
             };
-
 
             const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, secretKey, signOption);
 

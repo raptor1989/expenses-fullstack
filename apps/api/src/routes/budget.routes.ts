@@ -32,11 +32,11 @@ router.post('/', (req, res) => {
 // PUT /api/budgets/:id - Update budget
 router.put('/:id', (req, res) => {
     BudgetController.updateBudget(req, res);
-    });
+});
 
 // DELETE /api/budgets/:id - Delete budget
 router.delete('/:id', (req, res) => {
-  BudgetController.deleteBudget(req, res);
+    BudgetController.deleteBudget(req, res);
 });
 
 export const budgetRoutes = router;

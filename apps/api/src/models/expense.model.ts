@@ -133,11 +133,7 @@ export class ExpenseModel {
 
             if (updateData.date !== undefined) {
                 updateFields.push(`date = $${valueCounter++}`);
-                values.push(
-                    updateData.date instanceof Date
-                        ? updateData.date.toISOString()
-                        : updateData.date
-                );
+                values.push(updateData.date instanceof Date ? updateData.date.toISOString() : updateData.date);
             }
 
             if (updateData.categoryId !== undefined) {
