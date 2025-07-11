@@ -1,4 +1,4 @@
-import { Expense, ExpenseCreateInput, ExpenseUpdateInput } from '@expenses/shared';
+import { Expense, ExpenseCreateInput, ExpenseSummary, ExpenseUpdateInput } from '@expenses/shared';
 import pool from '../db/index';
 
 export class ExpenseModel {
@@ -184,7 +184,7 @@ export class ExpenseModel {
     }
 
     // Get expense summary by category
-    static async getSummaryByCategory(userId: string, startDate: Date, endDate: Date): Promise<any> {
+    static async getSummaryByCategory(userId: string, startDate: Date, endDate: Date): Promise<ExpenseSummary> {
         const client = await pool.connect();
 
         try {

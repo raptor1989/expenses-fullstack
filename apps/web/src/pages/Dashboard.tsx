@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Box,
     Typography,
@@ -10,16 +10,23 @@ import {
     CircularProgress,
     Button,
     Grid2,
-    Card
+    Card,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Chip
 } from '@mui/material';
 import { AttachMoney as MoneyIcon, Receipt as ReceiptIcon, Category as CategoryIcon } from '@mui/icons-material';
 import { ResponsivePie } from '@nivo/pie';
-import { ResponsiveLine } from '@nivo/line';
-import { getExpenseSummary } from '../services/expenseService';
+import { getExpenses, getExpenseSummary } from '../services/expenseService';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { formatCurrency } from '@/helpers/formatHelpers';
+import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
 import { useThemeMode } from '@/theme/ThemeProvider';
+import { getCategories } from '../services/categoryService';
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -27,7 +34,8 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState<any>(null);
     const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
-    const [expensesTrend, setExpensesTrend] = useState<any[]>([]);
+    const [recentExpenses, setRecentExpenses] = useState<any[]>([]);
+    const [categoriesMap, setCategoriesMap] = useState<Record<string, { name: string; color: string }>>({});
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -51,20 +59,15 @@ export default function Dashboard() {
                 }));
                 setExpensesByCategory(categoryData);
 
-                // Generate mock trend data (in real app, we'd fetch this)
-                const trendData = [
-                    {
-                        id: 'expenses',
-                        color: 'hsl(211, 70%, 50%)',
-                        data: Array.from({ length: 10 }, (_, i) => ({
-                            x: dayjs()
-                                .subtract(9 - i, 'day')
-                                .format('MMM DD'),
-                            y: Math.floor(Math.random() * 200) + 50
-                        }))
-                    }
-                ];
-                setExpensesTrend(trendData);
+                // Fetch last 10 expenses
+                try {
+                    // In a real app, you'd call the API
+                    const recentData = await getExpenses();
+                    setRecentExpenses(recentData.expenses);
+                } catch (error) {
+                    console.error('Error fetching recent expenses:', error);
+                    setRecentExpenses([]);
+                }
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
             } finally {
@@ -74,6 +77,29 @@ export default function Dashboard() {
 
         fetchDashboardData();
     }, []);
+
+    // Fetch categories for dropdown and table display
+    const fetchCategories = useCallback(async () => {
+        try {
+            const fetchedCategories = await getCategories();
+            // Create a map for easier lookup in the table
+            const categoryMap: Record<string, { name: string; color: string }> = {};
+            fetchedCategories.forEach((category) => {
+                categoryMap[category.id] = {
+                    name: category.name,
+                    color: category.color || '#9e9e9e' // Default color if none is specified
+                };
+            });
+            setCategoriesMap(categoryMap);
+        } catch (error) {
+            console.error('Failed to fetch categories:', error);
+        }
+    }, []);
+
+    // Initial data loading
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
 
     if (loading) {
         return (
@@ -195,77 +221,57 @@ export default function Dashboard() {
                     </Paper>
                 </Grid2>
 
-                {/* Expense Trend */}
+                {/* Last 10 expenses */}
                 <Grid2 size={{ xs: 12, md: 6 }}>
-                    <Paper sx={{ p: 2, height: 400 }}>
+                    <Paper sx={{ p: 2, height: 400, overflow: 'auto' }}>
                         <Typography variant="h6" gutterBottom>
-                            Expense Trend (Last 10 Days)
+                            Last 10 expenses
                         </Typography>
-                        <Box sx={{ height: 320 }}>
-                            <ResponsiveLine
-                                data={expensesTrend}
-                                margin={{ top: 50, right: 110, bottom: 50, left: 60 }}
-                                xScale={{ type: 'point' }}
-                                yScale={{
-                                    type: 'linear',
-                                    min: 'auto',
-                                    max: 'auto',
-                                    stacked: true,
-                                    reverse: false
-                                }}
-                                yFormat=" >-.2f"
-                                axisTop={null}
-                                axisRight={null}
-                                axisBottom={{
-                                    tickSize: 5,
-                                    tickPadding: 5,
-                                    tickRotation: -45,
-                                    legend: 'Date',
-                                    legendOffset: 36,
-                                    legendPosition: 'middle'
-                                }}
-                                axisLeft={{
-                                    tickSize: 5,
-                                    tickPadding: 5,
-                                    tickRotation: 0,
-                                    legend: 'Amount',
-                                    legendOffset: -40,
-                                    legendPosition: 'middle'
-                                }}
-                                pointSize={10}
-                                pointColor={{ theme: 'background' }}
-                                pointBorderWidth={2}
-                                pointBorderColor={{ from: 'serieColor' }}
-                                pointLabelYOffset={-12}
-                                useMesh={true}
-                                legends={[
-                                    {
-                                        anchor: 'bottom-right',
-                                        direction: 'column',
-                                        justify: false,
-                                        translateX: 100,
-                                        translateY: 0,
-                                        itemsSpacing: 0,
-                                        itemDirection: 'left-to-right',
-                                        itemWidth: 80,
-                                        itemHeight: 20,
-                                        itemOpacity: 0.75,
-                                        symbolSize: 12,
-                                        symbolShape: 'circle',
-                                        symbolBorderColor: 'rgba(0, 0, 0, .5)',
-                                        effects: [
-                                            {
-                                                on: 'hover',
-                                                style: {
-                                                    itemBackground: 'rgba(0, 0, 0, .03)',
-                                                    itemOpacity: 1
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]}
-                            />
-                        </Box>
+                        <TableContainer>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Date</TableCell>
+                                        <TableCell>Description</TableCell>
+                                        <TableCell>Category</TableCell>
+                                        <TableCell align="right">Amount</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {recentExpenses.length > 0 ? (
+                                        recentExpenses.map((expense) => (
+                                            <TableRow key={expense.id}>
+                                                <TableCell>{formatDate(expense.date)}</TableCell>
+                                                <TableCell>{expense.description}</TableCell>
+                                                <TableCell>
+                                                    {categoriesMap[expense.categoryId] ? (
+                                                        <Chip
+                                                            label={categoriesMap[expense.categoryId].name}
+                                                            size="small"
+                                                            sx={{
+                                                                bgcolor:
+                                                                    categoriesMap[expense.categoryId].color ||
+                                                                    '#e0e0e0',
+                                                                color: '#fff'
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        'Unknown Category'
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="right">{formatCurrency(expense.amount)}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} align="center">
+                                                No recent expenses
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
                     </Paper>
                 </Grid2>
 
