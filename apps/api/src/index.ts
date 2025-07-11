@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import { userRoutes } from './routes/user.routes';
 import { expenseRoutes } from './routes/expense.routes';
 import { categoryRoutes } from './routes/category.routes';
-import { budgetRoutes } from './routes/budget.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { notFound } from './middlewares/notFound.middleware';
 
@@ -23,7 +22,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/users', userRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/categories', categoryRoutes);
-app.use('/api/budgets', budgetRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -7,8 +7,7 @@ A full-stack TypeScript application for managing household expenses. Built with 
 - **User Authentication**: Secure JWT-based authentication system
 - **Expense Management**: Create, update, delete, and categorize expenses
 - **Categories**: Organize expenses by customizable categories
-- **Budgets**: Set budgets by category with progress tracking
-- **Dashboard**: Visualize spending patterns and budget progress
+- **Dashboard**: Visualize spending patterns
 - **Responsive UI**: Works on mobile and desktop
 
 ## Tech Stack
@@ -122,7 +121,6 @@ The API endpoints are available at `/api/v1` and include:
 - `/api/v1/users` - User management
 - `/api/v1/expenses` - Expense CRUD operations
 - `/api/v1/categories` - Category management
-- `/api/v1/budgets` - Budget management
 
 ## License
 

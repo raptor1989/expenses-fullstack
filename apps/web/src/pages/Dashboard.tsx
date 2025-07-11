@@ -3,35 +3,27 @@ import {
     Box,
     Typography,
     Paper,
-    Grid,
-    Card,
     CardContent,
     List,
     ListItem,
     ListItemText,
-    LinearProgress,
     CircularProgress,
-    Button
+    Button,
+    Grid2,
+    Card
 } from '@mui/material';
-import {
-    AttachMoney as MoneyIcon,
-    Receipt as ReceiptIcon,
-    Category as CategoryIcon,
-    DateRange as DateRangeIcon
-} from '@mui/icons-material';
+import { AttachMoney as MoneyIcon, Receipt as ReceiptIcon, Category as CategoryIcon } from '@mui/icons-material';
 import { ResponsivePie } from '@nivo/pie';
 import { ResponsiveLine } from '@nivo/line';
 import { getExpenseSummary } from '../services/expenseService';
-import { getBudgets } from '../services/budgetService';
-import { getCategories } from '../services/categoryService';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { formatCurrency } from '@/helpers/formatHelpers';
 
 export default function Dashboard() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState<any>(null);
-    const [budgetProgress, setBudgetProgress] = useState<any[]>([]);
     const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
     const [expensesTrend, setExpensesTrend] = useState<any[]>([]);
 
@@ -56,21 +48,6 @@ export default function Dashboard() {
                     color: item.color || `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`
                 }));
                 setExpensesByCategory(categoryData);
-
-                // Fetch budgets for progress display
-                const budgets = await getBudgets();
-                const categories = await getCategories();
-
-                // Map category names to budgets
-                const budgetsWithCategories = budgets.slice(0, 3).map((budget) => {
-                    const category = categories.find((cat) => cat.id === budget.categoryId);
-                    return {
-                        ...budget,
-                        categoryName: category ? category.name : 'Unknown',
-                        progress: Math.floor(Math.random() * 100) // Mock progress data
-                    };
-                });
-                setBudgetProgress(budgetsWithCategories);
 
                 // Generate mock trend data (in real app, we'd fetch this)
                 const trendData = [
@@ -113,8 +90,8 @@ export default function Dashboard() {
             </Typography>
 
             {/* Summary Cards */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={6} md={3}>
+            <Grid2 container spacing={3} sx={{ mb: 4 }}>
+                <Grid2 size={{ xs: 12, md: 4, sm: 6 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -122,15 +99,15 @@ export default function Dashboard() {
                                     <Typography color="textSecondary" gutterBottom variant="body2">
                                         Total Expenses (30 days)
                                     </Typography>
-                                    <Typography variant="h5">${totalExpenses.toFixed(2)}</Typography>
+                                    <Typography variant="h5">{totalExpenses.toFixed(2)} zł</Typography>
                                 </Box>
                                 <MoneyIcon sx={{ color: 'primary.main', fontSize: 40 }} />
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Grid2>
 
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -144,25 +121,9 @@ export default function Dashboard() {
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Grid2>
 
-                <Grid item xs={12} sm={6} md={3}>
-                    <Card>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Box>
-                                    <Typography color="textSecondary" gutterBottom variant="body2">
-                                        Active Budgets
-                                    </Typography>
-                                    <Typography variant="h5">{budgetProgress.length}</Typography>
-                                </Box>
-                                <DateRangeIcon sx={{ color: 'success.main', fontSize: 40 }} />
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -170,19 +131,19 @@ export default function Dashboard() {
                                     <Typography color="textSecondary" gutterBottom variant="body2">
                                         Average Daily Spend
                                     </Typography>
-                                    <Typography variant="h5">${(totalExpenses / 30).toFixed(2)}</Typography>
+                                    <Typography variant="h5">{(totalExpenses / 30).toFixed(2)} zł</Typography>
                                 </Box>
                                 <ReceiptIcon sx={{ color: 'warning.main', fontSize: 40 }} />
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid>
-            </Grid>
+                </Grid2>
+            </Grid2>
 
             {/* Charts and Lists */}
-            <Grid container spacing={3}>
+            <Grid2 container spacing={3}>
                 {/* Expenses by Category */}
-                <Grid item xs={12} md={6}>
+                <Grid2 size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2, height: 400 }}>
                         <Typography variant="h6" gutterBottom>
                             Expenses by Category
@@ -221,10 +182,10 @@ export default function Dashboard() {
                             )}
                         </Box>
                     </Paper>
-                </Grid>
+                </Grid2>
 
                 {/* Expense Trend */}
-                <Grid item xs={12} md={6}>
+                <Grid2 size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2, height: 400 }}>
                         <Typography variant="h6" gutterBottom>
                             Expense Trend (Last 10 Days)
@@ -295,64 +256,10 @@ export default function Dashboard() {
                             />
                         </Box>
                     </Paper>
-                </Grid>
-
-                {/* Budget Progress */}
-                <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2 }}>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                mb: 2
-                            }}
-                        >
-                            <Typography variant="h6">Budget Progress</Typography>
-                            <Button variant="outlined" size="small" onClick={() => navigate('/budget')}>
-                                View All
-                            </Button>
-                        </Box>
-                        {budgetProgress.length > 0 ? (
-                            <List>
-                                {budgetProgress.map((budget) => (
-                                    <Box key={budget.id} sx={{ mb: 2 }}>
-                                        <Box
-                                            sx={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                mb: 0.5
-                                            }}
-                                        >
-                                            <Typography variant="body2">{budget.categoryName}</Typography>
-                                            <Typography variant="body2">{budget.progress}%</Typography>
-                                        </Box>
-                                        <LinearProgress
-                                            variant="determinate"
-                                            value={budget.progress}
-                                            color={
-                                                budget.progress > 90
-                                                    ? 'error'
-                                                    : budget.progress > 70
-                                                      ? 'warning'
-                                                      : 'success'
-                                            }
-                                            sx={{ height: 8, borderRadius: 4 }}
-                                        />
-                                    </Box>
-                                ))}
-                            </List>
-                        ) : (
-                            <Typography variant="body1" color="textSecondary" sx={{ py: 4, textAlign: 'center' }}>
-                                No active budgets
-                            </Typography>
-                        )}
-                    </Paper>
-                </Grid>
+                </Grid2>
 
                 {/* Recent Expenses */}
-                <Grid item xs={12} md={6}>
+                <Grid2 size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2 }}>
                         <Box
                             sx={{
@@ -374,7 +281,7 @@ export default function Dashboard() {
                                         key={index}
                                         secondaryAction={
                                             <Typography variant="body2" fontWeight="bold">
-                                                ${parseFloat(category.value).toFixed(2)}
+                                                {formatCurrency(category.value)}
                                             </Typography>
                                         }
                                     >
@@ -391,8 +298,8 @@ export default function Dashboard() {
                             </Typography>
                         )}
                     </Paper>
-                </Grid>
-            </Grid>
+                </Grid2>
+            </Grid2>
         </Box>
     );
 }

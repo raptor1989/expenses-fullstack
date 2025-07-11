@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Avatar, Button, TextField, Link, Grid, Box, Typography, Alert } from '@mui/material';
+import { Avatar, Button, TextField, Link, Box, Typography, Alert, Grid2 } from '@mui/material';
 import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -90,18 +90,18 @@ export default function Login() {
                 >
                     Sign In
                 </Button>
-                <Grid container>
-                    <Grid>
+                <Grid2 container>
+                    <Grid2>
                         <Link component={RouterLink} to="#" variant="body2">
                             Forgot password?
                         </Link>
-                    </Grid>
-                    <Grid>
+                    </Grid2>
+                    <Grid2>
                         <Link component={RouterLink} to="/register" variant="body2">
                             {"Don't have an account? Sign Up"}
                         </Link>
-                    </Grid>
-                </Grid>
+                    </Grid2>
+                </Grid2>
             </Box>
         </>
     );

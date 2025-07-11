@@ -26,7 +26,6 @@ import {
     Dashboard as DashboardIcon,
     Receipt as ReceiptIcon,
     Category as CategoryIcon,
-    AccountBalance as AccountBalanceIcon,
     BarChart as BarChartIcon,
     Settings as SettingsIcon,
     ChevronLeft as ChevronLeftIcon,
@@ -74,7 +73,6 @@ export default function MainLayout() {
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
         { text: 'Expenses', icon: <ReceiptIcon />, path: '/expenses' },
         { text: 'Categories', icon: <CategoryIcon />, path: '/categories' },
-        { text: 'Budget', icon: <AccountBalanceIcon />, path: '/budget' },
         { text: 'Reports', icon: <BarChartIcon />, path: '/reports' },
         { text: 'Settings', icon: <SettingsIcon />, path: '/settings' }
     ];

@@ -9,7 +9,6 @@ import AuthLayout from './layouts/AuthLayout';
 import Dashboard from './pages/Dashboard';
 import Expenses from './pages/Expenses';
 import Categories from './pages/Categories';
-import Budget from './pages/Budget';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
@@ -64,7 +63,6 @@ function App() {
                 <Route index element={<Dashboard />} />
                 <Route path="expenses" element={<Expenses />} />
                 <Route path="categories" element={<Categories />} />
-                <Route path="budget" element={<Budget />} />
                 <Route path="reports" element={<Reports />} />
                 <Route path="settings" element={<Settings />} />
             </Route>

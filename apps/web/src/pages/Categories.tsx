@@ -3,7 +3,6 @@ import {
     Box,
     Typography,
     Paper,
-    Grid,
     Button,
     IconButton,
     Dialog,
@@ -22,7 +21,8 @@ import {
     Input,
     InputAdornment,
     Tooltip,
-    DialogContentText
+    DialogContentText,
+    Grid2
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -212,9 +212,9 @@ export default function Categories() {
                     </Typography>
                 </Paper>
             ) : (
-                <Grid container spacing={3}>
+                <Grid2 container spacing={3}>
                     {categories.map((category) => (
-                        <Grid item xs={12} sm={6} md={4} lg={3} key={category.id}>
+                        <Grid2 size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={category.id}>
                             <Card
                                 sx={{
                                     borderLeft: `5px solid ${category.color || '#3f51b5'}`,
@@ -264,9 +264,9 @@ export default function Categories() {
                                     </Box>
                                 </CardActions>
                             </Card>
-                        </Grid>
+                        </Grid2>
                     ))}
-                </Grid>
+                </Grid2>
             )}
 
             {/* Add/Edit Category Dialog */}

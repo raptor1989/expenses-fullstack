@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { Expense } from '@expenses/shared';
+import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
 
 interface ExpenseTableProps {
     expenses: Expense[];
@@ -21,24 +22,6 @@ interface ExpenseTableProps {
     onEdit?: (expense: Expense) => void;
     onDelete?: (expense: Expense) => void;
 }
-
-// Helper function to format currency
-const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2
-    }).format(amount);
-};
-
-// Helper function to format date
-const formatDate = (date: Date | string): string => {
-    return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-};
 
 export default function ExpenseTable({ expenses, categories, onEdit, onDelete }: ExpenseTableProps) {
     if (!expenses || expenses.length === 0) {
