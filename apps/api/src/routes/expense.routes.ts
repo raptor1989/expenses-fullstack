@@ -19,6 +19,11 @@ router.get('/summary', (req, res) => {
     ExpenseController.getExpenseSummary(req, res);
 });
 
+// GET /api/expenses/by-month - Get expenses by month for a specific year
+router.get('/by-month', (req, res) => {
+    ExpenseController.getExpensesByMonth(req, res);
+});
+
 // GET /api/expenses/:id - Get expense by ID
 router.get('/:id', (req, res) => {
     ExpenseController.getExpenseById(req, res);

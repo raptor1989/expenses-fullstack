@@ -231,4 +231,46 @@ export class ExpenseController {
             });
         }
     }
+
+    // Get expenses by month for a specific year
+    static async getExpensesByMonth(req: Request, res: Response) {
+        try {
+            if (!req.user) {
+                return res.status(401).json({
+                    message: 'Authentication required',
+                    code: 'auth_required'
+                });
+            }
+
+            // Parse year from query parameters
+            const yearStr = req.query.year as string;
+
+            if (!yearStr) {
+                return res.status(400).json({
+                    message: 'Year parameter is required',
+                    code: 'missing_year_parameter'
+                });
+            }
+
+            const year = parseInt(yearStr);
+
+            if (isNaN(year)) {
+                return res.status(400).json({
+                    message: 'Year must be a valid number',
+                    code: 'invalid_year_format'
+                });
+            }
+
+            // Get expenses by month
+            const monthlyData = await ExpenseModel.getExpensesByMonth(req.user.id, year);
+
+            res.status(200).json({ monthlyData });
+        } catch (error) {
+            console.error('Get expenses by month error:', error);
+            res.status(500).json({
+                message: 'Failed to get expenses by month',
+                code: 'monthly_expenses_fetch_failed'
+            });
+        }
+    }
 }

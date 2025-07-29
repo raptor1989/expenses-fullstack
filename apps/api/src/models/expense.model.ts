@@ -1,4 +1,4 @@
-import { Expense, ExpenseCreateInput, ExpenseSummary, ExpenseUpdateInput } from '@expenses/shared';
+import { Expense, ExpenseByMonth, ExpenseCreateInput, ExpenseSummary, ExpenseUpdateInput } from '@expenses/shared';
 import pool from '../db/index';
 
 export class ExpenseModel {
@@ -229,6 +229,85 @@ export class ExpenseModel {
                     endDate
                 }
             };
+        } finally {
+            client.release();
+        }
+    }
+
+    // Get expenses by month for a specific year
+    static async getExpensesByMonth(userId: string, year: number): Promise<ExpenseByMonth[]> {
+        const client = await pool.connect();
+
+        try {
+            // Get monthly totals with month name
+            const monthlyTotalsQuery = `
+        SELECT 
+            TO_CHAR(date, 'Month') as "month",
+            EXTRACT(MONTH FROM date) as month_num,
+            EXTRACT(YEAR FROM date) as "year",
+            SUM(amount) as "total"
+        FROM expenses
+        WHERE user_id = $1 AND EXTRACT(YEAR FROM date) = $2
+        GROUP BY EXTRACT(YEAR FROM date), EXTRACT(MONTH FROM date), TO_CHAR(date, 'Month')
+        ORDER BY month_num
+      `;
+
+            const monthlyTotals = await client.query(monthlyTotalsQuery, [userId, year]);
+
+            // Process each month
+            const results: ExpenseByMonth[] = [];
+
+            for (const monthData of monthlyTotals.rows) {
+                // Get category breakdown for this month
+                const categoryQuery = `
+          SELECT 
+              c.id as "categoryId",
+              c.name as "categoryName",
+              SUM(e.amount) as "amount"
+          FROM expenses e
+          JOIN categories c ON e.category_id = c.id
+          WHERE e.user_id = $1 
+            AND EXTRACT(YEAR FROM e.date) = $2
+            AND EXTRACT(MONTH FROM e.date) = $3
+          GROUP BY c.id, c.name
+          ORDER BY "amount" DESC
+        `;
+
+                const categoryResults = await client.query(categoryQuery, [userId, year, monthData.month_num]);
+
+                // Convert category results to Record<string, number>
+                const totalByCategory: Record<string, number> = {};
+                categoryResults.rows.forEach((cat) => {
+                    totalByCategory[cat.categoryName] = parseFloat(cat.amount);
+                });
+
+                // Get top five most expensive expenses for this month
+                const topExpensesQuery = `
+          SELECT 
+              id, amount, description, date, 
+              category_id as "categoryId", user_id as "userId",
+              created_at as "createdAt", updated_at as "updatedAt"
+          FROM expenses
+          WHERE user_id = $1 
+            AND EXTRACT(YEAR FROM date) = $2
+            AND EXTRACT(MONTH FROM date) = $3
+          ORDER BY amount DESC
+          LIMIT 5
+        `;
+
+                const topExpenses = await client.query(topExpensesQuery, [userId, year, monthData.month_num]);
+
+                // Create the monthly data object
+                results.push({
+                    month: monthData.month.trim(),
+                    year: parseInt(monthData.year),
+                    total: parseFloat(monthData.total),
+                    totalByCategory,
+                    topFiveMostExpensive: topExpenses.rows
+                });
+            }
+
+            return results;
         } finally {
             client.release();
         }
