@@ -27,12 +27,13 @@ import dayjs from 'dayjs';
 import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { getCategories } from '../services/categoryService';
+import { ExpenseSummary } from '@expenses/shared';
 
 export default function Dashboard() {
     const navigate = useNavigate();
     const { mode } = useThemeMode();
     const [loading, setLoading] = useState(true);
-    const [summary, setSummary] = useState<any>(null);
+    const [summary, setSummary] = useState<ExpenseSummary | undefined>(undefined);
     const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
     const [recentExpenses, setRecentExpenses] = useState<any[]>([]);
     const [categoriesMap, setCategoriesMap] = useState<Record<string, { name: string; color: string }>>({});

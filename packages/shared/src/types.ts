@@ -97,3 +97,12 @@ export interface ApiError {
     code: string;
     details?: Record<string, unknown>;
 }
+
+// Additional types for reports and analytics
+export interface ExpenseByMonth {
+    month: string;
+    year: number;
+    total: number;
+    totalByCategory: Record<string, number>;
+    topFiveMostExpensive: Expense[];
+}

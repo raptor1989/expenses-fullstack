@@ -1,4 +1,4 @@
-import { Expense, ExpenseCreateInput, ExpenseUpdateInput, ExpenseSummary } from '@expenses/shared';
+import { Expense, ExpenseCreateInput, ExpenseUpdateInput, ExpenseSummary, ExpenseByMonth } from '@expenses/shared';
 import api from './api';
 
 interface ExpensesResponse {
@@ -56,4 +56,11 @@ export const getExpenseSummary = async (startDate: string, endDate: string): Pro
 
     const response = await api.get<{ summary: ExpenseSummary }>(`/expenses/summary?${params.toString()}`);
     return response.data.summary;
+};
+
+export const getExpensesByMonth = async (year: number): Promise<ExpenseByMonth[]> => {
+    const params = new URLSearchParams();
+    params.append('year', year.toString());
+    const response = await api.get<{ monthlyData: ExpenseByMonth[] }>(`/expenses/by-month?${params.toString()}`);
+    return response.data.monthlyData;
 };
