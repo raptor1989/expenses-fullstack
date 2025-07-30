@@ -17,7 +17,8 @@ export class ExpenseModel {
             const values = [expense.amount, expense.description, expense.date, expense.categoryId, userId];
 
             const result = await client.query(query, values);
-            return result.rows[0];
+            const row = result.rows[0];
+            return { ...row, amount: parseFloat(row.amount) };
         } finally {
             client.release();
         }
@@ -78,8 +79,10 @@ export class ExpenseModel {
             const paginatedValues = [...values, limit, offset];
             const result = await client.query(query, paginatedValues);
 
+            // Convert amount to number for each expense
+            const expenses = result.rows.map((row) => ({ ...row, amount: parseFloat(row.amount) }));
             return {
-                expenses: result.rows,
+                expenses,
                 total
             };
         } finally {
@@ -104,8 +107,8 @@ export class ExpenseModel {
             if (result.rows.length === 0) {
                 return null;
             }
-
-            return result.rows[0];
+            const row = result.rows[0];
+            return { ...row, amount: parseFloat(row.amount) };
         } finally {
             client.release();
         }
@@ -158,8 +161,8 @@ export class ExpenseModel {
             if (result.rows.length === 0) {
                 return null;
             }
-
-            return result.rows[0];
+            const row = result.rows[0];
+            return { ...row, amount: parseFloat(row.amount) };
         } finally {
             client.release();
         }
@@ -221,9 +224,15 @@ export class ExpenseModel {
 
             const totalResult = await client.query(totalQuery, [userId, startDate, endDate]);
 
+            // Ensure all categoryBreakdown amounts are numbers
+            const categoryBreakdown = result.rows.map((row) => ({
+                ...row,
+                totalAmount: parseFloat(row.totalAmount),
+                percentage: parseFloat(row.percentage)
+            }));
             return {
                 totalAmount: parseFloat(totalResult.rows[0].grandTotal || 0),
-                categoryBreakdown: result.rows,
+                categoryBreakdown,
                 period: {
                     startDate,
                     endDate
@@ -296,14 +305,18 @@ export class ExpenseModel {
         `;
 
                 const topExpenses = await client.query(topExpensesQuery, [userId, year, monthData.month_num]);
-
+                // Ensure all top expenses have amount as number
+                const topFiveMostExpensive = topExpenses.rows.map((row) => ({
+                    ...row,
+                    amount: parseFloat(row.amount)
+                }));
                 // Create the monthly data object
                 results.push({
                     month: monthData.month.trim(),
                     year: parseInt(monthData.year),
                     total: parseFloat(monthData.total),
                     totalByCategory,
-                    topFiveMostExpensive: topExpenses.rows
+                    topFiveMostExpensive
                 });
             }
 
