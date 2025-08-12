@@ -29,7 +29,7 @@ interface ExpenseFormProps {
     title?: string;
 }
 
-const ExpenseSchema = Yup.object().shape({
+export const ExpenseSchema = Yup.object().shape({
     amount: Yup.number()
         .required('Amount is required')
         .positive('Amount must be positive')

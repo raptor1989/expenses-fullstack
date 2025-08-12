@@ -27,7 +27,8 @@ import dayjs from 'dayjs';
 import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { getCategories } from '../services/categoryService';
-import { ExpenseSummary } from '@expenses/shared';
+import { Category, ExpenseSummary } from '@expenses/shared';
+import SimpleExpenseForm from '@/components/SimpleExpenseForm';
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -37,6 +38,7 @@ export default function Dashboard() {
     const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
     const [recentExpenses, setRecentExpenses] = useState<any[]>([]);
     const [categoriesMap, setCategoriesMap] = useState<Record<string, { name: string; color: string }>>({});
+    const [categories, setCategories] = useState<Category[]>([]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -83,6 +85,7 @@ export default function Dashboard() {
     const fetchCategories = useCallback(async () => {
         try {
             const fetchedCategories = await getCategories();
+            setCategories(fetchedCategories);
             // Create a map for easier lookup in the table
             const categoryMap: Record<string, { name: string; color: string }> = {};
             fetchedCategories.forEach((category) => {
@@ -171,6 +174,16 @@ export default function Dashboard() {
 
             {/* Charts and Lists */}
             <Grid2 container spacing={3}>
+                {/* Simple Expense Form */}
+                <Grid2 size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="h6">Add Expense</Typography>
+                        </Box>
+                        <SimpleExpenseForm categories={categories} />
+                    </Paper>
+                </Grid2>
+
                 {/* Expenses by Category */}
                 <Grid2 size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2, height: 400 }}>
