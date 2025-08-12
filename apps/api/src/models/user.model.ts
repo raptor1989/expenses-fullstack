@@ -3,7 +3,6 @@ import pool from '../db/index';
 import bcrypt from 'bcryptjs';
 
 export class UserModel {
-    // Register a new user
     static async create(
         username: string,
         email: string,
@@ -14,11 +13,9 @@ export class UserModel {
         const client = await pool.connect();
 
         try {
-            // Hash the password
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            // Insert user into database
             const query = `
         INSERT INTO users (username, email, password, first_name, last_name)
         VALUES ($1, $2, $3, $4, $5)
@@ -34,7 +31,6 @@ export class UserModel {
         }
     }
 
-    // Find user by email
     static async findByEmail(email: string): Promise<(User & { password: string }) | null> {
         const client = await pool.connect();
 
@@ -58,7 +54,6 @@ export class UserModel {
         }
     }
 
-    // Find user by ID
     static async findById(id: string): Promise<User | null> {
         const client = await pool.connect();
 
@@ -82,15 +77,12 @@ export class UserModel {
         }
     }
 
-    // Update user profile
     static async update(id: string, updateData: Partial<User>): Promise<User | null> {
         const client = await pool.connect();
 
         try {
-            // Extract fields to update
             const { firstName, lastName, email, username } = updateData;
 
-            // Build the query dynamically
             const updateFields = [];
             const values = [id];
             let valueCounter = 2;
@@ -116,7 +108,6 @@ export class UserModel {
             }
 
             if (updateFields.length === 0) {
-                // Nothing to update
                 return await this.findById(id);
             }
 

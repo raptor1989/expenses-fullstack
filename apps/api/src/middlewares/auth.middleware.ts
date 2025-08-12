@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-// Extend Express Request interface to include user property
 declare global {
     namespace Express {
         interface Request {
@@ -25,7 +24,6 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
             });
         }
 
-        // Verify token
         const secretKey = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
 
         const decoded = jwt.verify(token, secretKey) as {
@@ -34,7 +32,6 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
             username: string;
         };
 
-        // Add user data to request object
         req.user = {
             id: decoded.id,
             email: decoded.email,

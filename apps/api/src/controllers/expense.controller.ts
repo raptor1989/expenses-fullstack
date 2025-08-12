@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { ExpenseModel } from '../models/expense.model';
 
 export class ExpenseController {
-    // Create a new expense
     static async createExpense(req: Request, res: Response) {
         try {
             if (!req.user) {
@@ -34,7 +33,6 @@ export class ExpenseController {
         }
     }
 
-    // Get all expenses for the current user
     static async getExpenses(req: Request, res: Response) {
         try {
             if (!req.user) {
@@ -44,12 +42,10 @@ export class ExpenseController {
                 });
             }
 
-            // Parse query parameters
             const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
             const page = req.query.page ? parseInt(req.query.page as string) : 1;
             const offset = (page - 1) * limit;
 
-            // Parse date filters
             let startDate: Date | undefined;
             let endDate: Date | undefined;
 
@@ -61,7 +57,6 @@ export class ExpenseController {
                 endDate = new Date(req.query.endDate as string);
             }
 
-            // Parse category filter
             const categoryId = req.query.categoryId as string | undefined;
 
             const { expenses, total } = await ExpenseModel.findByUserId(
@@ -91,7 +86,6 @@ export class ExpenseController {
         }
     }
 
-    // Get expense by ID
     static async getExpenseById(req: Request, res: Response) {
         try {
             if (!req.user) {
@@ -122,7 +116,6 @@ export class ExpenseController {
         }
     }
 
-    // Update expense
     static async updateExpense(req: Request, res: Response) {
         try {
             if (!req.user) {
@@ -162,7 +155,6 @@ export class ExpenseController {
         }
     }
 
-    // Delete expense
     static async deleteExpense(req: Request, res: Response) {
         try {
             if (!req.user) {
@@ -195,7 +187,6 @@ export class ExpenseController {
         }
     }
 
-    // Get expense summary by category
     static async getExpenseSummary(req: Request, res: Response) {
         try {
             if (!req.user) {
@@ -205,7 +196,6 @@ export class ExpenseController {
                 });
             }
 
-            // Parse date range
             const startDateStr = req.query.startDate as string;
             const endDateStr = req.query.endDate as string;
 
@@ -219,7 +209,6 @@ export class ExpenseController {
             const startDate = new Date(startDateStr);
             const endDate = new Date(endDateStr);
 
-            // Get summary
             const summary = await ExpenseModel.getSummaryByCategory(req.user.id, startDate, endDate);
 
             res.status(200).json({ summary });
@@ -232,7 +221,6 @@ export class ExpenseController {
         }
     }
 
-    // Get expenses by month for a specific year
     static async getExpensesByMonth(req: Request, res: Response) {
         try {
             if (!req.user) {
@@ -242,7 +230,6 @@ export class ExpenseController {
                 });
             }
 
-            // Parse year from query parameters
             const yearStr = req.query.year as string;
 
             if (!yearStr) {
@@ -261,7 +248,6 @@ export class ExpenseController {
                 });
             }
 
-            // Get expenses by month
             const monthlyData = await ExpenseModel.getExpensesByMonth(req.user.id, year);
 
             res.status(200).json({ monthlyData });

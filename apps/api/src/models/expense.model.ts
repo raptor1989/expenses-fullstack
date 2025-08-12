@@ -2,7 +2,6 @@ import { Expense, ExpenseByMonth, ExpenseCreateInput, ExpenseSummary, ExpenseUpd
 import pool from '../db/index';
 
 export class ExpenseModel {
-    // Create a new expense
     static async create(userId: string, expense: ExpenseCreateInput): Promise<Expense> {
         const client = await pool.connect();
 
@@ -24,7 +23,6 @@ export class ExpenseModel {
         }
     }
 
-    // Get all expenses for a user
     static async findByUserId(
         userId: string,
         limit = 50,
@@ -36,7 +34,6 @@ export class ExpenseModel {
         const client = await pool.connect();
 
         try {
-            // Build the query dynamically based on filters
             let whereClause = 'WHERE user_id = $1';
             const values = [userId];
             let paramCounter = 2;
@@ -56,7 +53,6 @@ export class ExpenseModel {
                 values.push(categoryId);
             }
 
-            // Get total count for pagination
             const countQuery = `
         SELECT COUNT(*) as total
         FROM expenses
@@ -66,7 +62,6 @@ export class ExpenseModel {
             const countResult = await client.query(countQuery, values);
             const total = parseInt(countResult.rows[0].total);
 
-            // Get expenses with pagination
             const query = `
         SELECT id, amount, description, date, category_id as "categoryId", user_id as "userId",
                created_at as "createdAt", updated_at as "updatedAt"
@@ -79,7 +74,6 @@ export class ExpenseModel {
             const paginatedValues = [...values, limit, offset];
             const result = await client.query(query, paginatedValues);
 
-            // Convert amount to number for each expense
             const expenses = result.rows.map((row) => ({ ...row, amount: parseFloat(row.amount) }));
             return {
                 expenses,
@@ -90,7 +84,6 @@ export class ExpenseModel {
         }
     }
 
-    // Get expense by ID
     static async findById(id: string, userId: string): Promise<Expense | null> {
         const client = await pool.connect();
 
@@ -114,12 +107,10 @@ export class ExpenseModel {
         }
     }
 
-    // Update expense
     static async update(id: string, userId: string, updateData: ExpenseUpdateInput): Promise<Expense | null> {
         const client = await pool.connect();
 
         try {
-            // Build dynamic update query
             const updateFields = [];
             const values = [id, userId];
             let valueCounter = 3;
@@ -168,7 +159,6 @@ export class ExpenseModel {
         }
     }
 
-    // Delete expense
     static async delete(id: string, userId: string): Promise<boolean> {
         const client = await pool.connect();
 
@@ -186,7 +176,6 @@ export class ExpenseModel {
         }
     }
 
-    // Get expense summary by category
     static async getSummaryByCategory(userId: string, startDate: Date, endDate: Date): Promise<ExpenseSummary> {
         const client = await pool.connect();
 
@@ -215,7 +204,6 @@ export class ExpenseModel {
 
             const result = await client.query(query, [userId, startDate, endDate]);
 
-            // Calculate the grand total
             const totalQuery = `
         SELECT SUM(amount) as "grandTotal"
         FROM expenses
@@ -224,7 +212,6 @@ export class ExpenseModel {
 
             const totalResult = await client.query(totalQuery, [userId, startDate, endDate]);
 
-            // Ensure all categoryBreakdown amounts are numbers
             const categoryBreakdown = result.rows.map((row) => ({
                 ...row,
                 totalAmount: parseFloat(row.totalAmount),
@@ -243,12 +230,10 @@ export class ExpenseModel {
         }
     }
 
-    // Get expenses by month for a specific year
     static async getExpensesByMonth(userId: string, year: number): Promise<ExpenseByMonth[]> {
         const client = await pool.connect();
 
         try {
-            // Get monthly totals with month name
             const monthlyTotalsQuery = `
         SELECT 
             TO_CHAR(date, 'Month') as "month",
@@ -263,11 +248,9 @@ export class ExpenseModel {
 
             const monthlyTotals = await client.query(monthlyTotalsQuery, [userId, year]);
 
-            // Process each month
             const results: ExpenseByMonth[] = [];
 
             for (const monthData of monthlyTotals.rows) {
-                // Get category breakdown for this month
                 const categoryQuery = `
           SELECT 
               c.id as "categoryId",
@@ -284,13 +267,11 @@ export class ExpenseModel {
 
                 const categoryResults = await client.query(categoryQuery, [userId, year, monthData.month_num]);
 
-                // Convert category results to Record<string, number>
                 const totalByCategory: Record<string, number> = {};
                 categoryResults.rows.forEach((cat) => {
                     totalByCategory[cat.categoryName] = parseFloat(cat.amount);
                 });
 
-                // Get top five most expensive expenses for this month
                 const topExpensesQuery = `
           SELECT 
               id, amount, description, date, 
@@ -305,12 +286,12 @@ export class ExpenseModel {
         `;
 
                 const topExpenses = await client.query(topExpensesQuery, [userId, year, monthData.month_num]);
-                // Ensure all top expenses have amount as number
+
                 const topFiveMostExpensive = topExpenses.rows.map((row) => ({
                     ...row,
                     amount: parseFloat(row.amount)
                 }));
-                // Create the monthly data object
+
                 results.push({
                     month: monthData.month.trim(),
                     year: parseInt(monthData.year),

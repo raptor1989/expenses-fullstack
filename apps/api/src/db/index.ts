@@ -2,7 +2,6 @@ import { Pool } from 'pg';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Database connection configuration
 const pool = new Pool({
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
@@ -12,7 +11,6 @@ const pool = new Pool({
     ssl: isProduction ? { rejectUnauthorized: false } : false
 });
 
-// Test database connection
 export const testConnection = async (): Promise<boolean> => {
     try {
         const client = await pool.connect();

@@ -1,10 +1,10 @@
-// PM2 startup script to manage the application processes
+
 const pm2 = require('pm2');
 const path = require('path');
 
 console.log('Starting applications with PM2...');
 
-// Configuration for PM2 ecosystem
+
 const processes = [
   {
     name: 'expenses-api',
@@ -35,14 +35,14 @@ const processes = [
   }
 ];
 
-// Connect to PM2
+
 pm2.connect((err) => {
   if (err) {
     console.error('Error connecting to PM2:', err);
     process.exit(2);
   }
 
-  // Start each process
+  
   processes.forEach((process) => {
     pm2.start(process, (err, apps) => {
       if (err) {
@@ -53,6 +53,6 @@ pm2.connect((err) => {
     });
   });
 
-  // Disconnect from PM2
+  
   pm2.disconnect();
 });

@@ -4,17 +4,14 @@ import { auth } from '../middlewares/auth.middleware';
 
 const router = express.Router();
 
-// POST /api/users/register - Register a new user
 router.post('/register', (req, res) => {
     UserController.register(req, res);
 });
 
-// POST /api/users/login - Login a user
 router.post('/login', (req, res) => {
     UserController.login(req, res);
 });
 
-// GET /api/users/profile - Get current user profile
 router.get(
     '/profile',
     (req, res, next) => {
@@ -25,7 +22,6 @@ router.get(
     }
 );
 
-// PUT /api/users/profile - Update user profile
 router.put(
     '/profile',
     (req, res, next) => {

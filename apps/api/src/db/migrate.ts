@@ -2,7 +2,6 @@ import pool, { testConnection } from './index';
 
 const runMigrations = async () => {
     try {
-        // Test database connection
         const isConnected = await testConnection();
 
         if (!isConnected) {
@@ -15,10 +14,8 @@ const runMigrations = async () => {
         const client = await pool.connect();
 
         try {
-            // Begin transaction
             await client.query('BEGIN');
 
-            // Create users table
             await client.query(`
         CREATE TABLE IF NOT EXISTS users (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -32,7 +29,6 @@ const runMigrations = async () => {
         )
       `);
 
-            // Create categories table
             await client.query(`
         CREATE TABLE IF NOT EXISTS categories (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -46,7 +42,6 @@ const runMigrations = async () => {
         )
       `);
 
-            // Create expenses table
             await client.query(`
         CREATE TABLE IF NOT EXISTS expenses (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -62,7 +57,6 @@ const runMigrations = async () => {
         )
       `);
 
-            // Create a few default categories for new users
             await client.query(`
         CREATE OR REPLACE FUNCTION create_default_categories()
         RETURNS TRIGGER AS $$
@@ -79,7 +73,6 @@ const runMigrations = async () => {
         $$ LANGUAGE plpgsql;
       `);
 
-            // Create trigger for default categories
             await client.query(`
         DROP TRIGGER IF EXISTS create_categories_for_new_user ON users;
         CREATE TRIGGER create_categories_for_new_user
@@ -88,7 +81,6 @@ const runMigrations = async () => {
         EXECUTE FUNCTION create_default_categories();
       `);
 
-            // Create updated_at triggers
             const tables = ['users', 'categories', 'expenses'];
 
             for (const table of tables) {
@@ -111,17 +103,14 @@ const runMigrations = async () => {
         `);
             }
 
-            // Commit transaction
             await client.query('COMMIT');
 
             console.log('Database migrations completed successfully!');
         } catch (error) {
-            // Rollback transaction on error
             await client.query('ROLLBACK');
             console.error('Migration failed:', error);
             process.exit(1);
         } finally {
-            // Release client
             client.release();
         }
     } catch (error) {
@@ -130,7 +119,6 @@ const runMigrations = async () => {
     }
 };
 
-// Run migrations
 runMigrations().then(() => {
     console.log('Migration process finished');
     process.exit(0);

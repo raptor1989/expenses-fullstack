@@ -6,12 +6,10 @@ import dotenv from 'dotenv';
 import ms from 'ms';
 
 export class UserController {
-    // Register new user
     static async register(req: Request, res: Response) {
         try {
             const { username, email, password, firstName, lastName } = req.body;
 
-            // Check if user already exists
             const existingUser = await UserModel.findByEmail(email);
 
             if (existingUser) {
@@ -21,10 +19,8 @@ export class UserController {
                 });
             }
 
-            // Create new user
             const user = await UserModel.create(username, email, password, firstName, lastName);
 
-            // Generate JWT token
             const secretKey = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
             const expiresIn = (process.env.JWT_EXPIRES_IN as ms.StringValue) || '7D';
 
@@ -56,12 +52,10 @@ export class UserController {
         }
     }
 
-    // Login user
     static async login(req: Request, res: Response) {
         try {
             const { email, password } = req.body;
 
-            // Find user by email
             const user = await UserModel.findByEmail(email);
 
             if (!user) {
@@ -71,7 +65,6 @@ export class UserController {
                 });
             }
 
-            // Verify password
             const isPasswordValid = await bcrypt.compare(password, user.password);
 
             if (!isPasswordValid) {
@@ -81,7 +74,6 @@ export class UserController {
                 });
             }
 
-            // Generate JWT token
             const secretKey = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
             const expiresIn = (process.env.JWT_EXPIRES_IN as ms.StringValue) || '7D';
 
@@ -113,7 +105,6 @@ export class UserController {
         }
     }
 
-    // Get current user profile
     static async getProfile(req: Request, res: Response) {
         try {
             if (!req.user) {
@@ -152,7 +143,6 @@ export class UserController {
         }
     }
 
-    // Update user profile
     static async updateProfile(req: Request, res: Response) {
         try {
             if (!req.user) {

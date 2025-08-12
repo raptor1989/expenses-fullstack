@@ -2,7 +2,6 @@ import { Category } from '@expenses/shared';
 import pool from '../db/index';
 
 export class CategoryModel {
-    // Create a new category
     static async create(userId: string, name: string, color?: string, icon?: string): Promise<Category> {
         const client = await pool.connect();
 
@@ -22,7 +21,6 @@ export class CategoryModel {
         }
     }
 
-    // Get all categories for a user
     static async findByUserId(userId: string): Promise<Category[]> {
         const client = await pool.connect();
 
@@ -41,7 +39,6 @@ export class CategoryModel {
         }
     }
 
-    // Get category by ID
     static async findById(id: string, userId: string): Promise<Category | null> {
         const client = await pool.connect();
 
@@ -64,7 +61,6 @@ export class CategoryModel {
         }
     }
 
-    // Update category
     static async update(
         id: string,
         userId: string,
@@ -75,7 +71,6 @@ export class CategoryModel {
         const client = await pool.connect();
 
         try {
-            // Build dynamic update query
             const updateFields = [];
             const values = [id, userId];
             let valueCounter = 3;
@@ -118,12 +113,10 @@ export class CategoryModel {
         }
     }
 
-    // Delete category
     static async delete(id: string, userId: string): Promise<boolean> {
         const client = await pool.connect();
 
         try {
-            // Check if category has associated expenses
             const checkQuery = `
         SELECT COUNT(*) as count
         FROM expenses
@@ -137,7 +130,6 @@ export class CategoryModel {
                 throw new Error('Cannot delete category with associated expenses');
             }
 
-            // Delete category
             const query = `
         DELETE FROM categories
         WHERE id = $1 AND user_id = $2

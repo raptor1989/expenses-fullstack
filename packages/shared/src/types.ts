@@ -1,6 +1,3 @@
-// Basic types for expense management app
-
-// User related types
 export interface User {
     id: string;
     username: string;
@@ -21,7 +18,6 @@ export interface AuthResponse {
     token: string;
 }
 
-// Expense category types
 export interface Category {
     id: string;
     name: string;
@@ -32,7 +28,6 @@ export interface Category {
     updatedAt: Date;
 }
 
-// Expense types
 export interface Expense {
     id: string;
     amount: number;
@@ -58,7 +53,6 @@ export interface ExpenseUpdateInput {
     categoryId?: string;
 }
 
-// Budget types
 export interface Budget {
     id: string;
     amount: number;
@@ -76,7 +70,6 @@ export interface BudgetProgress {
     remaining: number;
 }
 
-// Statistics and reports
 export interface ExpenseSummary {
     totalAmount: number;
     categoryBreakdown: Array<{
@@ -92,14 +85,12 @@ export interface ExpenseSummary {
     };
 }
 
-// API error response
 export interface ApiError {
     message: string;
     code: string;
     details?: Record<string, unknown>;
 }
 
-// Additional types for reports and analytics
 export interface ExpenseByMonth {
     month: string;
     year: number;
