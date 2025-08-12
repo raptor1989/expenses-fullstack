@@ -123,12 +123,12 @@ export default function Expenses() {
         setPagination((prev) => ({ ...prev, page: value }));
     };
 
-    const handleFilterChange = (field: keyof typeof filters, value: any) => {
+    const handleFilterChange = (field: keyof typeof filters, value: unknown) => {
         setFilters((prev) => ({ ...prev, [field]: value }));
     };
 
     const handleApplyFilters = () => {
-        setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page when filtering
+        setPagination((prev) => ({ ...prev, page: 1 }));
         fetchExpenses();
     };
 

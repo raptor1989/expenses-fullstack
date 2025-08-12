@@ -27,7 +27,7 @@ import dayjs from 'dayjs';
 import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { getCategories } from '../services/categoryService';
-import { Category, ExpenseSummary } from '@expenses/shared';
+import { Category, Expense, ExpenseByCategory, ExpenseSummary } from '@expenses/shared';
 import SimpleExpenseForm from '@/components/SimpleExpenseForm';
 
 export default function Dashboard() {
@@ -35,8 +35,8 @@ export default function Dashboard() {
     const { mode } = useThemeMode();
     const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState<ExpenseSummary | undefined>(undefined);
-    const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
-    const [recentExpenses, setRecentExpenses] = useState<any[]>([]);
+    const [expensesByCategory, setExpensesByCategory] = useState<ExpenseByCategory[]>([]);
+    const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
     const [categoriesMap, setCategoriesMap] = useState<Record<string, { name: string; color: string }>>({});
     const [categories, setCategories] = useState<Category[]>([]);
 
@@ -54,7 +54,7 @@ export default function Dashboard() {
                 setSummary(summaryData);
 
                 // Transform category breakdown for pie chart
-                const categoryData = summaryData.categoryBreakdown.map((item: any) => ({
+                const categoryData = summaryData.categoryBreakdown.map((item) => ({
                     id: item.categoryName,
                     label: item.categoryName,
                     value: item.totalAmount,

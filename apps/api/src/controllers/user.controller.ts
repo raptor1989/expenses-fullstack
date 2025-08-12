@@ -3,6 +3,7 @@ import { UserModel } from '../models/user.model';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+import ms from 'ms';
 
 export class UserController {
     // Register new user
@@ -25,7 +26,7 @@ export class UserController {
 
             // Generate JWT token
             const secretKey = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
-            const expiresIn: any = process.env.JWT_EXPIRES_IN || '7d';
+            const expiresIn = (process.env.JWT_EXPIRES_IN as ms.StringValue) || '7D';
 
             const signOption: jwt.SignOptions = {
                 expiresIn
@@ -82,7 +83,7 @@ export class UserController {
 
             // Generate JWT token
             const secretKey = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
-            const expiresIn: any = process.env.JWT_EXPIRES_IN || '7d';
+            const expiresIn = (process.env.JWT_EXPIRES_IN as ms.StringValue) || '7D';
 
             const signOption: jwt.SignOptions = {
                 expiresIn

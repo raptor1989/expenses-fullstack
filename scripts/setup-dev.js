@@ -162,7 +162,7 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=${DB_NAME}
 JWT_SECRET=development_secret_key
-JWT_EXPIRES_IN=7d`;
+JWT_EXPIRES_IN=7D`;
       fs.writeFileSync(ENV_FILE, basicEnvContent);
       log('Basic .env file created ✓', colors.green);
     }

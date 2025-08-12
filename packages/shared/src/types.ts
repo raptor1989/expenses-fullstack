@@ -82,8 +82,9 @@ export interface ExpenseSummary {
     categoryBreakdown: Array<{
         categoryId: string;
         categoryName: string;
-        amount: number;
+        totalAmount: number;
         percentage: number;
+        color: string;
     }>;
     period: {
         startDate: Date;
@@ -105,4 +106,11 @@ export interface ExpenseByMonth {
     total: number;
     totalByCategory: Record<string, number>;
     topFiveMostExpensive: Expense[];
+}
+
+export interface ExpenseByCategory {
+    id: string;
+    label: string;
+    value: number;
+    color: string;
 }
