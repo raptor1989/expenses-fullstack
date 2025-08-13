@@ -1,47 +1,41 @@
 {
-  "name": "expenses-fullstack-js",
-  "description": "A fullstack TypeScript application for managing household expenses. Built with NestJS (backend) and NextJS (frontend) in a Turborepo monorepo structure. Use 'npm run dev' to start development servers, 'npm run build' for production builds, and 'npm run lint' for code linting.",
-  "private": true,
-  "scripts": {
-    "build": "turbo run build",
-    "build:api": "turbo run build --filter=api",
-    "build:frontend": "turbo run build --filter=frontend",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "format": "prettier --config ./.prettierrc --write \"**/*.{ts,tsx}\"",
-    "check-types": "turbo run check-types",
-    "build:prod": "cross-env NODE_ENV=production turbo run build",
-    "build:api:prod": "cross-env NODE_ENV=production turbo run build --filter=api",
-    "build:frontend:prod": "cross-env NODE_ENV=production turbo run build --filter=frontend",
-    "start:prod": "cross-env NODE_ENV=production pm2 start ecosystem.config.js",
-    "start:api:prod": "cd apps/api && npm run start:prod",
-    "start:frontend:prod": "cd apps/frontend && npm run start",
-    "pm2:start": "pm2 start ecosystem.config.js",
-    "pm2:stop": "pm2 stop ecosystem.config.js",
-    "pm2:restart": "pm2 restart ecosystem.config.js",
-    "pm2:logs": "pm2 logs",
-    "pm2:monit": "pm2 monit",
-    "pm2:status": "pm2 list",
-    "pm2:save": "pm2 save"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.27.0",
-    "cross-env": "^7.0.3",
-    "eslint": "^9.27.0",
-    "eslint-plugin-react": "^7.37.5",
-    "globals": "^16.1.0",
-    "pm2": "^6.0.6",
-    "prettier": "^3.5.3",
-    "turbo": "^2.5.3",
-    "typescript": "5.8.2",
-    "typescript-eslint": "^8.32.1"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "packageManager": "npm@11.3.0",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
+    "name": "expenses-fullstack",
+    "version": "1.0.0",
+    "description": "A fullstack TypeScript application to manage household expenses. This monorepo includes a React frontend with Vite, Express.js backend, JWT authentication, and PostgreSQL database integration. Use 'npm run dev' to start development servers, 'npm run build' to build all applications, and 'npm run start' to run the production build with PM2.",
+    "private": true,
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "dev": "turbo run dev",
+        "setup": "node scripts/setup-dev.js",
+        "build": "turbo run build",
+        "test": "turbo run test",
+        "lint": "turbo run lint",
+        "format": "prettier --config ./.prettierrc --write \"**/*.{ts,tsx}\"",
+        "clean": "turbo run clean && rm -rf node_modules"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://raptor1989: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@github.com/raptor1989/expenses-fullstack.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "bugs": {
+        "url": "https://github.com/raptor1989/expenses-fullstack/issues"
+    },
+    "homepage": "https://github.com/raptor1989/expenses-fullstack#readme",
+    "devDependencies": {
+        "@types/node": "22.15.21",
+        "pm2": "6.0.6",
+        "turbo": "2.5.3",
+        "typescript": "5.8.3"
+    },
+    "packageManager": "npm@11.3.0",
+    "engines": {
+        "node": ">=20.0.0"
+    }
 }
