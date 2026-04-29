@@ -99,22 +99,29 @@ static async findById(id: number, userId: number): Promise<Item | null> {
   ```json
   { "message": "...", "code": "error_code", "details": {}, "stack": "..." }
   ```
-- `stack` included only when `NODE_ENV !== 'production'`
+- `stack` included only when `NODE_ENV === 'development'`
 - Standard error codes: `auth_required`, `invalid_token`, `email_in_use`, `missing_required_field`, `user_not_found`, `category_has_expenses`, `server_error`
 
 ## Response Format
 
-Success responses follow this shape:
+Mutation responses (POST/PUT/DELETE) include `message`:
 
 ```json
 {
-    "message": "Items retrieved successfully",
+    "message": "Item created successfully",
+    "item": { ... }
+}
+```
+
+GET responses return data directly (no `message`):
+
+```json
+{
     "items": [...],
     "pagination": { "total": 100, "page": 1, "limit": 10, "totalPages": 10 }
 }
 ```
 
-- Always include `message`
 - Include `code` for error responses
 - Include `pagination` for list endpoints
 
