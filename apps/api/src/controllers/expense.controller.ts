@@ -42,8 +42,8 @@ export class ExpenseController {
                 });
             }
 
-            const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-            const page = req.query.page ? parseInt(req.query.page as string) : 1;
+            const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 50), 100);
+            const page = Math.max(1, parseInt(req.query.page as string) || 1);
             const offset = (page - 1) * limit;
 
             let startDate: Date | undefined;

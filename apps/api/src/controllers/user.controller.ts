@@ -5,6 +5,18 @@ import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import ms from 'ms';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+function setAuthCookie(res: Response, token: string, expiresIn: string) {
+    const maxAge = ms(expiresIn as ms.StringValue);
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'strict',
+        maxAge
+    });
+}
+
 export class UserController {
     static async register(req: Request, res: Response) {
         try {
@@ -30,6 +42,8 @@ export class UserController {
 
             const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, secretKey, signOption);
 
+            setAuthCookie(res, token, expiresIn);
+
             res.status(201).json({
                 message: 'User registered successfully',
                 user: {
@@ -40,8 +54,7 @@ export class UserController {
                     lastName: user.lastName,
                     createdAt: user.createdAt,
                     updatedAt: user.updatedAt
-                },
-                token
+                }
             });
         } catch (error) {
             console.error('Registration error:', error);
@@ -83,6 +96,8 @@ export class UserController {
 
             const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, secretKey, signOption);
 
+            setAuthCookie(res, token, expiresIn);
+
             res.status(200).json({
                 message: 'Login successful',
                 user: {
@@ -93,8 +108,7 @@ export class UserController {
                     lastName: user.lastName,
                     createdAt: user.createdAt,
                     updatedAt: user.updatedAt
-                },
-                token
+                }
             });
         } catch (error) {
             console.error('Login error:', error);
@@ -103,6 +117,11 @@ export class UserController {
                 code: 'login_failed'
             });
         }
+    }
+
+    static logout(req: Request, res: Response) {
+        res.clearCookie('token', { httpOnly: true, secure: isProduction, sameSite: 'strict' });
+        res.status(200).json({ message: 'Logged out successfully' });
     }
 
     static async getProfile(req: Request, res: Response) {

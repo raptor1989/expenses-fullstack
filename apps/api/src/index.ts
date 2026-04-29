@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { userRoutes } from './routes/user.routes';
 import { expenseRoutes } from './routes/expense.routes';
@@ -18,7 +19,8 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()) ?? [];
-app.use(cors({ origin: allowedOrigins.length > 0 ? allowedOrigins : false }));
+app.use(cors({ origin: allowedOrigins.length > 0 ? allowedOrigins : false, credentials: true }));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

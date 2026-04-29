@@ -4,6 +4,7 @@ import { Avatar, Button, TextField, Link, Grid2, Box, Typography, Alert } from '
 import { PersonAddOutlined as PersonAddOutlinedIcon } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
+import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
 
 // Validation schema
@@ -39,8 +40,8 @@ export default function Register() {
                 await register(values.username, values.email, values.password, values.firstName, values.lastName);
                 navigate('/');
             } catch (err) {
-                if (err instanceof Error) {
-                    setError(err.message);
+                if (axios.isAxiosError(err)) {
+                    setError(err.response?.data?.message || 'An error occurred during registration.');
                 } else {
                     setError('An error occurred during registration.');
                 }

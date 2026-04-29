@@ -15,7 +15,9 @@ declare global {
 
 export const auth = (req: Request, res: Response, next: NextFunction) => {
     try {
-        const token = req.header('Authorization')?.replace('Bearer ', '');
+        const cookieToken = req.cookies?.token;
+        const headerToken = req.header('Authorization')?.replace('Bearer ', '');
+        const token = cookieToken || headerToken;
 
         if (!token) {
             return res.status(401).json({

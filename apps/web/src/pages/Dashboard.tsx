@@ -30,6 +30,8 @@ import { getCategories } from '../services/categoryService';
 import { Category, Expense, ExpenseByCategory, ExpenseSummary } from '@expenses/shared';
 import SimpleExpenseForm from '@/components/SimpleExpenseForm';
 
+const CHART_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
+
 export default function Dashboard() {
     const navigate = useNavigate();
     const { mode } = useThemeMode();
@@ -54,25 +56,23 @@ export default function Dashboard() {
                 setSummary(summaryData);
 
                 // Transform category breakdown for pie chart
-                const categoryData = summaryData.categoryBreakdown.map((item) => ({
+                const categoryData = summaryData.categoryBreakdown.map((item, index) => ({
                     id: item.categoryName,
                     label: item.categoryName,
                     value: item.totalAmount,
-                    color: item.color || `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`
+                    color: item.color || CHART_COLORS[index % CHART_COLORS.length]
                 }));
                 setExpensesByCategory(categoryData);
 
                 // Fetch last 10 expenses
                 try {
-                    // In a real app, you'd call the API
                     const recentData = await getExpenses();
                     setRecentExpenses(recentData.expenses);
-                } catch (error) {
-                    console.error('Error fetching recent expenses:', error);
+                } catch {
                     setRecentExpenses([]);
                 }
-            } catch (error) {
-                console.error('Error fetching dashboard data:', error);
+            } catch {
+                // summary unavailable — UI shows zeroed state
             } finally {
                 setLoading(false);
             }
@@ -95,8 +95,8 @@ export default function Dashboard() {
                 };
             });
             setCategoriesMap(categoryMap);
-        } catch (error) {
-            console.error('Failed to fetch categories:', error);
+        } catch {
+            // categories unavailable — table falls back to 'Unknown Category'
         }
     }, []);
 

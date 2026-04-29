@@ -15,7 +15,7 @@ export interface UserCredentials {
 
 export interface AuthResponse {
     user: Omit<User, 'password'>;
-    token: string;
+    token?: string;
 }
 
 export interface Category {

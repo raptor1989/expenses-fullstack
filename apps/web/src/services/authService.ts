@@ -19,6 +19,10 @@ export const registerUser = async (userData: RegisterParams): Promise<AuthRespon
     return response.data;
 };
 
+export const logoutUser = async (): Promise<void> => {
+    await api.post('/users/logout');
+};
+
 export const fetchCurrentUser = async (): Promise<User> => {
     const response = await api.get<{ user: User }>('/users/profile');
     return response.data.user;

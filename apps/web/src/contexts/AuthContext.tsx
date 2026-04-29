@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@expenses/shared';
-import { loginUser, registerUser, fetchCurrentUser } from '../services/authService';
+import { loginUser, registerUser, logoutUser, fetchCurrentUser } from '../services/authService';
 
 interface AuthContextType {
     user: User | null;
@@ -14,7 +14,7 @@ interface AuthContextType {
         firstName?: string,
         lastName?: string
     ) => Promise<void>;
-    logout: () => void;
+    logout: () => Promise<void>;
     updateUser: (user: User) => void;
 }
 
@@ -24,7 +24,7 @@ export const AuthContext = createContext<AuthContextType>({
     isLoading: true,
     login: async () => {},
     register: async () => {},
-    logout: () => {},
+    logout: async () => {},
     updateUser: () => {}
 });
 
@@ -36,22 +36,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Check if there's a token when the app loads
+    // Check if there's an active session (cookie) when the app loads
     useEffect(() => {
         const checkAuth = async () => {
-            const token = localStorage.getItem('token');
-
-            if (token) {
-                try {
-                    const userData = await fetchCurrentUser();
-                    setUser(userData);
-                } catch (error) {
-                    console.error('Auth check failed:', error);
-                    localStorage.removeItem('token');
-                }
+            try {
+                const userData = await fetchCurrentUser();
+                setUser(userData);
+            } catch {
+                // No active session
+            } finally {
+                setIsLoading(false);
             }
-
-            setIsLoading(false);
         };
 
         checkAuth();
@@ -62,7 +57,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         try {
             const response = await loginUser(email, password);
             setUser(response.user);
-            localStorage.setItem('token', response.token);
         } finally {
             setIsLoading(false);
         }
@@ -85,15 +79,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 lastName
             });
             setUser(response.user);
-            localStorage.setItem('token', response.token);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('token');
+    const logout = async () => {
+        try {
+            await logoutUser();
+        } finally {
+            setUser(null);
+        }
     };
 
     const updateUser = (updatedUser: User) => {

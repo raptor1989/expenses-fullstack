@@ -77,8 +77,7 @@ export default function Expenses() {
                 total: response.pagination.total,
                 totalPages: response.pagination.totalPages
             }));
-        } catch (error) {
-            console.error('Failed to fetch expenses:', error);
+        } catch {
             setNotification({
                 open: true,
                 message: 'Failed to load expenses. Please try again later.',
@@ -104,8 +103,8 @@ export default function Expenses() {
                 };
             });
             setCategoriesMap(categoryMap);
-        } catch (error) {
-            console.error('Failed to fetch categories:', error);
+        } catch {
+            // categories unavailable — filter dropdown stays empty
         }
     }, []);
 
@@ -158,8 +157,7 @@ export default function Expenses() {
                 message: 'Expense deleted successfully!',
                 severity: 'success'
             });
-        } catch (error) {
-            console.error('Failed to delete expense:', error);
+        } catch {
             setNotification({
                 open: true,
                 message: 'Failed to delete expense. Please try again.',
@@ -191,8 +189,7 @@ export default function Expenses() {
                 });
             }
             setFormOpen(false);
-        } catch (error) {
-            console.error('Failed to save expense:', error);
+        } catch {
             setNotification({
                 open: true,
                 message: `Failed to ${editExpense ? 'update' : 'create'} expense. Please try again.`,

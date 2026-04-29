@@ -61,4 +61,14 @@ router.put(
     }
 );
 
+router.post(
+    '/logout',
+    (req: Request, res: Response, next: NextFunction) => {
+        auth(req, res, next);
+    },
+    (req: Request, res: Response) => {
+        UserController.logout(req, res);
+    }
+);
+
 export const userRoutes = router;

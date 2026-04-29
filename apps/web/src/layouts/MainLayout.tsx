@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import {
     Box,
     CssBaseline,
@@ -43,6 +43,7 @@ const drawerWidth = 240;
 
 export default function MainLayout() {
     const navigate = useNavigate();
+    const location = useLocation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -62,9 +63,9 @@ export default function MainLayout() {
         setAnchorEl(null);
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         handleMenuClose();
-        logout();
+        await logout();
         navigate('/login');
     };
 
@@ -109,8 +110,8 @@ export default function MainLayout() {
                             }}
                             selected={
                                 item.path === '/'
-                                    ? window.location.pathname === '/'
-                                    : window.location.pathname.startsWith(item.path)
+                                    ? location.pathname === '/'
+                                    : location.pathname.startsWith(item.path)
                             }
                         >
                             <ListItemIcon>{item.icon}</ListItemIcon>

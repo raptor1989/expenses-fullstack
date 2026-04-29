@@ -33,7 +33,6 @@ const SimpleExpenseForm = ({ categories }: SimpleExpenseFormProps) => {
         date: today.format('YYYY-MM-DD')
     };
 
-    const [formValues, _setFormValues] = useState<ExpenseCreateInput>(defaultValues);
     const [notification, setNotification] = useState({
         open: false,
         message: '',
@@ -69,7 +68,7 @@ const SimpleExpenseForm = ({ categories }: SimpleExpenseFormProps) => {
 
     return (
         <Formik
-            initialValues={formValues}
+            initialValues={defaultValues}
             validationSchema={ExpenseSchema}
             onSubmit={handleFormSubmit}
             enableReinitialize

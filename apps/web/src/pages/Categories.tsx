@@ -71,8 +71,7 @@ export default function Categories() {
             setLoading(true);
             const data = await getCategories();
             setCategories(data);
-        } catch (error) {
-            console.error('Error fetching categories:', error);
+        } catch {
             setNotification({
                 open: true,
                 message: 'Failed to load categories. Please try again.',
@@ -149,8 +148,7 @@ export default function Categories() {
             }
 
             handleDialogClose();
-        } catch (error) {
-            console.error('Error saving category:', error);
+        } catch {
             setNotification({
                 open: true,
                 message: `Failed to ${dialogMode === 'add' ? 'create' : 'update'} category. Please try again.`,
@@ -175,8 +173,7 @@ export default function Categories() {
                 message: 'Category deleted successfully!',
                 severity: 'success'
             });
-        } catch (error) {
-            console.error('Error deleting category:', error);
+        } catch {
             setNotification({
                 open: true,
                 message: 'Failed to delete category. It may be in use by existing expenses.',
