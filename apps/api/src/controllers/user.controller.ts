@@ -21,7 +21,7 @@ export class UserController {
 
             const user = await UserModel.create(username, email, password, firstName, lastName);
 
-            const secretKey = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
+            const secretKey = process.env.JWT_SECRET!;
             const expiresIn = (process.env.JWT_EXPIRES_IN as ms.StringValue) || '7D';
 
             const signOption: jwt.SignOptions = {
@@ -74,7 +74,7 @@ export class UserController {
                 });
             }
 
-            const secretKey = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
+            const secretKey = process.env.JWT_SECRET!;
             const expiresIn = (process.env.JWT_EXPIRES_IN as ms.StringValue) || '7D';
 
             const signOption: jwt.SignOptions = {

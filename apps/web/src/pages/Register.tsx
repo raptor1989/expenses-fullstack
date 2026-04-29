@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Avatar, Button, TextField, Link, Grid, Box, Typography, Alert } from '@mui/material';
+import { Avatar, Button, TextField, Link, Grid2, Box, Typography, Alert } from '@mui/material';
 import { PersonAddOutlined as PersonAddOutlinedIcon } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -65,7 +65,7 @@ export default function Register() {
 
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 3, width: '100%' }}>
                 <Grid2 container spacing={2}>
-                    <Grid2 xs={12} sm={6}>
+                    <Grid2 size={{ xs: 12, sm: 6 }}>
                         <TextField
                             autoComplete="given-name"
                             name="firstName"
@@ -79,7 +79,7 @@ export default function Register() {
                             helperText={formik.touched.firstName && formik.errors.firstName}
                         />
                     </Grid2>
-                    <Grid2 xs={12} sm={6}>
+                    <Grid2 size={{ xs: 12, sm: 6 }}>
                         <TextField
                             fullWidth
                             id="lastName"
@@ -93,7 +93,7 @@ export default function Register() {
                             helperText={formik.touched.lastName && formik.errors.lastName}
                         />
                     </Grid2>
-                    <Grid2 xs={12}>
+                    <Grid2 size={{ xs: 12 }}>
                         <TextField
                             fullWidth
                             id="username"
@@ -107,7 +107,7 @@ export default function Register() {
                             helperText={formik.touched.username && formik.errors.username}
                         />
                     </Grid2>
-                    <Grid2 xs={12}>
+                    <Grid2 size={{ xs: 12 }}>
                         <TextField
                             fullWidth
                             id="email"
@@ -121,7 +121,7 @@ export default function Register() {
                             helperText={formik.touched.email && formik.errors.email}
                         />
                     </Grid2>
-                    <Grid2 xs={12}>
+                    <Grid2 size={{ xs: 12 }}>
                         <TextField
                             fullWidth
                             name="password"
@@ -136,7 +136,7 @@ export default function Register() {
                             helperText={formik.touched.password && formik.errors.password}
                         />
                     </Grid2>
-                    <Grid2 xs={12}>
+                    <Grid2 size={{ xs: 12 }}>
                         <TextField
                             fullWidth
                             name="confirmPassword"
@@ -161,7 +161,7 @@ export default function Register() {
                     Sign Up
                 </Button>
                 <Grid2 container justifyContent="flex-end">
-                    <Grid2>
+                    <Grid2 size="auto">
                         <Link component={RouterLink} to="/login" variant="body2">
                             Already have an account? Sign in
                         </Link>

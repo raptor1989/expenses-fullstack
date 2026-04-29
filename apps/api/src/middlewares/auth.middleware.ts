@@ -24,7 +24,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
             });
         }
 
-        const secretKey = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
+        const secretKey = process.env.JWT_SECRET!;
 
         const decoded = jwt.verify(token, secretKey) as {
             id: string;

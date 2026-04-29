@@ -8,7 +8,7 @@ const pool = new Pool({
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT) || 5432,
     database: process.env.DB_NAME || 'expenses_db',
-    ssl: isProduction ? { rejectUnauthorized: false } : false
+    ssl: isProduction ? { rejectUnauthorized: true } : false
 });
 
 export const testConnection = async (): Promise<boolean> => {
