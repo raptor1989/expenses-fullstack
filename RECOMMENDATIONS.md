@@ -15,7 +15,7 @@ będzie) publiczne albo token nie został jeszcze zrewokowany:
 - zrewokuj token na https://github.com/settings/tokens,
 - rozważ przepisanie historii (`git filter-repo` / BFG) jeśli repo jest publiczne.
 
-### 1.2 Brak ochrony CSRF poza `SameSite=Strict`
+### 1.2 [NAPRAWIONE] Brak ochrony CSRF poza `SameSite=Strict`
 [auth.middleware.ts](apps/api/src/middlewares/auth.middleware.ts) i logowanie
 w [user.controller.ts](apps/api/src/controllers/user.controller.ts) opierają
 się wyłącznie na ciasteczku `httpOnly` z `sameSite: 'strict'`. To wystarczające
@@ -24,7 +24,7 @@ jeśli kiedyś frontend i API znajdą się na różnych (sub)domenach, `sameSite
 'strict'` może zacząć blokować legalne żądania, a osłabienie go do `'lax'`
 otworzy częściowo CSRF. Brak osobnego tokenu CSRF.
 
-### 1.3 Rate limiting tylko na endpointach auth
+### 1.3 [NAPRAWIONE] Rate limiting tylko na endpointach auth
 [user.routes.ts](apps/api/src/routes/user.routes.ts) ma `express-rate-limit`
 na `/register` i `/login`, ale [expense.routes.ts](apps/api/src/routes/expense.routes.ts)
 i `category.routes.ts` nie mają żadnego limitu. W połączeniu z problemem N+1
@@ -32,7 +32,7 @@ opisanym w sekcji 4.1 (`/expenses/by-month`), zalogowany użytkownik (lub
 przejęte konto) może wygenerować dużą liczbę kosztownych zapytań do bazy bez
 żadnego throttlingu.
 
-### 1.4 Wykrywanie błędu „kategoria ma wydatki” przez `String.includes`
+### 1.4 [NAPRAWIONE] Wykrywanie błędu „kategoria ma wydatki” przez `String.includes`
 W [category.controller.ts:148](apps/api/src/controllers/category.controller.ts#L148)
 błąd usunięcia kategorii z powiązanymi wydatkami jest rozpoznawany przez
 `error.message.includes('associated expenses')`. To bardzo kruche — zmiana
@@ -44,7 +44,7 @@ foreign-key violation).
 
 ## 2. Zepsute / niekompletne tooling
 
-### 2.1 `npm run lint` najprawdopodobniej nie działa
+### 2.1 [NAPRAWIONE] `npm run lint` najprawdopodobniej nie działa
 `apps/api` i `apps/web` mają zainstalowany **ESLint 9**, który wymaga
 „flat config” (`eslint.config.js`). W repo nie istnieje żaden taki plik (ani
 żaden `.eslintrc*` poza tymi wewnątrz `node_modules` zależności). Skrypty
@@ -54,7 +54,7 @@ find a configuration file”. Trzeba dodać `eslint.config.js` w obu apkach
 `eslint-plugin-react-refresh` — czyli config był planowany, ale nigdy nie
 dodany).
 
-### 2.2 Brak CI
+### 2.2 [NAPRAWIONE] Brak CI
 Katalog `.github/workflows` nie istnieje / jest pusty. Build, testy i lint
 nie są dziś weryfikowane automatycznie na PR-ach — całość odpowiedzialności
 spada na lokalne odpalenie przez dewelopera. Sugeruję prosty workflow:
@@ -153,9 +153,9 @@ testów manualnych.
 | Priorytet | Co | Gdzie |
 |---|---|---|
 | Krytyczny | Zrewokować token GitHub (poza samym repo) | GitHub settings |
-| Wysoki | Naprawić `eslint.config.js` w `apps/api`/`apps/web` | tooling |
+| Wysoki | [NAPRAWIONE] Naprawić `eslint.config.js` w `apps/api`/`apps/web` | tooling |
 | Wysoki | N+1 w `getExpensesByMonth` | `expense.model.ts` |
-| Średni | Dodać CI (build+test+lint) | `.github/workflows` |
+| Średni | [NAPRAWIONE] Dodać CI (build+test+lint) | `.github/workflows` |
 | Średni | Usunąć/dokończyć `Budget`, dokończyć `Settings.tsx` | shared/web |
 | Średni | Usunąć nieużywane zależności (`chart.js`, `react-chartjs-2`, ew. `zustand`) | `apps/web` |
 | Niski | Ujednolicić walidację kategorii vs. expenses/users | `apps/api` |
