@@ -113,6 +113,57 @@ describe('GET /api/expenses/by-month', () => {
         expect(july!.total).toBeCloseTo(80, 1);
     });
 
+    it('returns per-month category breakdown and top expenses', async () => {
+        const auth = await registerAndLogin(userFixture());
+        const groceriesRes = await request(app)
+            .post('/api/categories')
+            .set('Cookie', auth.cookie)
+            .send(categoryFixture({ name: 'Groceries' }));
+        const groceriesId = groceriesRes.body.category.id as string;
+
+        const fuelRes = await request(app)
+            .post('/api/categories')
+            .set('Cookie', auth.cookie)
+            .send(categoryFixture({ name: 'Fuel' }));
+        const fuelId = fuelRes.body.category.id as string;
+
+        await request(app)
+            .post('/api/expenses')
+            .set('Cookie', auth.cookie)
+            .send(expenseFixture(groceriesId, { amount: 100, date: '2025-03-05', description: 'Big shop' }));
+
+        await request(app)
+            .post('/api/expenses')
+            .set('Cookie', auth.cookie)
+            .send(expenseFixture(groceriesId, { amount: 50, date: '2025-03-12', description: 'Top up' }));
+
+        await request(app)
+            .post('/api/expenses')
+            .set('Cookie', auth.cookie)
+            .send(expenseFixture(fuelId, { amount: 60, date: '2025-03-20', description: 'Fill tank' }));
+
+        const res = await request(app)
+            .get('/api/expenses/by-month?year=2025')
+            .set('Cookie', auth.cookie);
+
+        expect(res.status).toBe(200);
+        const months = res.body.monthlyData as Array<{
+            month: string;
+            total: number;
+            totalByCategory: Record<string, number>;
+            topFiveMostExpensive: Array<{ description: string; amount: number }>;
+        }>;
+        const march = months.find((m) => m.month === 'March');
+
+        expect(march).toBeDefined();
+        expect(march!.total).toBeCloseTo(210, 1);
+        expect(march!.totalByCategory.Groceries).toBeCloseTo(150, 1);
+        expect(march!.totalByCategory.Fuel).toBeCloseTo(60, 1);
+        expect(march!.topFiveMostExpensive).toHaveLength(3);
+        expect(march!.topFiveMostExpensive[0].description).toBe('Big shop');
+        expect(march!.topFiveMostExpensive[0].amount).toBeCloseTo(100, 1);
+    });
+
     it('returns 400 when year is missing', async () => {
         const auth = await registerAndLogin(userFixture());
 

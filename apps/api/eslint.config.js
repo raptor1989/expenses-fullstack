@@ -22,7 +22,7 @@ module.exports = [
             'no-undef': 'off',
             'no-redeclare': ['error', { builtinGlobals: false }],
             '@typescript-eslint/no-namespace': ['error', { allowDeclarations: true }],
-            '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
+            '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', ignoreRestSiblings: true }]
         }
     }
 ];
