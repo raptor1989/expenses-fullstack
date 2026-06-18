@@ -6,9 +6,9 @@
             "es2017",
             "dom"
         ],
-        "module": "nodenext",
-        "moduleResolution": "nodenext",
-        "ignoreDeprecations": "6.0",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "ignoreDeprecations": "5.0",
         "downlevelIteration": true,
         "noUnusedLocals": false,
         "rootDir": "./src",

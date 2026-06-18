@@ -161,6 +161,10 @@ db/           Pool singleton, migrations
   attaches `req.user: { id, email, username }` via global `Express.Request`
   augmentation. Secret from `JWT_SECRET`, expiry from `JWT_EXPIRES_IN`
   (default `7D`). 401 with `auth_required`/`invalid_token` on failure.
+  CSRF protection relies solely on the auth cookie's `sameSite: 'strict'`
+  (no separate CSRF token). This is sufficient while web and API share a
+  site, but `sameSite: 'strict'` would need revisiting (and a CSRF token
+  added) if the frontend and API ever move to different (sub)domains.
 - **Error handling**: `ApiError` extends `Error` with `statusCode`, `code`,
   `details`. Error middleware registered last. `stack` included only in
   development.

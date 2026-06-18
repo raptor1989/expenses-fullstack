@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { CategoryModel } from '../models/category.model';
+import { CategoryModel, CategoryHasExpensesError } from '../models/category.model';
 
 export class CategoryController {
     static async createCategory(req: Request, res: Response) {
@@ -65,7 +65,7 @@ export class CategoryController {
                 });
             }
 
-            const { id } = req.params;
+            const { id } = req.params as { id: string };
 
             const category = await CategoryModel.findById(id, req.user.id);
 
@@ -95,7 +95,7 @@ export class CategoryController {
                 });
             }
 
-            const { id } = req.params;
+            const { id } = req.params as { id: string };
             const { name, color, icon } = req.body;
 
             const updatedCategory = await CategoryModel.update(id, req.user.id, name, color, icon);
@@ -129,7 +129,7 @@ export class CategoryController {
                 });
             }
 
-            const { id } = req.params;
+            const { id } = req.params as { id: string };
 
             try {
                 const deleted = await CategoryModel.delete(id, req.user.id);
@@ -145,10 +145,10 @@ export class CategoryController {
                     message: 'Category deleted successfully'
                 });
             } catch (error) {
-                if (error instanceof Error && error.message.includes('associated expenses')) {
+                if (error instanceof CategoryHasExpensesError) {
                     return res.status(400).json({
-                        message: 'Cannot delete category with associated expenses',
-                        code: 'category_has_expenses'
+                        message: error.message,
+                        code: error.code
                     });
                 }
                 throw error;

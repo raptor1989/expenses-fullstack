@@ -1,6 +1,15 @@
 import { Category } from '@expenses/shared';
 import pool from '../db/index';
 
+export class CategoryHasExpensesError extends Error {
+    code = 'category_has_expenses';
+
+    constructor() {
+        super('Cannot delete category with associated expenses');
+        this.name = 'CategoryHasExpensesError';
+    }
+}
+
 export class CategoryModel {
     static async create(userId: string, name: string, color?: string, icon?: string): Promise<Category> {
         const client = await pool.connect();
@@ -127,7 +136,7 @@ export class CategoryModel {
             const expenseCount = parseInt(checkResult.rows[0].count);
 
             if (expenseCount > 0) {
-                throw new Error('Cannot delete category with associated expenses');
+                throw new CategoryHasExpensesError();
             }
 
             const query = `

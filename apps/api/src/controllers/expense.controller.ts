@@ -95,7 +95,7 @@ export class ExpenseController {
                 });
             }
 
-            const { id } = req.params;
+            const { id } = req.params as { id: string };
 
             const expense = await ExpenseModel.findById(id, req.user.id);
 
@@ -125,7 +125,7 @@ export class ExpenseController {
                 });
             }
 
-            const { id } = req.params;
+            const { id } = req.params as { id: string };
             const { amount, description, date, categoryId } = req.body;
 
             const updatedExpense = await ExpenseModel.update(id, req.user.id, {
@@ -164,7 +164,7 @@ export class ExpenseController {
                 });
             }
 
-            const { id } = req.params;
+            const { id } = req.params as { id: string };
 
             const deleted = await ExpenseModel.delete(id, req.user.id);
 

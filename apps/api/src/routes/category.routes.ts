@@ -3,8 +3,11 @@ import { body } from 'express-validator';
 import { CategoryController } from '../controllers/category.controller';
 import { auth } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
+import { apiLimiter } from '../middlewares/rateLimit.middleware';
 
 const router = express.Router();
+
+router.use(apiLimiter);
 
 router.use((req, res, next) => {
     auth(req, res, next);
