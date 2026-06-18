@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { UserModel } from '../models/user.model';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import dotenv from 'dotenv';
 import ms from 'ms';
 
 const isProduction = process.env.NODE_ENV === 'production';

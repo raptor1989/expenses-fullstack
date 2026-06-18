@@ -6,7 +6,7 @@ export interface ApiError extends Error {
     details?: Record<string, unknown>;
 }
 
-export const errorHandler = (err: ApiError, req: Request, res: Response, next: NextFunction) => {
+export const errorHandler = (err: ApiError, req: Request, res: Response, _next: NextFunction) => {
     console.error('Error:', err);
 
     const statusCode = err.statusCode || 500;

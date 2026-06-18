@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { body, query } from 'express-validator';
+import { body } from 'express-validator';
 import { ExpenseController } from '../controllers/expense.controller';
 import { auth } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';

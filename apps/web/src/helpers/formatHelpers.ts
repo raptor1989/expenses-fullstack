@@ -1,5 +1,5 @@
-const locale = (import.meta as any).env.VITE_LOCALE || 'pl-PL';
-const currency = (import.meta as any).env.VITE_CURRENCY || 'PLN';
+const locale = import.meta.env.VITE_LOCALE || 'pl-PL';
+const currency = import.meta.env.VITE_CURRENCY || 'PLN';
 
 export const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat(locale, {

@@ -78,6 +78,7 @@ export default function ExpenseForm({
         } else {
             setFormValues(defaultValues);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- defaultValues is recreated every render; including it would re-run this on every render
     }, [initialValues, open]);
 
     const handleFormSubmit = async (

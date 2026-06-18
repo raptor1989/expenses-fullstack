@@ -18,6 +18,7 @@ interface AuthContextType {
     updateUser: (user: User) => void;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- context object lives alongside its Provider intentionally
 export const AuthContext = createContext<AuthContextType>({
     user: null,
     isAuthenticated: false,

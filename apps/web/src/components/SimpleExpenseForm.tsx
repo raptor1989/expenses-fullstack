@@ -51,7 +51,7 @@ const SimpleExpenseForm = ({ categories }: SimpleExpenseFormProps) => {
                 severity: 'success'
             });
             resetForm();
-        } catch (error) {
+        } catch {
             setNotification({
                 open: true,
                 message: 'Failed to create expense. Please try again.',
