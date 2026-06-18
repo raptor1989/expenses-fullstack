@@ -161,6 +161,10 @@ db/           Pool singleton, migrations
   attaches `req.user: { id, email, username }` via global `Express.Request`
   augmentation. Secret from `JWT_SECRET`, expiry from `JWT_EXPIRES_IN`
   (default `7D`). 401 with `auth_required`/`invalid_token` on failure.
+  The web app only ever sends the cookie; the `Authorization: Bearer`
+  fallback has no client in this repo today, but keep it — it's there so
+  non-browser clients (future mobile app, third-party API integration)
+  that can't rely on cookies have a path in.
   CSRF protection relies solely on the auth cookie's `sameSite: 'strict'`
   (no separate CSRF token). This is sufficient while web and API share a
   site, but `sameSite: 'strict'` would need revisiting (and a CSRF token
@@ -210,13 +214,14 @@ store/        Zustand — installed, not yet used
 - **Service layer**: one file per domain in `services/`, typed Axios calls,
   always destructure `.data`. Base instance in `api.ts`:
   `baseURL` from `VITE_API_URL` (default `http://localhost:4000/api`),
-  request interceptor attaches Bearer token from `localStorage`, response
-  interceptor redirects to `/login` on 401.
+  `withCredentials: true` so the `httpOnly` auth cookie set by the API is
+  sent automatically — no token is read from or written to `localStorage`.
+  Response interceptor redirects to `/login` on 401.
 - **Auth flow**: `AuthContext` provides `user`, `isAuthenticated`,
   `isLoading`, `login/register/logout`. On mount, checks for an existing
-  session via `fetchCurrentUser`. Token in `localStorage`. `useAuth()`
-  wraps the context with an error-boundary check. `ProtectedRoute` blocks
-  unauthenticated users.
+  session via `fetchCurrentUser`, relying on the `httpOnly` cookie rather
+  than any client-readable token. `useAuth()` wraps the context with an
+  error-boundary check. `ProtectedRoute` blocks unauthenticated users.
 - **State**: auth is global (`AuthContext`); feature data (expenses,
   categories, pagination) is local `useState` per page. Zustand is
   installed but `store/` is empty.

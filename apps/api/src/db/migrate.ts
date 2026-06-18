@@ -21,12 +21,16 @@ const runMigrations = async () => {
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           username VARCHAR(50) UNIQUE NOT NULL,
           email VARCHAR(100) UNIQUE NOT NULL,
-          password VARCHAR(100) NOT NULL,
+          password TEXT NOT NULL,
           first_name VARCHAR(50),
           last_name VARCHAR(50),
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         )
+      `);
+
+            await client.query(`
+        ALTER TABLE users ALTER COLUMN password TYPE TEXT
       `);
 
             await client.query(`

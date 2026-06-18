@@ -151,21 +151,28 @@ pola, dodatnia kwota, długość opisu, data nie z przyszłości. To
 fundament do rozbudowy (Dashboard/Reports/Expenses logika, więcej
 schematów walidacji), nie pełne pokrycie.
 
-## 7. Drobne uwagi
+## 7. [NAPRAWIONE] Drobne uwagi
 
 - **Dokumentacja auth jest nieaktualna**: CLAUDE.md opisuje frontendowy
   „request interceptor attaches Bearer token from localStorage”, ale
   [api.ts](apps/web/src/services/api.ts) nie czyta żadnego tokenu z
   `localStorage` — całość auth idzie przez `withCredentials` + ciasteczko
   `httpOnly`. To dobra, bezpieczniejsza implementacja, ale dokument ją źle
-  opisuje.
+  opisuje. **Naprawione**: poprawiono opis w CLAUDE.md (sekcje „Service
+  layer” i „Auth flow”).
 - `auth.middleware.ts` akceptuje token zarówno z ciasteczka, jak i z nagłówka
   `Authorization: Bearer`, ale żaden klient w repo nie wysyła nagłówka —
   warto potwierdzić, czy to zostało dodane pod przyszłych klientów (np.
-  mobile/API), czy to martwa ścieżka kodu.
+  mobile/API), czy to martwa ścieżka kodu. **Naprawione (dokumentacyjnie)**:
+  odnotowano w CLAUDE.md jako celowe wsparcie dla przyszłych
+  klientów niewykorzystujących ciasteczek — nie usuwano kodu.
 - Kolumna `users.password` to `VARCHAR(100)` — dla bcrypt (zawsze 60 znaków)
   wystarcza, ale `TEXT` byłby bezpieczniejszy na przyszłość (zmiana
-  algorytmu hashowania nie wymagałaby migracji schematu).
+  algorytmu hashowania nie wymagałaby migracji schematu). **Naprawione**:
+  `migrate.ts` teraz tworzy kolumnę jako `TEXT` i dodaje idempotentny
+  `ALTER TABLE users ALTER COLUMN password TYPE TEXT` dla istniejących baz
+  (zweryfikowane: świeża baza, powtórne odpalenie, baza z istniejącą
+  kolumną `VARCHAR(100)`).
 
 ## Podsumowanie priorytetów
 
@@ -179,4 +186,4 @@ schematów walidacji), nie pełne pokrycie.
 | Średni | Usunąć nieużywane zależności (`chart.js`, `react-chartjs-2`, ew. `zustand`) | `apps/web` |
 | Niski | [NAPRAWIONE] Ujednolicić walidację kategorii vs. expenses/users | `apps/api` |
 | Niski | [NAPRAWIONE] Testy dla `apps/web` | `apps/web` |
-| Niski | Zaktualizować CLAUDE.md (auth flow, express-validator) | `CLAUDE.md` |
+| Niski | [NAPRAWIONE] Zaktualizować CLAUDE.md (auth flow, express-validator) | `CLAUDE.md` |
