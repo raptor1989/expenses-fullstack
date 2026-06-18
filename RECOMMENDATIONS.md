@@ -107,7 +107,7 @@ endpointu `/expenses/by-month`. Da się to sprowadzić do 2-3 zapytań
 zagregowanych (CTE/window functions z `PARTITION BY EXTRACT(MONTH FROM date)`
 albo `json_agg` per miesiąc), bez zmiany kontraktu `ExpenseByMonth`.
 
-## 5. Niekonsekwencja walidacji
+## 5. [NAPRAWIONE] Niekonsekwencja walidacji
 
 [expense.routes.ts](apps/api/src/routes/expense.routes.ts) i
 [user.routes.ts](apps/api/src/routes/user.routes.ts) używają
@@ -118,10 +118,20 @@ robią tylko ręczne `if (!name)` bez walidacji długości, formatu koloru
 kategorii, albo udokumentować, że dla prostych zasobów wystarcza walidacja
 ręczna (i trzymać się tego konsekwentnie).
 
+`category.routes.ts` ma już `express-validator` (`categoryBodyValidation`/
+`categoryUpdateValidation`, walidujące długość, format koloru i `icon`) —
+walidacja jest teraz konsekwentna we wszystkich trzech zasobach. Zostawiłem
+nietknięty redundantny `if (!name)` w `category.controller.ts` (martwa,
+ale niegroźna asekuracja sprzed dodania walidatora) — niewymagane przez to
+zadanie do usunięcia.
+
 **Uwaga do CLAUDE.md**: dokument w sekcji „Known gaps” twierdzi „No
 `express-validator` currently used” — to nieaktualne, biblioteka jest już
 używana dla `users` i `expenses`. Warto zaktualizować ten zapis, żeby nie
 wprowadzał w błąd przy kolejnych zmianach.
+
+Zapis w CLAUDE.md zaktualizowany, żeby opisywał faktyczny stan
+(`express-validator` na routingu dla users/expenses/categories).
 
 ## 6. Testy
 
@@ -158,6 +168,6 @@ testów manualnych.
 | Średni | [NAPRAWIONE] Dodać CI (build+test+lint) | `.github/workflows` |
 | Średni | Usunąć/dokończyć `Budget`, dokończyć `Settings.tsx` | shared/web |
 | Średni | Usunąć nieużywane zależności (`chart.js`, `react-chartjs-2`, ew. `zustand`) | `apps/web` |
-| Niski | Ujednolicić walidację kategorii vs. expenses/users | `apps/api` |
+| Niski | [NAPRAWIONE] Ujednolicić walidację kategorii vs. expenses/users | `apps/api` |
 | Niski | Testy dla `apps/web` | `apps/web` |
 | Niski | Zaktualizować CLAUDE.md (auth flow, express-validator) | `CLAUDE.md` |

@@ -168,9 +168,12 @@ db/           Pool singleton, migrations
 - **Error handling**: `ApiError` extends `Error` with `statusCode`, `code`,
   `details`. Error middleware registered last. `stack` included only in
   development.
-- **Validation**: manual in controllers (`if (!field)` → 400). No
-  `express-validator` currently used. DB constraints are the fallback
-  safety net.
+- **Validation**: `express-validator` (`validate` middleware) on the route
+  chain for users, expenses, and categories — field length, format
+  (e.g. `#RRGGBB` colors), and required-field checks live there. A couple
+  of controllers (e.g. `CategoryController.createCategory`) also keep a
+  redundant manual `if (!field)` guard left over from before
+  `express-validator` was added. DB constraints are the last safety net.
 - **Pagination**: count query first, then `LIMIT`/`OFFSET` with a dynamic
   parameter counter for `WHERE` conditions.
 
