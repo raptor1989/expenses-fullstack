@@ -11,6 +11,7 @@
     "format": "prettier --config ./.prettierrc --write \"**/*.{ts,tsx}\"",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
+    "test": "vitest run",
     "clean": "rimraf dist"
   },
   "dependencies": {
@@ -49,6 +50,7 @@
     "prettier": "^3.5.3",
     "rimraf": "6.0.1",
     "typescript": "5.8.3",
-    "vite": "6.3.5"
+    "vite": "6.3.5",
+    "vitest": "^3.0.0"
   }
 }

@@ -133,7 +133,7 @@ wprowadzał w błąd przy kolejnych zmianach.
 Zapis w CLAUDE.md zaktualizowany, żeby opisywał faktyczny stan
 (`express-validator` na routingu dla users/expenses/categories).
 
-## 6. Testy
+## 6. [NAPRAWIONE] Testy
 
 `apps/api/src/__tests__` ma sensowne pokrycie (auth, expenses, categories,
 analytics) z helperami do bazy testowej. **`apps/web` nie ma ani jednego
@@ -141,6 +141,15 @@ testu** — przy stronach z formularzami (Formik+Yup) i logiką biznesową
 (Dashboard, Reports, Expenses) brak nawet podstawowych testów serwisów
 (`services/*.ts`) czy walidacji formularzy zostawia regresje niewykryte do
 testów manualnych.
+
+Dodano Vitest (`apps/web/vitest.config.ts`, `npm run test` →
+`vitest run`) i podstawowe testy: `services/expenseService.test.ts`,
+`categoryService.test.ts`, `authService.test.ts` (mockują `./api`,
+sprawdzają budowane URL-e/payloady i odpakowywanie `.data`) oraz
+`components/ExpenseForm.test.ts` dla `ExpenseSchema` (Yup) — wymagane
+pola, dodatnia kwota, długość opisu, data nie z przyszłości. To
+fundament do rozbudowy (Dashboard/Reports/Expenses logika, więcej
+schematów walidacji), nie pełne pokrycie.
 
 ## 7. Drobne uwagi
 
@@ -169,5 +178,5 @@ testów manualnych.
 | Średni | Usunąć/dokończyć `Budget`, dokończyć `Settings.tsx` | shared/web |
 | Średni | Usunąć nieużywane zależności (`chart.js`, `react-chartjs-2`, ew. `zustand`) | `apps/web` |
 | Niski | [NAPRAWIONE] Ujednolicić walidację kategorii vs. expenses/users | `apps/api` |
-| Niski | Testy dla `apps/web` | `apps/web` |
+| Niski | [NAPRAWIONE] Testy dla `apps/web` | `apps/web` |
 | Niski | Zaktualizować CLAUDE.md (auth flow, express-validator) | `CLAUDE.md` |
