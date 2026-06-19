@@ -7,7 +7,6 @@ declare global {
             user?: {
                 id: string;
                 email: string;
-                username: string;
             };
         }
     }
@@ -31,13 +30,11 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
         const decoded = jwt.verify(token, secretKey) as {
             id: string;
             email: string;
-            username: string;
         };
 
         req.user = {
             id: decoded.id,
-            email: decoded.email,
-            username: decoded.username
+            email: decoded.email
         };
 
         next();

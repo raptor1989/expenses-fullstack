@@ -19,7 +19,7 @@ function setAuthCookie(res: Response, token: string, expiresIn: string) {
 export class UserController {
     static async register(req: Request, res: Response) {
         try {
-            const { username, email, password, firstName, lastName } = req.body;
+            const { email, password, firstName, lastName } = req.body;
 
             const existingUser = await UserModel.findByEmail(email);
 
@@ -30,7 +30,7 @@ export class UserController {
                 });
             }
 
-            const user = await UserModel.create(username, email, password, firstName, lastName);
+            const user = await UserModel.create(email, password, firstName, lastName);
 
             const secretKey = process.env.JWT_SECRET!;
             const expiresIn = (process.env.JWT_EXPIRES_IN as ms.StringValue) || '7D';
@@ -39,7 +39,7 @@ export class UserController {
                 expiresIn
             };
 
-            const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, secretKey, signOption);
+            const token = jwt.sign({ id: user.id, email: user.email }, secretKey, signOption);
 
             setAuthCookie(res, token, expiresIn);
 
@@ -47,7 +47,6 @@ export class UserController {
                 message: 'User registered successfully',
                 user: {
                     id: user.id,
-                    username: user.username,
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
@@ -93,7 +92,7 @@ export class UserController {
                 expiresIn
             };
 
-            const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, secretKey, signOption);
+            const token = jwt.sign({ id: user.id, email: user.email }, secretKey, signOption);
 
             setAuthCookie(res, token, expiresIn);
 
@@ -101,7 +100,6 @@ export class UserController {
                 message: 'Login successful',
                 user: {
                     id: user.id,
-                    username: user.username,
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
@@ -144,7 +142,6 @@ export class UserController {
             res.status(200).json({
                 user: {
                     id: user.id,
-                    username: user.username,
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
@@ -211,13 +208,12 @@ export class UserController {
                 });
             }
 
-            const { firstName, lastName, email, username } = req.body;
+            const { firstName, lastName, email } = req.body;
 
             const updatedUser = await UserModel.update(req.user.id, {
                 firstName,
                 lastName,
-                email,
-                username
+                email
             });
 
             if (!updatedUser) {
@@ -231,7 +227,6 @@ export class UserController {
                 message: 'Profile updated successfully',
                 user: {
                     id: updatedUser.id,
-                    username: updatedUser.username,
                     email: updatedUser.email,
                     firstName: updatedUser.firstName,
                     lastName: updatedUser.lastName,

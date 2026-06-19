@@ -158,7 +158,7 @@ db/           Pool singleton, migrations
 - **Routes**: exported as named constants (`export const itemRoutes = router`),
   lambdas delegating to controller statics, mounted under `/api/` in `index.ts`.
 - **Auth**: JWT Bearer token (or cookie) → `auth` middleware decodes and
-  attaches `req.user: { id, email, username }` via global `Express.Request`
+  attaches `req.user: { id, email }` via global `Express.Request`
   augmentation. Secret from `JWT_SECRET`, expiry from `JWT_EXPIRES_IN`
   (default `7D`). 401 with `auth_required`/`invalid_token` on failure.
   The web app only ever sends the cookie; the `Authorization: Bearer`

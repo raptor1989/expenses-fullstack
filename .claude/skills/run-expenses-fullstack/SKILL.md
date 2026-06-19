@@ -97,7 +97,7 @@ The user must already exist — register first if needed:
 ```bash
 curl -s -X POST http://localhost:4000/api/users/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"smoketest","email":"smoketest@example.com","password":"Password123!"}'
+  -d '{"email":"smoketest@example.com","password":"Password123!"}'
 ```
 
 | driver command | what it does |

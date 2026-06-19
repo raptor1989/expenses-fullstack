@@ -39,7 +39,6 @@ export default async function globalSetup() {
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                username VARCHAR(50) UNIQUE NOT NULL,
                 email VARCHAR(100) UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 first_name VARCHAR(50),
@@ -47,6 +46,10 @@ export default async function globalSetup() {
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
+        `);
+
+        await client.query(`
+            ALTER TABLE users DROP COLUMN IF EXISTS username
         `);
 
         await client.query(`

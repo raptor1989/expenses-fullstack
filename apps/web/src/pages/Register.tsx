@@ -11,7 +11,6 @@ import { useAuth } from '../hooks/useAuth';
 const validationSchema = yup.object({
     firstName: yup.string().trim(),
     lastName: yup.string().trim(),
-    username: yup.string().min(3, 'Username should be of minimum 3 characters length').required('Username is required'),
     email: yup.string().email('Enter a valid email').required('Email is required'),
     password: yup.string().min(8, 'Password should be of minimum 8 characters length').required('Password is required'),
     confirmPassword: yup
@@ -29,7 +28,6 @@ export default function Register() {
         initialValues: {
             firstName: '',
             lastName: '',
-            username: '',
             email: '',
             password: '',
             confirmPassword: ''
@@ -37,7 +35,7 @@ export default function Register() {
         validationSchema: validationSchema,
         onSubmit: async (values) => {
             try {
-                await register(values.username, values.email, values.password, values.firstName, values.lastName);
+                await register(values.email, values.password, values.firstName, values.lastName);
                 navigate('/');
             } catch (err) {
                 if (axios.isAxiosError(err)) {
@@ -92,20 +90,6 @@ export default function Register() {
                             onBlur={formik.handleBlur}
                             error={formik.touched.lastName && Boolean(formik.errors.lastName)}
                             helperText={formik.touched.lastName && formik.errors.lastName}
-                        />
-                    </Grid2>
-                    <Grid2 size={{ xs: 12 }}>
-                        <TextField
-                            fullWidth
-                            id="username"
-                            label="Username"
-                            name="username"
-                            autoComplete="username"
-                            value={formik.values.username}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            error={formik.touched.username && Boolean(formik.errors.username)}
-                            helperText={formik.touched.username && formik.errors.username}
                         />
                     </Grid2>
                     <Grid2 size={{ xs: 12 }}>

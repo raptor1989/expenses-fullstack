@@ -26,7 +26,6 @@ import { useThemeMode } from '@/theme/ThemeProvider';
 import { updateUserProfile, changePassword } from '@/services/authService';
 
 const ProfileSchema = Yup.object().shape({
-    username: Yup.string().trim().min(3, 'Username must be at least 3 characters').required('Username is required'),
     email: Yup.string().trim().email('Valid email is required').required('Email is required'),
     firstName: Yup.string().max(100, 'First name too long'),
     lastName: Yup.string().max(100, 'Last name too long')
@@ -78,7 +77,6 @@ export default function Settings() {
                 </Typography>
                 <Formik
                     initialValues={{
-                        username: user?.username || '',
                         email: user?.email || '',
                         firstName: user?.firstName || '',
                         lastName: user?.lastName || ''
@@ -100,19 +98,6 @@ export default function Settings() {
                     {({ isSubmitting, errors, touched }) => (
                         <Form>
                             <Grid2 container spacing={2}>
-                                <Grid2 size={{ xs: 12, sm: 6 }}>
-                                    <Field name="username">
-                                        {({ field }: FieldProps) => (
-                                            <TextField
-                                                {...field}
-                                                label="Username"
-                                                fullWidth
-                                                error={touched.username && Boolean(errors.username)}
-                                                helperText={touched.username && errors.username}
-                                            />
-                                        )}
-                                    </Field>
-                                </Grid2>
                                 <Grid2 size={{ xs: 12, sm: 6 }}>
                                     <Field name="email">
                                         {({ field }: FieldProps) => (

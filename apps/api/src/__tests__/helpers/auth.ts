@@ -6,11 +6,9 @@ export interface AuthResult {
     cookie: string;
     userId: string;
     email: string;
-    username: string;
 }
 
 export async function registerAndLogin(userData: {
-    username: string;
     email: string;
     password: string;
     firstName?: string;
@@ -32,6 +30,5 @@ export async function registerAndLogin(userData: {
         cookie: rawCookie,
         userId: res.body.user.id,
         email: res.body.user.email,
-        username: res.body.user.username,
     };
 }

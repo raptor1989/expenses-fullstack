@@ -23,7 +23,6 @@ describe('POST /api/users/register', () => {
         expect(res.status).toBe(201);
         expect(res.body.user).toMatchObject({
             email: data.email,
-            username: data.username,
         });
         expect(res.body.user.password).toBeUndefined();
         expect(res.headers['set-cookie']).toBeDefined();
@@ -56,14 +55,6 @@ describe('POST /api/users/register', () => {
         expect(res.body.code).toBe('validation_error');
     });
 
-    it('returns 400 when username is too short', async () => {
-        const res = await request(app)
-            .post('/api/users/register')
-            .send(userFixture({ username: 'ab' }));
-
-        expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_error');
-    });
 });
 
 describe('POST /api/users/login', () => {

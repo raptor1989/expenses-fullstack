@@ -19,7 +19,7 @@ beforeEach(() => {
 
 describe('authService', () => {
     it('loginUser posts email/password and returns the auth response', async () => {
-        const authResponse = { user: { id: '1', username: 'u', email: 'e@x.com' } };
+        const authResponse = { user: { id: '1', email: 'e@x.com' } };
         apiMock.post.mockResolvedValue({ data: authResponse });
 
         const result = await loginUser('e@x.com', 'pw');
@@ -29,9 +29,9 @@ describe('authService', () => {
     });
 
     it('registerUser posts the registration payload and returns the auth response', async () => {
-        const authResponse = { user: { id: '1', username: 'u', email: 'e@x.com' } };
+        const authResponse = { user: { id: '1', email: 'e@x.com' } };
         apiMock.post.mockResolvedValue({ data: authResponse });
-        const userData = { username: 'u', email: 'e@x.com', password: 'pw' };
+        const userData = { email: 'e@x.com', password: 'pw' };
 
         const result = await registerUser(userData);
 
@@ -48,7 +48,7 @@ describe('authService', () => {
     });
 
     it('fetchCurrentUser unwraps the current user', async () => {
-        const user = { id: '1', username: 'u', email: 'e@x.com' };
+        const user = { id: '1', email: 'e@x.com' };
         apiMock.get.mockResolvedValue({ data: { user } });
 
         const result = await fetchCurrentUser();
@@ -60,7 +60,7 @@ describe('authService', () => {
     });
 
     it('updateUserProfile puts the partial user and unwraps the updated user', async () => {
-        const user = { id: '1', username: 'u', email: 'e@x.com', firstName: 'New' };
+        const user = { id: '1', email: 'e@x.com', firstName: 'New' };
         apiMock.put.mockResolvedValue({ data: { message: 'ok', user } });
 
         const result = await updateUserProfile({ firstName: 'New' });

@@ -4,10 +4,9 @@ function next() {
     return ++counter;
 }
 
-export function userFixture(overrides?: Partial<{ username: string; email: string; password: string }>) {
+export function userFixture(overrides?: Partial<{ email: string; password: string }>) {
     const n = next();
     return {
-        username: `testuser${n}`,
         email: `testuser${n}@example.com`,
         password: 'Password123!',
         ...overrides,

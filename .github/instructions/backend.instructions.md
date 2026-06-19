@@ -85,9 +85,9 @@ static async findById(id: number, userId: number): Promise<Item | null> {
 - JWT Bearer token extracted from `Authorization` header
 - Middleware decodes token and attaches to `req.user` via global `Express.Request` augmentation:
   ```typescript
-  declare global { namespace Express { interface Request { user?: { id: number; email: string; username: string } } } }
+  declare global { namespace Express { interface Request { user?: { id: number; email: string } } } }
   ```
-- Token payload: `{ id, email, username }`
+- Token payload: `{ id, email }`
 - Secret from `JWT_SECRET` env var, expiration from `JWT_EXPIRES_IN` (default `'7D'`)
 - Returns 401 with code `auth_required` or `invalid_token` on failure
 

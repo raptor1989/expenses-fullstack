@@ -19,7 +19,6 @@ const runMigrations = async () => {
             await client.query(`
         CREATE TABLE IF NOT EXISTS users (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          username VARCHAR(50) UNIQUE NOT NULL,
           email VARCHAR(100) UNIQUE NOT NULL,
           password TEXT NOT NULL,
           first_name VARCHAR(50),
@@ -31,6 +30,10 @@ const runMigrations = async () => {
 
             await client.query(`
         ALTER TABLE users ALTER COLUMN password TYPE TEXT
+      `);
+
+            await client.query(`
+        ALTER TABLE users DROP COLUMN IF EXISTS username
       `);
 
             await client.query(`

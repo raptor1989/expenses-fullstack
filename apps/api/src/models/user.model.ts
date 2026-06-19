@@ -4,7 +4,6 @@ import bcrypt from 'bcryptjs';
 
 export class UserModel {
     static async create(
-        username: string,
         email: string,
         password: string,
         firstName?: string,
@@ -17,12 +16,12 @@ export class UserModel {
             const hashedPassword = await bcrypt.hash(password, salt);
 
             const query = `
-        INSERT INTO users (username, email, password, first_name, last_name)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, username, email, first_name as "firstName", last_name as "lastName", created_at as "createdAt", updated_at as "updatedAt"
+        INSERT INTO users (email, password, first_name, last_name)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, email, first_name as "firstName", last_name as "lastName", created_at as "createdAt", updated_at as "updatedAt"
       `;
 
-            const values = [username, email, hashedPassword, firstName, lastName];
+            const values = [email, hashedPassword, firstName, lastName];
             const result = await client.query(query, values);
 
             return result.rows[0];
@@ -36,7 +35,7 @@ export class UserModel {
 
         try {
             const query = `
-        SELECT id, username, email, password, first_name as "firstName", last_name as "lastName", 
+        SELECT id, email, password, first_name as "firstName", last_name as "lastName",
                created_at as "createdAt", updated_at as "updatedAt"
         FROM users
         WHERE email = $1
@@ -88,7 +87,7 @@ export class UserModel {
 
         try {
             const query = `
-        SELECT id, username, email, first_name as "firstName", last_name as "lastName", 
+        SELECT id, email, first_name as "firstName", last_name as "lastName",
                created_at as "createdAt", updated_at as "updatedAt"
         FROM users
         WHERE id = $1
@@ -110,16 +109,11 @@ export class UserModel {
         const client = await pool.connect();
 
         try {
-            const { firstName, lastName, email, username } = updateData;
+            const { firstName, lastName, email } = updateData;
 
             const updateFields = [];
             const values = [id];
             let valueCounter = 2;
-
-            if (username !== undefined) {
-                updateFields.push(`username = $${valueCounter++}`);
-                values.push(username);
-            }
 
             if (email !== undefined) {
                 updateFields.push(`email = $${valueCounter++}`);
@@ -144,7 +138,7 @@ export class UserModel {
         UPDATE users
         SET ${updateFields.join(', ')}
         WHERE id = $1
-        RETURNING id, username, email, first_name as "firstName", last_name as "lastName", 
+        RETURNING id, email, first_name as "firstName", last_name as "lastName",
                  created_at as "createdAt", updated_at as "updatedAt"
       `;
 

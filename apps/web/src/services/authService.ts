@@ -2,7 +2,6 @@ import { AuthResponse, User } from '@expenses/shared';
 import api from './api';
 
 interface RegisterParams {
-    username: string;
     email: string;
     password: string;
     firstName?: string;

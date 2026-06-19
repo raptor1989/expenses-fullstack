@@ -16,12 +16,6 @@ const authLimiter = rateLimit({
 });
 
 const registerValidation = [
-    body('username')
-        .trim()
-        .notEmpty()
-        .withMessage('Username is required')
-        .isLength({ min: 3 })
-        .withMessage('Username must be at least 3 characters'),
     body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail(),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     body('firstName').optional().trim().isLength({ max: 100 }).withMessage('First name too long'),
