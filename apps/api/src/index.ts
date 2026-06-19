@@ -1,7 +1,8 @@
 import dotenv from 'dotenv';
-import app from './app';
 
 dotenv.config();
+
+import app from './app';
 
 if (!process.env.JWT_SECRET) {
     console.error('FATAL: JWT_SECRET environment variable is not set. Refusing to start.');

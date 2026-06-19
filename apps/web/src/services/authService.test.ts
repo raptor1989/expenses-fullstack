@@ -53,7 +53,9 @@ describe('authService', () => {
 
         const result = await fetchCurrentUser();
 
-        expect(apiMock.get).toHaveBeenCalledWith('/users/profile');
+        expect(apiMock.get).toHaveBeenCalledWith('/users/profile', {
+            headers: { 'X-Skip-Auth-Redirect': 'true' }
+        });
         expect(result).toEqual(user);
     });
 
