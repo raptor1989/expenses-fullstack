@@ -11,7 +11,7 @@ const { apiMock } = vi.hoisted(() => ({
 
 vi.mock('./api', () => ({ default: apiMock }));
 
-import { loginUser, registerUser, logoutUser, fetchCurrentUser, updateUserProfile } from './authService';
+import { loginUser, registerUser, logoutUser, fetchCurrentUser, updateUserProfile, changePassword } from './authService';
 
 beforeEach(() => {
     vi.clearAllMocks();
@@ -67,5 +67,16 @@ describe('authService', () => {
 
         expect(apiMock.put).toHaveBeenCalledWith('/users/profile', { firstName: 'New' });
         expect(result).toEqual(user);
+    });
+
+    it('changePassword puts the current and new password', async () => {
+        apiMock.put.mockResolvedValue({});
+
+        await changePassword('oldpw', 'newpw');
+
+        expect(apiMock.put).toHaveBeenCalledWith('/users/password', {
+            currentPassword: 'oldpw',
+            newPassword: 'newpw'
+        });
     });
 });

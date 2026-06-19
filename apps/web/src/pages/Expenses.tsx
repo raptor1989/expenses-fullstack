@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
     Typography,
@@ -28,15 +28,14 @@ import dayjs from 'dayjs';
 import ExpenseTable from '../components/ExpenseTable';
 import ExpenseForm from '../components/ExpenseForm';
 import { getExpenses, deleteExpense, createExpense, updateExpense } from '../services/expenseService';
-import { getCategories } from '../services/categoryService';
-import { Expense, ExpenseCreateInput, Category } from '@expenses/shared';
+import { useCategoryStore } from '@/store/categoryStore';
+import { Expense, ExpenseCreateInput } from '@expenses/shared';
 
 export default function Expenses() {
     // State variables
     const [loading, setLoading] = useState(true);
     const [expenses, setExpenses] = useState<Expense[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [categoriesMap, setCategoriesMap] = useState<Record<string, { name: string; color: string }>>({});
+    const { categories, fetchCategories } = useCategoryStore();
     const [pagination, setPagination] = useState({
         total: 0,
         page: 1,
@@ -88,30 +87,22 @@ export default function Expenses() {
         }
     }, [pagination.page, pagination.limit, filters.startDate, filters.endDate, filters.categoryId]);
 
-    // Fetch categories for dropdown and table display
-    const fetchCategories = useCallback(async () => {
-        try {
-            const fetchedCategories = await getCategories();
-            setCategories(fetchedCategories);
-
-            // Create a map for easier lookup in the table
-            const categoryMap: Record<string, { name: string; color: string }> = {};
-            fetchedCategories.forEach((category) => {
-                categoryMap[category.id] = {
-                    name: category.name,
-                    color: category.color || '#9e9e9e' // Default color if none is specified
-                };
-            });
-            setCategoriesMap(categoryMap);
-        } catch {
-            // categories unavailable — filter dropdown stays empty
-        }
-    }, []);
-
     // Initial data loading
     useEffect(() => {
         fetchCategories();
     }, [fetchCategories]);
+
+    // Map for easier category lookup in the table
+    const categoriesMap = useMemo(() => {
+        const categoryMap: Record<string, { name: string; color: string }> = {};
+        categories.forEach((category) => {
+            categoryMap[category.id] = {
+                name: category.name,
+                color: category.color || '#9e9e9e' // Default color if none is specified
+            };
+        });
+        return categoryMap;
+    }, [categories]);
 
     useEffect(() => {
         fetchExpenses();

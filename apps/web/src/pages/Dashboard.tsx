@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     Box,
     Typography,
@@ -26,8 +26,9 @@ import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
 import { useThemeMode } from '@/theme/ThemeProvider';
-import { getCategories } from '../services/categoryService';
-import { Category, Expense, ExpenseByCategory, ExpenseSummary } from '@expenses/shared';
+import { useSettings } from '@/hooks/useSettings';
+import { useCategoryStore } from '@/store/categoryStore';
+import { Expense, ExpenseByCategory, ExpenseSummary } from '@expenses/shared';
 import SimpleExpenseForm from '@/components/SimpleExpenseForm';
 
 const CHART_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
@@ -35,12 +36,12 @@ const CHART_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#e
 export default function Dashboard() {
     const navigate = useNavigate();
     const { mode } = useThemeMode();
+    const { settings } = useSettings();
     const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState<ExpenseSummary | undefined>(undefined);
     const [expensesByCategory, setExpensesByCategory] = useState<ExpenseByCategory[]>([]);
     const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
-    const [categoriesMap, setCategoriesMap] = useState<Record<string, { name: string; color: string }>>({});
-    const [categories, setCategories] = useState<Category[]>([]);
+    const { categories, fetchCategories } = useCategoryStore();
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -81,29 +82,22 @@ export default function Dashboard() {
         fetchDashboardData();
     }, []);
 
-    // Fetch categories for dropdown and table display
-    const fetchCategories = useCallback(async () => {
-        try {
-            const fetchedCategories = await getCategories();
-            setCategories(fetchedCategories);
-            // Create a map for easier lookup in the table
-            const categoryMap: Record<string, { name: string; color: string }> = {};
-            fetchedCategories.forEach((category) => {
-                categoryMap[category.id] = {
-                    name: category.name,
-                    color: category.color || '#9e9e9e' // Default color if none is specified
-                };
-            });
-            setCategoriesMap(categoryMap);
-        } catch {
-            // categories unavailable — table falls back to 'Unknown Category'
-        }
-    }, []);
-
     // Initial data loading
     useEffect(() => {
         fetchCategories();
     }, [fetchCategories]);
+
+    // Map for easier category lookup in the recent expenses table
+    const categoriesMap = useMemo(() => {
+        const categoryMap: Record<string, { name: string; color: string }> = {};
+        categories.forEach((category) => {
+            categoryMap[category.id] = {
+                name: category.name,
+                color: category.color || '#9e9e9e' // Default color if none is specified
+            };
+        });
+        return categoryMap;
+    }, [categories]);
 
     if (loading) {
         return (
@@ -131,7 +125,7 @@ export default function Dashboard() {
                                     <Typography color="textSecondary" gutterBottom variant="body2">
                                         Total Expenses (30 days)
                                     </Typography>
-                                    <Typography variant="h5">{totalExpenses.toFixed(2)} zł</Typography>
+                                    <Typography variant="h5">{formatCurrency(totalExpenses, settings.currency)}</Typography>
                                 </Box>
                                 <MoneyIcon sx={{ color: 'primary.main', fontSize: 40 }} />
                             </Box>
@@ -163,7 +157,7 @@ export default function Dashboard() {
                                     <Typography color="textSecondary" gutterBottom variant="body2">
                                         Average Daily Spend
                                     </Typography>
-                                    <Typography variant="h5">{(totalExpenses / 30).toFixed(2)} zł</Typography>
+                                    <Typography variant="h5">{formatCurrency(totalExpenses / 30, settings.currency)}</Typography>
                                 </Box>
                                 <ReceiptIcon sx={{ color: 'warning.main', fontSize: 40 }} />
                             </Box>
@@ -273,7 +267,9 @@ export default function Dashboard() {
                                                         'Unknown Category'
                                                     )}
                                                 </TableCell>
-                                                <TableCell align="right">{formatCurrency(expense.amount)}</TableCell>
+                                                <TableCell align="right">
+                                                    {formatCurrency(expense.amount, settings.currency)}
+                                                </TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
@@ -312,7 +308,7 @@ export default function Dashboard() {
                                         key={index}
                                         secondaryAction={
                                             <Typography variant="body2" fontWeight="bold">
-                                                {formatCurrency(category.value)}
+                                                {formatCurrency(category.value, settings.currency)}
                                             </Typography>
                                         }
                                     >

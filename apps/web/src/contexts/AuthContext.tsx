@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@expenses/shared';
 import { loginUser, registerUser, logoutUser, fetchCurrentUser } from '../services/authService';
+import { useCategoryStore } from '../store/categoryStore';
 
 interface AuthContextType {
     user: User | null;
@@ -90,6 +91,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             await logoutUser();
         } finally {
             setUser(null);
+            useCategoryStore.getState().reset();
         }
     };
 

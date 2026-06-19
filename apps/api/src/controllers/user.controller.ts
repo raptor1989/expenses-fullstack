@@ -161,6 +161,47 @@ export class UserController {
         }
     }
 
+    static async changePassword(req: Request, res: Response) {
+        try {
+            if (!req.user) {
+                return res.status(401).json({
+                    message: 'Authentication required',
+                    code: 'auth_required'
+                });
+            }
+
+            const { currentPassword, newPassword } = req.body;
+
+            const currentHash = await UserModel.findPasswordById(req.user.id);
+
+            if (!currentHash) {
+                return res.status(404).json({
+                    message: 'User not found',
+                    code: 'user_not_found'
+                });
+            }
+
+            const isPasswordValid = await bcrypt.compare(currentPassword, currentHash);
+
+            if (!isPasswordValid) {
+                return res.status(400).json({
+                    message: 'Current password is incorrect',
+                    code: 'invalid_credentials'
+                });
+            }
+
+            await UserModel.updatePassword(req.user.id, newPassword);
+
+            res.status(200).json({ message: 'Password changed successfully' });
+        } catch (error) {
+            console.error('Change password error:', error);
+            res.status(500).json({
+                message: 'Failed to change password',
+                code: 'password_change_failed'
+            });
+        }
+    }
+
     static async updateProfile(req: Request, res: Response) {
         try {
             if (!req.user) {

@@ -54,6 +54,35 @@ export class UserModel {
         }
     }
 
+    static async findPasswordById(id: string): Promise<string | null> {
+        const client = await pool.connect();
+
+        try {
+            const result = await client.query('SELECT password FROM users WHERE id = $1', [id]);
+
+            if (result.rows.length === 0) {
+                return null;
+            }
+
+            return result.rows[0].password;
+        } finally {
+            client.release();
+        }
+    }
+
+    static async updatePassword(id: string, newPassword: string): Promise<void> {
+        const client = await pool.connect();
+
+        try {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+            await client.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, id]);
+        } finally {
+            client.release();
+        }
+    }
+
     static async findById(id: string): Promise<User | null> {
         const client = await pool.connect();
 

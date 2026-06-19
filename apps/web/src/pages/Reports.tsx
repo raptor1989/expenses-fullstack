@@ -13,13 +13,18 @@ import {
     MenuItem
 } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { ResponsiveBar } from '@nivo/bar';
 import { getExpensesByMonth } from '../services/expenseService';
 import { ExpenseByMonth } from '@expenses/shared';
 import { formatCurrency } from '@/helpers/formatHelpers';
+import { useThemeMode } from '@/theme/ThemeProvider';
+import { useSettings } from '@/hooks/useSettings';
 
 const currentYear = new Date().getFullYear();
 
 export default function Reports() {
+    const { mode } = useThemeMode();
+    const { settings } = useSettings();
     const [year, setYear] = useState(currentYear);
     const [data, setData] = useState<ExpenseByMonth[]>([]);
     const [loading, setLoading] = useState(false);
@@ -59,33 +64,33 @@ export default function Reports() {
                     <Typography color="error">{error}</Typography>
                 ) : (
                     <>
-                        {/* Chart placeholder */}
+                        {/* Monthly total chart */}
                         <Box sx={{ mb: 4 }}>
                             <Typography variant="subtitle1" gutterBottom>
-                                Monthly Total (Bar Chart)
+                                Monthly Total
                             </Typography>
-                            <Box
-                                sx={{
-                                    height: 200,
-                                    bgcolor: '#f5f5f5',
-                                    display: 'flex',
-                                    alignItems: 'flex-end',
-                                    gap: 1,
-                                    p: 2
-                                }}
-                            >
-                                {data.map((m) => (
-                                    <Box key={m.month} sx={{ flex: 1, textAlign: 'center' }}>
-                                        <Box
-                                            sx={{
-                                                height: `${Math.max(10, (m.total / Math.max(...data.map((d) => d.total || 1))) * 150)}px`,
-                                                bgcolor: 'primary.main',
-                                                mb: 1
-                                            }}
-                                        />
-                                        <Typography variant="caption">{m.month.slice(0, 3)}</Typography>
-                                    </Box>
-                                ))}
+                            <Box sx={{ height: 300 }}>
+                                <ResponsiveBar
+                                    data={data.map((m) => ({ month: m.month.slice(0, 3), total: m.total }))}
+                                    keys={['total']}
+                                    indexBy="month"
+                                    margin={{ top: 20, right: 20, bottom: 40, left: 60 }}
+                                    padding={0.3}
+                                    colors={['#2e7d32']}
+                                    theme={{
+                                        text: { fill: mode === 'dark' ? '#e0e0e0' : '#333333' },
+                                        grid: { line: { stroke: mode === 'dark' ? '#444444' : '#dddddd' } }
+                                    }}
+                                    axisBottom={{ tickSize: 5, tickPadding: 5 }}
+                                    axisLeft={{ tickSize: 5, tickPadding: 5 }}
+                                    enableLabel={false}
+                                    valueFormat={(value) => formatCurrency(value, settings.currency)}
+                                    tooltip={({ value, indexValue }) => (
+                                        <Paper sx={{ p: 1 }}>
+                                            {indexValue}: {formatCurrency(value, settings.currency)}
+                                        </Paper>
+                                    )}
+                                />
                             </Box>
                         </Box>
                         {/* Table */}
@@ -112,7 +117,7 @@ export default function Reports() {
                                                 </TableCell>
                                                 <TableCell>
                                                     {topExp
-                                                        ? `${topExp.description} (${formatCurrency(topExp.amount)})`
+                                                        ? `${topExp.description} (${formatCurrency(topExp.amount, settings.currency)})`
                                                         : '-'}
                                                 </TableCell>
                                             </TableRow>

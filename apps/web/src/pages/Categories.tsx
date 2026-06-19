@@ -30,13 +30,12 @@ import {
     Delete as DeleteIcon,
     ColorLens as ColorLensIcon
 } from '@mui/icons-material';
-import { getCategories, createCategory, updateCategory, deleteCategory } from '../services/categoryService';
+import { useCategoryStore } from '@/store/categoryStore';
 import { Category } from '@expenses/shared';
 
 export default function Categories() {
-    // State for categories list
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(true);
+    // Shared categories cache
+    const { categories, loading, fetchCategories, addCategory, editCategory, removeCategory } = useCategoryStore();
 
     // State for dialog
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -63,24 +62,14 @@ export default function Categories() {
 
     // Fetch categories on component mount
     useEffect(() => {
-        fetchCategories();
-    }, []);
-
-    const fetchCategories = async () => {
-        try {
-            setLoading(true);
-            const data = await getCategories();
-            setCategories(data);
-        } catch {
+        fetchCategories().catch(() => {
             setNotification({
                 open: true,
                 message: 'Failed to load categories. Please try again.',
                 severity: 'error'
             });
-        } finally {
-            setLoading(false);
-        }
-    };
+        });
+    }, [fetchCategories]);
 
     const handleOpenAddDialog = () => {
         setDialogMode('add');
@@ -125,21 +114,14 @@ export default function Categories() {
             }
 
             if (dialogMode === 'add') {
-                const newCategory = await createCategory(formData.name, formData.color, formData.icon);
-                setCategories((prev) => [...prev, newCategory]);
+                await addCategory(formData.name, formData.color, formData.icon);
                 setNotification({
                     open: true,
                     message: 'Category created successfully!',
                     severity: 'success'
                 });
             } else if (dialogMode === 'edit' && selectedCategory) {
-                const updatedCategory = await updateCategory(
-                    selectedCategory.id,
-                    formData.name,
-                    formData.color,
-                    formData.icon
-                );
-                setCategories((prev) => prev.map((cat) => (cat.id === updatedCategory.id ? updatedCategory : cat)));
+                await editCategory(selectedCategory.id, formData.name, formData.color, formData.icon);
                 setNotification({
                     open: true,
                     message: 'Category updated successfully!',
@@ -166,8 +148,7 @@ export default function Categories() {
         if (!categoryToDelete) return;
 
         try {
-            await deleteCategory(categoryToDelete.id);
-            setCategories((prev) => prev.filter((cat) => cat.id !== categoryToDelete.id));
+            await removeCategory(categoryToDelete.id);
             setNotification({
                 open: true,
                 message: 'Category deleted successfully!',

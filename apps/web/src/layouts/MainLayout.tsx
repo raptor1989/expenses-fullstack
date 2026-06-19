@@ -36,6 +36,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useSettings } from '../hooks/useSettings';
 import { useThemeMode } from '../theme/ThemeProvider';
 
 // Drawer width
@@ -49,7 +50,16 @@ export default function MainLayout() {
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const { logout, user } = useAuth();
+    const { updateSettings } = useSettings();
     const { mode, toggleColorMode } = useThemeMode();
+
+    const handleToggleTheme = () => {
+        const newMode = mode === 'light' ? 'dark' : 'light';
+        toggleColorMode();
+        updateSettings({ theme: newMode }).catch(() => {
+            // theme still applies locally even if persisting the preference fails
+        });
+    };
 
     const handleDrawerToggle = () => {
         setMobileDrawerOpen(!mobileDrawerOpen);
@@ -152,7 +162,7 @@ export default function MainLayout() {
                         )?.text || 'Expense Manager'}
                     </Typography>
 
-                    <IconButton sx={{ ml: 1 }} onClick={toggleColorMode} color="inherit">
+                    <IconButton sx={{ ml: 1 }} onClick={handleToggleTheme} color="inherit">
                         {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
                     </IconButton>
 

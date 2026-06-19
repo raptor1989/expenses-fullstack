@@ -36,3 +36,7 @@ export const updateUserProfile = async (userData: Partial<User>): Promise<User> 
     const response = await api.put<{ user: User; message: string }>('/users/profile', userData);
     return response.data.user;
 };
+
+export const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+    await api.put('/users/password', { currentPassword, newPassword });
+};

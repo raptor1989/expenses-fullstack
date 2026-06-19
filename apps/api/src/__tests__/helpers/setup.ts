@@ -101,7 +101,35 @@ export default async function globalSetup() {
             EXECUTE FUNCTION create_default_categories();
         `);
 
-        const tables = ['users', 'categories', 'expenses'];
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS user_settings (
+                user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                currency VARCHAR(3) NOT NULL DEFAULT 'PLN',
+                theme VARCHAR(5) NOT NULL DEFAULT 'light' CHECK (theme IN ('light', 'dark')),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await client.query(`
+            CREATE OR REPLACE FUNCTION create_default_settings()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                INSERT INTO user_settings (user_id) VALUES (NEW.id);
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+        `);
+
+        await client.query(`
+            DROP TRIGGER IF EXISTS create_settings_for_new_user ON users;
+            CREATE TRIGGER create_settings_for_new_user
+            AFTER INSERT ON users
+            FOR EACH ROW
+            EXECUTE FUNCTION create_default_settings();
+        `);
+
+        const tables = ['users', 'categories', 'expenses', 'user_settings'];
         for (const table of tables) {
             await client.query(`
                 CREATE OR REPLACE FUNCTION update_${table}_updated_at()

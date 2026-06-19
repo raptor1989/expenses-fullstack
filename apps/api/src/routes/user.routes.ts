@@ -33,6 +33,11 @@ const loginValidation = [
     body('password').notEmpty().withMessage('Password is required')
 ];
 
+const changePasswordValidation = [
+    body('currentPassword').notEmpty().withMessage('Current password is required'),
+    body('newPassword').isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+];
+
 router.post('/register', authLimiter, registerValidation, validate, (req: Request, res: Response) => {
     UserController.register(req, res);
 });
@@ -58,6 +63,18 @@ router.put(
     },
     (req: Request, res: Response) => {
         UserController.updateProfile(req, res);
+    }
+);
+
+router.put(
+    '/password',
+    (req: Request, res: Response, next: NextFunction) => {
+        auth(req, res, next);
+    },
+    changePasswordValidation,
+    validate,
+    (req: Request, res: Response) => {
+        UserController.changePassword(req, res);
     }
 );
 

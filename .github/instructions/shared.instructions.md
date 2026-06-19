@@ -77,7 +77,7 @@ export interface ApiError {
 | User | `User`, `UserCredentials`, `AuthResponse` |
 | Expense | `Expense`, `ExpenseCreateInput`, `ExpenseUpdateInput` |
 | Category | `Category` |
-| Budget | `Budget`, `BudgetProgress` |
+| Settings | `UserSettings`, `UserSettingsUpdateInput` |
 | Analytics | `ExpenseSummary`, `ExpenseByMonth`, `ExpenseByCategory` |
 | API | `ApiError` |
 

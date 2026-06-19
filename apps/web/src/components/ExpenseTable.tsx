@@ -15,6 +15,7 @@ import {
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { Expense } from '@expenses/shared';
 import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
+import { useSettings } from '@/hooks/useSettings';
 
 interface ExpenseTableProps {
     expenses: Expense[];
@@ -24,6 +25,8 @@ interface ExpenseTableProps {
 }
 
 export default function ExpenseTable({ expenses, categories, onEdit, onDelete }: ExpenseTableProps) {
+    const { settings } = useSettings();
+
     if (!expenses || expenses.length === 0) {
         return (
             <Paper sx={{ p: 3, textAlign: 'center' }}>
@@ -67,7 +70,7 @@ export default function ExpenseTable({ expenses, categories, onEdit, onDelete }:
                                     'Unknown Category'
                                 )}
                             </TableCell>
-                            <TableCell align="right">{formatCurrency(expense.amount)}</TableCell>
+                            <TableCell align="right">{formatCurrency(expense.amount, settings.currency)}</TableCell>
                             <TableCell align="right">
                                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                                     {onEdit && (

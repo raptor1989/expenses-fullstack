@@ -147,6 +147,60 @@ describe('PUT /api/users/profile', () => {
     });
 });
 
+describe('PUT /api/users/password', () => {
+    it('changes the password and allows login with the new one', async () => {
+        const data = userFixture();
+        const { cookie } = await registerAndLogin(data);
+
+        const res = await request(app)
+            .put('/api/users/password')
+            .set('Cookie', cookie)
+            .send({ currentPassword: data.password, newPassword: 'NewPassword123!' });
+
+        expect(res.status).toBe(200);
+
+        const loginRes = await request(app)
+            .post('/api/users/login')
+            .send({ email: data.email, password: 'NewPassword123!' });
+
+        expect(loginRes.status).toBe(200);
+    });
+
+    it('returns 400 when current password is incorrect', async () => {
+        const data = userFixture();
+        const { cookie } = await registerAndLogin(data);
+
+        const res = await request(app)
+            .put('/api/users/password')
+            .set('Cookie', cookie)
+            .send({ currentPassword: 'WrongPassword1!', newPassword: 'NewPassword123!' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('invalid_credentials');
+    });
+
+    it('returns 400 when new password is too short', async () => {
+        const data = userFixture();
+        const { cookie } = await registerAndLogin(data);
+
+        const res = await request(app)
+            .put('/api/users/password')
+            .set('Cookie', cookie)
+            .send({ currentPassword: data.password, newPassword: 'short' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+    });
+
+    it('returns 401 when not authenticated', async () => {
+        const res = await request(app)
+            .put('/api/users/password')
+            .send({ currentPassword: 'x', newPassword: 'NewPassword123!' });
+
+        expect(res.status).toBe(401);
+    });
+});
+
 describe('POST /api/users/logout', () => {
     it('clears the auth cookie', async () => {
         const { cookie } = await registerAndLogin(userFixture());

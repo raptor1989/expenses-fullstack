@@ -92,11 +92,13 @@ const getDesignTokens = (mode: PaletteMode) => ({
 type ThemeContextType = {
     mode: PaletteMode;
     toggleColorMode: () => void;
+    setMode: (mode: PaletteMode) => void;
 };
 
 const ThemeContext = createContext<ThemeContextType>({
     mode: 'light',
-    toggleColorMode: () => {}
+    toggleColorMode: () => {},
+    setMode: () => {}
 });
 
 // Custom hook to use theme context
@@ -128,11 +130,17 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         });
     };
 
+    // Set theme mode directly (e.g. from a saved preference)
+    const applyMode = (newMode: PaletteMode) => {
+        localStorage.setItem('themeMode', newMode);
+        setMode(newMode);
+    };
+
     // Create theme with current mode
     const theme = useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
 
     return (
-        <ThemeContext.Provider value={{ mode, toggleColorMode }}>
+        <ThemeContext.Provider value={{ mode, toggleColorMode, setMode: applyMode }}>
             <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>
         </ThemeContext.Provider>
     );
