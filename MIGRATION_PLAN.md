@@ -65,7 +65,7 @@ orkiestrują/uruchamiają build (Turbo, PM2), więc idą pierwsze.
   odpalić `pm2 start dist/index.js --name expenses-api`, sprawdzić
   `pm2 logs`/`pm2 status`, `pm2 delete expenses-api`.
 
-### Krok 1.3 — `@types/node`: dopasować do realnej wersji Node, nie do `latest`
+### Krok 1.3 — `@types/node`: dopasować do realnej wersji Node, nie do `latest` ✅
 
 - Lokalnie zainstalowany Node to `v24.14.1`. `npm view @types/node version`
   zwraca `26.0.0` — to typy dla Node 26, których ten silnik nie ma. Celować
