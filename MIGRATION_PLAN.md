@@ -150,13 +150,22 @@ TypeScript, już zrobionym w Fazie 1) idą przed `apps/*`.
   `eslint.config.js` (`globals.browser`/`globals.node`) — bez zmian w
   configu. Pełny `build`/`test` po bumpie też zielony (regression check).
 
-### Krok 2.2 — `rimraf` `5.0.5 → 6.1.3` (tylko w `packages/shared`; `apps/*` już są na `6.0.1 → 6.1.3`)
+### Krok 2.2 — `rimraf` `5.0.5 → 6.1.3` (tylko w `packages/shared`; `apps/*` już są na `6.0.1 → 6.1.3`) ✅
 
 - Tylko CLI do `rm -rf dist`, brak API używanego w kodzie. Patch/minor
   bump w obrębie v6 dla `apps/*`; w `packages/shared` to faktycznie major
   (5→6) — sprawdzić, że `rimraf` jako CLI binarny (`scripts.clean`) działa
   identycznie (`npx rimraf dist` lokalnie).
-- **Weryfikacja:** `npm run clean && npm run build` w `packages/shared`.
+- **Weryfikacja ✅:** `npm run clean && npm run build` w `packages/shared`.
+  `rimraf dist` (CLI) usuwa katalog identycznie jak w v5. Odkryta **pre-
+  existing** (niezależna od tego bumpu) usterka: `clean` nie usuwa
+  `tsconfig.tsbuildinfo`, więc kolejny `tsc` (incremental, `composite:
+  true`) widzi cache jako aktualny i nie re-emituje `dist` — to dotyczy
+  każdej wersji `rimraf`, czysto kwestia `tsc --incremental` + skrypt
+  `clean` nieusuwający `.tsbuildinfo`. Poza zakresem tego planu (nie
+  naprawiać tu) — zweryfikowano binarkę `rimraf` w izolacji (usunięcie
+  `tsconfig.tsbuildinfo` + `dist`, `tsc` ponownie emituje poprawnie).
+  Pełny `npm run build` z root: zielony.
 
 ### Krok 2.3 — `jest@29.7.0 → 30.4.2`
 
