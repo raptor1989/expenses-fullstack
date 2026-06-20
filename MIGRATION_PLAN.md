@@ -282,15 +282,30 @@ smoke test API (health, login, CORS) zrobiony w Kroku 3.3.
   kodzie) stary dryf schemy lokalnej bazy dev — patrz notatka w pamięci
   `env_expenses_fullstack_quirks.md`, niezwiązane z tym bumpem.
 
-### Krok 4.2 — `@nivo/bar`/`core`/`line`/`pie` `0.98.0 → 0.99.0`
+### Krok 4.2 — `@nivo/bar`/`core`/`line`/`pie` `0.98.0 → 0.99.0` ✅
 
 - Pre-1.0 (`0.x`), więc semver nie gwarantuje braku breaking changes na
   minor. Używane w `Reports.tsx` (wykresy). Sprawdzić changelog Nivo
   0.98→0.99 dla zmian w propsach `ResponsiveBar`/`ResponsiveLine`/
   `ResponsivePie` przed bumpem — **nie zakładać kompatybilności tylko
   dlatego, że to "minor"**.
-- **Weryfikacja:** otworzyć `/reports` w przeglądarce, porównać wizualnie
-  wykresy przed/po (screenshot).
+- **Weryfikacja ✅:** sprawdzono changelog/PR #2764 — zmiana w `@nivo/bar`
+  to "restrict the type of value scale supported and use better
+  defaults"; `Reports.tsx` nie ustawia `valueScale`/`indexScale`
+  explicite, więc dotyczy go tylko (nieszkodliwa) zmiana defaultów. W
+  kodzie używane są tylko `ResponsiveBar` (`Reports.tsx`) i
+  `ResponsivePie` (`Dashboard.tsx`) — `@nivo/line`/`ResponsiveLine` jest
+  zainstalowany, ale nieużywany nigdzie (pre-existing, poza zakresem).
+  Screenshot przed/po (prawdziwa przeglądarka, dane testowe w 2
+  kategoriach/2 miesiącach): donut na Dashboard identyczny pixel-w-pixel;
+  bar chart na Reports identyczny, jedyna różnica — skala osi Y (sufit
+  60→65), kosmetyczny efekt "better defaults", nie regresja. `tsc`
+  przechodzi (żadnych nowych błędów typów z restrykcji scale). Lint +
+  wszystkie 26 testów web zielone. **Korekta przypięcia wersji:** tylko
+  `@nivo/bar` ma zostać z `^` (jedyny wyjątek z listy na początku planu);
+  `@nivo/core`/`line`/`pie` przypięte na sztywno (bez `^`), tak jak były
+  przed bumpem — `npm install` domyślnie dodał `^` do wszystkich
+  czterech, poprawiono ręcznie.
 
 ### Krok 4.3 — Build tooling: `vite@6.3.5`, `@vitejs/plugin-react@4.5.1`, `vitest@^3.0.0`, `eslint-plugin-react-hooks@5.2.0`, `eslint-plugin-react-refresh@0.4.20`
 
