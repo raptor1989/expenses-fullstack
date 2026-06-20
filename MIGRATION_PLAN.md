@@ -86,10 +86,12 @@ ustawia swoje opcje, więc realne ryzyko zależy od tego, czy `strict` jest
 już włączony i czy `target` jest ustawiony explicite — to trzeba sprawdzić
 przed bumpem, nie zakładać.
 
-- **Krok 1.4a:** Przeczytać `tsconfig.json` w `packages/shared`,
-  `apps/api`, `apps/web` — potwierdzić, że `strict` i `target` są ustawione
-  explicite (jeśli nie są, dopisać explicite **przed** bumpem, żeby zmiana
-  defaultów TS 6.0 nie zmieniła zachowania niezauważalnie).
+- **Krok 1.4a ✅:** Przeczytano `tsconfig.json` w `packages/shared`,
+  `apps/api`, `apps/web`. `packages/shared` (przez `extends` z root) i
+  `apps/web` (własne ustawienia) mają `strict`/`target` już explicite.
+  `apps/api` **nie** miał `extends` ani `strict` — dopisano `"strict":
+  false` explicite (zachowuje bieżące zachowanie, build zweryfikowany
+  jako no-op przed bumpem TS).
 - **Krok 1.4b:** Bump `typescript@6.0.3` w `packages/shared`, build,
   naprawić nowe błędy typów (oczekiwane: edge case’y, które wcześniej
   "przechodziły" przez słabszy default).
