@@ -30,7 +30,7 @@
     "homepage": "https://github.com/raptor1989/expenses-fullstack#readme",
     "devDependencies": {
         "@types/node": "22.15.21",
-        "pm2": "6.0.6",
+        "pm2": "7.0.1",
         "turbo": "2.9.18",
         "typescript": "5.8.3"
     },

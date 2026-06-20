@@ -53,7 +53,7 @@ orkiestrują/uruchamiają build (Turbo, PM2), więc idą pierwsze.
 - **Weryfikacja:** `npm run build` i `npm run dev` (Ctrl+C po starcie)
   przez Turbo bez zmian w `turbo.json`.
 
-### Krok 1.2 — PM2 `6.0.6 → 7.0.1` (major)
+### Krok 1.2 — PM2 `6.0.6 → 7.0.1` (major) ✅
 
 - Używany tylko do `npm run start` (produkcyjny runtime), nie wpływa na
   build/dev. Brak udokumentowanych breaking changes API wpływających na
