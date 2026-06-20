@@ -240,7 +240,7 @@ zero regresji w `apps/api`/`apps/web`.
   odzwierciedlone z `ALLOWED_ORIGINS`. Build + wszystkie 64 testy API
   zielone.
 
-### Krok 3.4 — `bcryptjs@3.0.2→3.0.3`, `jsonwebtoken@9.0.2→9.0.3`, `pg@8.16.0→8.22.0`, oraz odpowiadające `@types/*` (`@types/cors`, `@types/express`, `@types/jsonwebtoken`, `@types/pg`)
+### Krok 3.4 — `bcryptjs@3.0.2→3.0.3`, `jsonwebtoken@9.0.2→9.0.3`, `pg@8.16.0→8.22.0`, oraz odpowiadające `@types/*` (`@types/cors`, `@types/express`, `@types/jsonwebtoken`, `@types/pg`) ✅
 
 - Wszystko patch/minor, brak udokumentowanych breaking changes na tym
   zakresie wersji. Najwyższe ryzyko praktyczne: `pg` 8.16→8.22 (6 minorów)
@@ -248,8 +248,14 @@ zero regresji w `apps/api`/`apps/web`.
   `DECIMAL`/`NUMERIC` (repo robi ręczny `parseFloat()` na wynikach —
   upewnić się, że `pg` nadal zwraca `DECIMAL` jako string, a nie np. jako
   number po jakiejś zmianie typeparsera).
-- **Weryfikacja:** pełny smoke test API (rejestracja, login, CRUD
-  expense/category) + `npm run test --workspace=@expenses/api`.
+- **Weryfikacja ✅:** build + wszystkie 64 testy API zielone. `DECIMAL`
+  wciąż wraca jako string z `pg` (kod z `parseFloat()` dalej działa bez
+  zmian). **Odkryto nowy deprecation warning** (poza zakresem badanym w
+  planie): `client.query()` wołane współbieżnie na tym samym checked-out
+  `client` (Promise.all w `expense.model.ts:278-282`, analytics endpoint)
+  — działa, ale `pg@9.0` to usunie. Plan celuje w `8.22.0`, nie `9.x`, więc
+  za zgodą użytkownika **zostawione jako follow-up**, nie naprawione w
+  ramach tego kroku.
 
 **Weryfikacja całej Fazy 3:** `npm run build --workspace=@expenses/api` +
 testy + manualny smoke test wszystkich endpointów.
