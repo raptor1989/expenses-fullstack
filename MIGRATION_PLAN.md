@@ -257,8 +257,9 @@ zero regresji w `apps/api`/`apps/web`.
   za zgodą użytkownika **zostawione jako follow-up**, nie naprawione w
   ramach tego kroku.
 
-**Weryfikacja całej Fazy 3:** `npm run build --workspace=@expenses/api` +
-testy + manualny smoke test wszystkich endpointów.
+**Weryfikacja całej Fazy 3 ✅:** pełny `npm run build`/`lint`/`test` z root
+zielony (3/3 build, 3/3 lint, web 26/26 + api 64/64 testów), manualny
+smoke test API (health, login, CORS) zrobiony w Kroku 3.3.
 
 ---
 
