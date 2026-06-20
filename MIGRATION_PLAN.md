@@ -46,7 +46,7 @@ każdym kroku build/lint/test musi przejść, zanim ruszamy dalej.
 Te pakiety są używane przez wszystkie workspace’y (TypeScript) albo
 orkiestrują/uruchamiają build (Turbo, PM2), więc idą pierwsze.
 
-### Krok 1.1 — Turbo `2.5.3 → 2.9.18`
+### Krok 1.1 — Turbo `2.5.3 → 2.9.18` ✅
 
 - Minor w obrębie 2.x, brak zmian schematu `turbo.json` w tym zakresie.
 - `npm install turbo@2.9.18 -D` w root.
