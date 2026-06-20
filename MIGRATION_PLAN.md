@@ -216,9 +216,9 @@ zero regresji w `apps/api`/`apps/web`.
   żadna z potencjalnych breaking changes nie dotyczy tego repo. Build
   API również zielony.
 
-### Krok 3.2 — ESLint plugin/parser TS — już zrobione w Kroku 2.1 (wspólny bump). Pominąć powtórzenie.
+### Krok 3.2 ✅ — ESLint plugin/parser TS — już zrobione w Kroku 2.1 (wspólny bump). Pominięto powtórzenie.
 
-### Krok 3.3 — Express ecosystem: `express@5.1.0→5.2.1`, `express-rate-limit@8.4.1→8.5.2`, `express-validator@7.2.1→7.3.2`, `cors@2.8.5→2.8.6`, `dotenv@16.5.0→17.4.2`
+### Krok 3.3 — Express ecosystem: `express@5.1.0→5.2.1`, `express-rate-limit@8.4.1→8.5.2`, `express-validator@7.2.1→7.3.2`, `cors@2.8.5→2.8.6`, `dotenv@16.5.0→17.4.2` ✅
 
 - Wszystkie minor/patch **poza `dotenv` (16→17, major)**. `dotenv` 17
   changelog: główna zmiana to nowe domyślne zachowanie ładowania `.env*`
@@ -229,10 +229,16 @@ zero regresji w `apps/api`/`apps/web`.
   `apps/api/.env` (patrz znana pułapka w skillu `run-expenses-fullstack`:
   `dotenv.config()` musi wykonać się **przed** importem `./app`, inaczej
   pool DB łapie `undefined`).
-- **Weryfikacja:** wystartować API (`-r dotenv/config`), `curl
-  http://localhost:4000/health`, zalogować się przez `/api/users/login`
-  (cookie auth) — potwierdzić że `ALLOWED_ORIGINS`/`DB_*` z `.env` nadal są
-  wczytywane.
+- **Weryfikacja ✅:** `dotenv.config()` wykonuje się przed `import app`
+  (potwierdzone w `src/index.ts`, więc `-r dotenv/config` niepotrzebny —
+  repo i tak go nie używa). Wystartowano API na realnym `.env`: `dotenv@17`
+  loguje nowy banner `injected env (10) from .env` (zmiana w stylu logów,
+  bez wpływu na zachowanie). `curl /health` → ok. `POST
+  /api/users/login` z błędnym hasłem → poprawny `invalid_credentials`
+  (czyli DB_*, bcrypt, walidacja działają). CORS preflight z `Origin:
+  http://localhost:5173` → `Access-Control-Allow-Origin` poprawnie
+  odzwierciedlone z `ALLOWED_ORIGINS`. Build + wszystkie 64 testy API
+  zielone.
 
 ### Krok 3.4 — `bcryptjs@3.0.2→3.0.3`, `jsonwebtoken@9.0.2→9.0.3`, `pg@8.16.0→8.22.0`, oraz odpowiadające `@types/*` (`@types/cors`, `@types/express`, `@types/jsonwebtoken`, `@types/pg`)
 
