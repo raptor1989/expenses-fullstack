@@ -265,15 +265,22 @@ smoke test API (health, login, CORS) zrobiony w Kroku 3.3.
 
 ## Faza 4 — `apps/web` (bez MUI — patrz Faza 5)
 
-### Krok 4.1 — Biblioteki domenowe niskiego ryzyka: `axios@1.9.0→1.18.0`, `dayjs@1.11.13→1.11.21`, `formik@2.4.6→2.4.9`, `yup@1.6.1→1.7.1`, `zustand@5.0.5→5.0.14`, `react-router-dom@7.6.2→7.18.0`, `@emotion/react@11.14.0` (bez zmian), `@emotion/styled@11.14.0→11.14.1`
+### Krok 4.1 — Biblioteki domenowe niskiego ryzyka: `axios@1.9.0→1.18.0`, `dayjs@1.11.13→1.11.21`, `formik@2.4.6→2.4.9`, `yup@1.6.1→1.7.1`, `zustand@5.0.5→5.0.14`, `react-router-dom@7.6.2→7.18.0`, `@emotion/react@11.14.0` (bez zmian), `@emotion/styled@11.14.0→11.14.1` ✅
 
 - Wszystko minor/patch w obrębie obecnego majora — brak API breaking
   changes do zaadresowania w kodzie. `react-router-dom` zostaje w v7 (nie
   v8), `zustand` zostaje w v5.
-- **Weryfikacja:** `tsc && vite build`, smoke test: routing
-  (`ProtectedRoute`, `NotFound`), formularze Formik+Yup (Login, Register,
-  ExpenseForm), DatePicker z `dayjs` adapter (patrz Faza 5 — adapter
-  zostaje taki sam, tylko wersja `dayjs` rośnie patch-owo).
+- **Weryfikacja ✅:** `tsc && vite build` zielony, `vitest run` (26/26),
+  lint clean. Manualny smoke test w prawdziwej przeglądarce (Playwright +
+  systemowy Edge, skill `run-expenses-fullstack`): logowanie + dashboard
+  render OK; `/nieistniejaca-trasa` → `NotFound` render OK; formularz
+  Register z pustymi polami → walidacja Formik+Yup blokuje submit
+  (komunikaty "required" widoczne, brak nawigacji) OK; Dialog
+  `ExpenseForm` → otwarcie `dayjs`-owego `DatePicker`, wybór dnia 15,
+  zapis — nowy wiersz wydatku pokazuje poprawną datę (`15.06`) i kwotę
+  (`12,34 zł`) OK. Po drodze odkryto i naprawiono (środowiskowo, nie w
+  kodzie) stary dryf schemy lokalnej bazy dev — patrz notatka w pamięci
+  `env_expenses_fullstack_quirks.md`, niezwiązane z tym bumpem.
 
 ### Krok 4.2 — `@nivo/bar`/`core`/`line`/`pie` `0.98.0 → 0.99.0`
 
