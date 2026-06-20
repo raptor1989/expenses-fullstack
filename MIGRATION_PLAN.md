@@ -195,7 +195,7 @@ zero regresji w `apps/api`/`apps/web`.
   błędów. Nie wymaga akcji — krok zostaje w planie tylko jako historyczna
   notatka.
 
-### Krok 3.1 — Jest `29.7.0 → 30.4.2` + `ts-jest@29.3.4 → 29.4.11` + `@types/jest` (już `30.0.0`, bez zmian)
+### Krok 3.1 — Jest `29.7.0 → 30.4.2` + `ts-jest@29.3.4 → 29.4.11` + `@types/jest` (już `30.0.0`, bez zmian) ✅
 
 - Realne breaking changes dla tego repo:
   - `jest-environment-jsdom` poszedł z jsdom 21→26 — **nieistotne**, API
@@ -207,9 +207,14 @@ zero regresji w `apps/api`/`apps/web`.
   - `testPathPattern` → `testPathPatterns` — dotyczy tylko CLI flag, nie
     `jest.config.js` (sprawdzić, czy `package.json`/CI nie wywołuje
     `--testPathPattern` explicite).
-- **Weryfikacja:** `DB_PORT=... DB_USER=... DB_PASSWORD=... npx jest
-  --config jest.config.js --runInBand --forceExit` — wszystkie 4 suity
-  przechodzą (a nie tylko "compiluje się", jak dziś przez Krok 3.0).
+- **Weryfikacja ✅:** `npm run test --workspace=@expenses/api` — 5 suit /
+  64 testy przechodzą (identycznie jak baseline z Kroku 0.2; plan
+  wspominał "4 suity", ale w repo jest ich 5 — `expenses`, `categories`,
+  `auth`, `analytics`, `settings`). Brak legacy aliasów matcherów
+  (`toBeCalled`/`toReturn`/`lastCalledWith`) w testach, `testEnvironment:
+  'node'` (jsdom nieużywany), brak `--testPathPattern` w skryptach —
+  żadna z potencjalnych breaking changes nie dotyczy tego repo. Build
+  API również zielony.
 
 ### Krok 3.2 — ESLint plugin/parser TS — już zrobione w Kroku 2.1 (wspólny bump). Pominąć powtórzenie.
 
