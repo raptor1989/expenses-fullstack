@@ -133,7 +133,7 @@ jak baseline z Kroku 0.2), `pm2 start/stop` ręcznie sprawdzony w Kroku 1.2.
 Buduje się jako pierwszy w grafie Turbo, więc jego dev-zależności (poza
 TypeScript, już zrobionym w Fazie 1) idą przed `apps/*`.
 
-### Krok 2.1 — ESLint `9.27.0 → 10.x` + `@eslint/js` + `@typescript-eslint/*`
+### Krok 2.1 — ESLint `9.27.0 → 10.x` + `@eslint/js` + `@typescript-eslint/*` ✅
 
 - `packages/shared/eslint.config.js` (jak i `apps/api`, `apps/web`) **już
   używa flat config** — ESLint v10 usuwa wyłącznie legacy `.eslintrc.*`/
@@ -145,10 +145,10 @@ TypeScript, już zrobionym w Fazie 1) idą przed `apps/*`.
   `@typescript-eslint/eslint-plugin@8.61.1`,
   `@typescript-eslint/parser@8.61.1`, `globals@17.6.0` — w `packages/shared`,
   `apps/api`, `apps/web` razem.
-- **Weryfikacja:** `npm run lint` w każdym z trzech workspace’ów (`turbo
-  run lint` z root) — 0 nowych błędów. Jeśli `globals@17` zmienił nazwy
-  kluczy dla `globals.browser`/`globals.node` (sprawdzić diff configu),
-  poprawić `eslint.config.js`.
+- **Weryfikacja ✅:** `turbo run lint` z root — 3/3 zielone, 0 nowych
+  błędów/warningów. `globals@17` nie zmienił kluczy używanych w
+  `eslint.config.js` (`globals.browser`/`globals.node`) — bez zmian w
+  configu. Pełny `build`/`test` po bumpie też zielony (regression check).
 
 ### Krok 2.2 — `rimraf` `5.0.5 → 6.1.3` (tylko w `packages/shared`; `apps/*` już są na `6.0.1 → 6.1.3`)
 
