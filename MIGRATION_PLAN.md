@@ -109,10 +109,22 @@ przed bumpem, nie zakładać.
   nie ma `extends` (samodzielny plik, bez konfliktu z innym workspace’em
   jak w przypadku `shared`/root) — podniesiono `ignoreDeprecations` z
   `"5.0"` na `"6.0"` bezpośrednio w nim, co wystarczyło dla obu błędów.
-- **Krok 1.4d:** Bump w `apps/web`, `tsc && vite build`.
+- **Krok 1.4d ✅:** Bump w `apps/web` (i dodatkowo w root — `typescript`
+  był tam pinowany niezależnie, poza zakresem "3 plików" z tego kroku, ale
+  bumpnięty dla konsystencji, patrz notatka przy nagłówku Kroku 1.4).
+  `apps/web/tsconfig.json` używa `moduleResolution: "bundler"` (nie
+  `"node"`) i nie ustawia `downlevelIteration`, więc **żadna** z dwóch
+  deprecation z Kroków 1.4b/1.4c go nie dotyczy — `tsc && vite build`
+  przeszło czysto bez żadnej zmiany w `tsconfig.json`. Root
+  `ignoreDeprecations: "5.0"` (odziedziczone przez `apps/web` via
+  `extends`) zostało **nietknięte** — `tsc` 6.0.3 akceptuje tę wartość
+  bez błędu, gdy nie ma czego nią silencować, więc zmiana nie była
+  potrzebna (zasada surowych zmian — nie dotykać czegoś, co nie jest
+  zepsute).
 
-**Weryfikacja całej Fazy 1:** pełny `npm run build` z root przechodzi,
-`pm2 start/stop` ręcznie sprawdzony.
+**Weryfikacja całej Fazy 1 ✅:** pełny `npm run build`/`lint`/`test` z root
+przechodzi (3/3 build, 3/3 lint, web 26/26 + api 64/64 testów — identycznie
+jak baseline z Kroku 0.2), `pm2 start/stop` ręcznie sprawdzony w Kroku 1.2.
 
 ---
 
