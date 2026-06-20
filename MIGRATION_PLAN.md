@@ -167,7 +167,7 @@ TypeScript, już zrobionym w Fazie 1) idą przed `apps/*`.
   `tsconfig.tsbuildinfo` + `dist`, `tsc` ponownie emituje poprawnie).
   Pełny `npm run build` z root: zielony.
 
-### Krok 2.3 — `jest@29.7.0 → 30.4.2`
+### Krok 2.3 — `jest@29.7.0 → 30.4.2` ✅
 
 - Tylko w `packages/shared` na razie nie ma realnych testów
   (`"test": "jest --passWithNoTests"`), więc ryzyko praktyczne ~zero.
@@ -176,11 +176,11 @@ TypeScript, już zrobionym w Fazie 1) idą przed `apps/*`.
   `jest.Mock`) nie mają tu czego dotknąć — ale **ten sam bump trzeba
   zrobić w `apps/api`**, patrz Faza 3, gdzie testy faktycznie istnieją i
   breaking changes są realne.
-- **Weryfikacja:** `npm run test` (przejdzie trywialnie, brak testów).
+- **Weryfikacja ✅:** `npm run test` — przeszło trywialnie (brak testów).
 
-**Weryfikacja całej Fazy 2:** `npm run build --workspace=@expenses/shared`
-+ `npm run lint --workspace=@expenses/shared`, zero regresji w
-`apps/api`/`apps/web` (które konsumują `dist/`).
+**Weryfikacja całej Fazy 2 ✅:** `npm run build`/`lint`/`test` z root —
+wszystko zielone (3/3 build, 3/3 lint, web 26/26 + api 64/64 testów),
+zero regresji w `apps/api`/`apps/web`.
 
 ---
 
