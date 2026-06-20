@@ -92,9 +92,15 @@ przed bumpem, nie zakładać.
   `apps/api` **nie** miał `extends` ani `strict` — dopisano `"strict":
   false` explicite (zachowuje bieżące zachowanie, build zweryfikowany
   jako no-op przed bumpem TS).
-- **Krok 1.4b:** Bump `typescript@6.0.3` w `packages/shared`, build,
-  naprawić nowe błędy typów (oczekiwane: edge case’y, które wcześniej
-  "przechodziły" przez słabszy default).
+- **Krok 1.4b ✅:** Bump `typescript@6.0.3` w `packages/shared`, build.
+  Napotkany nowy błąd: `TS5107` — `moduleResolution=node10` (czyli
+  wartość `"node"`, odziedziczona z root `tsconfig.json` przez `extends`)
+  jest deprecated w TS 6.0 i wymaga `"ignoreDeprecations": "6.0"`. Root ma
+  `"5.0"`, ale **nie można** podnieść go do `"6.0"` w tym kroku — `apps/web`
+  nadal extenduje root i kompiluje się TS 5.8.3 (do Kroku 1.4d), który
+  akceptuje tylko `"5.0"`. Rozwiązanie: nadpisano `ignoreDeprecations:
+  "6.0"` lokalnie w `packages/shared/tsconfig.json`, root zostaje
+  nietknięty do Kroku 1.4d.
 - **Krok 1.4c:** Bump w `apps/api`, build + `npm run test` (uwaga: testy w
   API już teraz nie odpalają się przez pre-existing `TS2345` — patrz
   Faza 0 — ten błąd trzeba naprawić jako pierwszy krok Fazy 3, **przed**
