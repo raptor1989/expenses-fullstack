@@ -101,10 +101,14 @@ przed bumpem, nie zakładać.
   akceptuje tylko `"5.0"`. Rozwiązanie: nadpisano `ignoreDeprecations:
   "6.0"` lokalnie w `packages/shared/tsconfig.json`, root zostaje
   nietknięty do Kroku 1.4d.
-- **Krok 1.4c:** Bump w `apps/api`, build + `npm run test` (uwaga: testy w
-  API już teraz nie odpalają się przez pre-existing `TS2345` — patrz
-  Faza 0 — ten błąd trzeba naprawić jako pierwszy krok Fazy 3, **przed**
-  albo **razem z** tym bumpem, inaczej nie da się zweryfikować testów).
+- **Krok 1.4c ✅:** Bump w `apps/api`, build + `npm run test`. Pre-existing
+  `TS2345` z Fazy 0 już nieaktualny (patrz korekta w Kroku 0.2) — testy
+  odpaliły się normalnie. Napotkane nowe błędy (analogiczne do Kroku
+  1.4b): `TS5107` (`moduleResolution=node10`, czyli `"node"`) i `TS5101`
+  (`downlevelIteration`), oba deprecated w TS 6.0. `apps/api/tsconfig.json`
+  nie ma `extends` (samodzielny plik, bez konfliktu z innym workspace’em
+  jak w przypadku `shared`/root) — podniesiono `ignoreDeprecations` z
+  `"5.0"` na `"6.0"` bezpośrednio w nim, co wystarczyło dla obu błędów.
 - **Krok 1.4d:** Bump w `apps/web`, `tsc && vite build`.
 
 **Weryfikacja całej Fazy 1:** pełny `npm run build` z root przechodzi,
