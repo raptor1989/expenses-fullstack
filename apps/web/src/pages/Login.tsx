@@ -91,13 +91,13 @@ export default function Login() {
                 >
                     Sign In
                 </Button>
-                <Grid2 container>
-                    <Grid2>
+                <Grid2 container justifyContent="space-between">
+                    <Grid2 size="auto">
                         <Link component={RouterLink} to="#" variant="body2">
                             Forgot password?
                         </Link>
                     </Grid2>
-                    <Grid2>
+                    <Grid2 size="auto">
                         <Link component={RouterLink} to="/register" variant="body2">
                             {"Don't have an account? Sign Up"}
                         </Link>
