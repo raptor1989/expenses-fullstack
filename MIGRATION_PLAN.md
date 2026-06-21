@@ -356,7 +356,7 @@ osobne sub-kroki, jeden pakiet/grupa na commit**, nie razem z Krokiem 4.1/4.2.
   pierwsza edycja zajęła >15s (cold compile tego środowiska
   sandboxowego), kolejna ~1s. Lint + wszystkie 26 testów web zielone.
 
-#### 4.3c — `vitest@^3.0.0 → ^4.x`
+#### 4.3c — `vitest@^3.0.0 → ^4.x` ✅
 
 - Breaking changes realne dla `apps/web/vitest.config.ts` (obecnie tylko
   `resolve.alias` + `test.environment: 'node'`, **bez** `poolOptions`,
@@ -366,8 +366,13 @@ osobne sub-kroki, jeden pakiet/grupa na commit**, nie razem z Krokiem 4.1/4.2.
   wymaga zmian**. Jedyne realne ryzyko: `vi.restoreAllMocks()` nie resetuje
   już `vi.fn()`/automocków, tylko `vi.spyOn()` — przeszukać testy `*.test.ts`
   w `apps/web` pod `restoreAllMocks` i `vi.fn()` w tym samym teście.
-- **Weryfikacja:** `vitest run` — wszystkie testy przechodzą z tymi samymi
-  asercjami (nie tylko "zielono", porównać liczbę testów przed/po).
+- **Weryfikacja ✅:** zainstalowano `^4.1.9` (najnowszy 4.x, caret
+  zachowany — `vitest` jest na liście wyjątków z nagłówka planu).
+  `vi.restoreAllMocks()` nigdzie nie występuje w testach `apps/web` —
+  wszystkie używają `vi.clearAllMocks()`, więc opisana breaking change
+  nie dotyczy tego repo. `vitest run` → identyczna liczba testów jak
+  przed bumpem (5 plików / 26 testów). `tsc && vite build` + lint
+  zielone.
 
 #### 4.3d — `eslint-plugin-react-hooks@5.2.0 → 6.x` (NIE 7.x w tym samym kroku) + `eslint-plugin-react-refresh@0.4.20 → 0.5.3`
 
