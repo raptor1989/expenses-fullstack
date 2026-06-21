@@ -70,7 +70,6 @@ export default function Settings() {
             <Typography variant="h4" gutterBottom>
                 Settings
             </Typography>
-
             <Paper sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h6" gutterBottom>
                     Profile
@@ -151,7 +150,6 @@ export default function Settings() {
                     )}
                 </Formik>
             </Paper>
-
             <Paper sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h6" gutterBottom>
                     Change Password
@@ -230,12 +228,13 @@ export default function Settings() {
                     )}
                 </Formik>
             </Paper>
-
             <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>
                     Preferences
                 </Typography>
-                <Grid container spacing={3} alignItems="center">
+                <Grid container spacing={3} sx={{
+                    alignItems: "center"
+                }}>
                     <Grid size={{ xs: 12, sm: 6 }}>
                         <FormControl fullWidth>
                             <InputLabel id="currency-label">Currency</InputLabel>
@@ -262,7 +261,6 @@ export default function Settings() {
                     </Grid>
                 </Grid>
             </Paper>
-
             <Snackbar
                 open={notification.open}
                 autoHideDuration={5000}

@@ -114,7 +114,6 @@ export default function Dashboard() {
             <Typography variant="h4" gutterBottom>
                 Dashboard
             </Typography>
-
             {/* Summary Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid size={{ xs: 12, md: 4, sm: 6 }}>
@@ -165,7 +164,6 @@ export default function Dashboard() {
                     </Card>
                 </Grid>
             </Grid>
-
             {/* Charts and Lists */}
             <Grid container spacing={3}>
                 {/* Simple Expense Form */}
@@ -307,7 +305,9 @@ export default function Dashboard() {
                                     <ListItem
                                         key={index}
                                         secondaryAction={
-                                            <Typography variant="body2" fontWeight="bold">
+                                            <Typography variant="body2" sx={{
+                                                fontWeight: "bold"
+                                            }}>
                                                 {formatCurrency(category.value, settings.currency)}
                                             </Typography>
                                         }

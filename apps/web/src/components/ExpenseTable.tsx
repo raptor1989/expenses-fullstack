@@ -30,7 +30,9 @@ export default function ExpenseTable({ expenses, categories, onEdit, onDelete }:
     if (!expenses || expenses.length === 0) {
         return (
             <Paper sx={{ p: 3, textAlign: 'center' }}>
-                <Typography variant="body1" color="text.secondary">
+                <Typography variant="body1" sx={{
+                    color: "text.secondary"
+                }}>
                     No expenses to display
                 </Typography>
             </Paper>

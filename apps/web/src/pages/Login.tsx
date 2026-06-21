@@ -46,13 +46,11 @@ export default function Login() {
             <Typography component="h1" variant="h5">
                 Sign in
             </Typography>
-
             {error && (
                 <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
                     {error}
                 </Alert>
             )}
-
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 1, width: '100%' }}>
                 <TextField
                     margin="normal"
@@ -91,7 +89,9 @@ export default function Login() {
                 >
                     Sign In
                 </Button>
-                <Grid container justifyContent="space-between">
+                <Grid container sx={{
+                    justifyContent: "space-between"
+                }}>
                     <Grid size="auto">
                         <Link component={RouterLink} to="#" variant="body2">
                             Forgot password?

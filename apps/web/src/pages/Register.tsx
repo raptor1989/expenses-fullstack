@@ -55,13 +55,11 @@ export default function Register() {
             <Typography component="h1" variant="h5">
                 Sign up
             </Typography>
-
             {error && (
                 <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
                     {error}
                 </Alert>
             )}
-
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 3, width: '100%' }}>
                 <Grid container spacing={2}>
                     <Grid size={{ xs: 12, sm: 6 }}>
@@ -145,7 +143,9 @@ export default function Register() {
                 >
                     Sign Up
                 </Button>
-                <Grid container justifyContent="flex-end">
+                <Grid container sx={{
+                    justifyContent: "flex-end"
+                }}>
                     <Grid size="auto">
                         <Link component={RouterLink} to="/login" variant="body2">
                             Already have an account? Sign in

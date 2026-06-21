@@ -477,15 +477,61 @@ reszta migracji mogła wejść do `develop` niezależnie i wcześniej.
   Settings (profil/hasło/preferencje) — wszystkie identyczne wizualnie z
   layoutem przed bumpem, **0 błędów konsoli** na żadnej z nich.
 
-### Krok 5.2 — `@mui/material`/`@mui/icons-material` `7.0.x → 9.1.1` (Material UI przeskakuje v8, idzie razem z MUI X v9)
+### Krok 5.2 — `@mui/material`/`@mui/icons-material` `7.0.x → 9.1.1` (Material UI przeskakuje v8, idzie razem z MUI X v9) ✅
 
-- Brak nowych udokumentowanych breaking changes w core komponentach
-  używanych w tym repo (Dialog, Select, TextField, Avatar, Alert, Button,
-  AppBar/sidebar w `MainLayout`) ponad to, co już obsłużone w 5.1.
-- **Weryfikacja:** powtórzyć smoke test z 5.1 (regresja między v7 i v9
-  jest mniej prawdopodobna niż między v6 i v7, ale sprawdzić ponownie
-  dark/light theme toggle w `ThemeProvider.tsx`, bo v9 rozszerza CSS
-  variables o `color-mix()` dla pochodnych kolorów).
+- **Plan był nieprecyzyjny** — "brak nowych breaking changes" się nie
+  potwierdziło. `tsc` po bumpie zgłosił 8 błędów:
+  - `TextField`'s `inputProps`/`InputProps` → usunięte na rzecz
+    `slotProps={{htmlInput: ...}}`/`slotProps={{input: ...}}`. Naprawione
+    oficjalnym codemodem `npx @mui/codemod@latest deprecations/text-field-props
+    apps/web/src` — poprawnie zmigrował `ExpenseForm.tsx`, `SimpleExpenseForm.tsx`
+    (oba `inputProps={{step,min}}`) i `Expenses.tsx` (`InputProps` z
+    `endAdornment` na search polu). Artefakt CRLF/LF na `vite-env.d.ts` —
+    przywrócony `git checkout --`.
+  - `Typography`'s `paragraph` prop — usunięty całkowicie. Naprawione
+    codemodem `npx @mui/codemod@latest deprecations/typography-props
+    apps/web/src` (`NotFound.tsx`) — usunął sam prop, bo istniejący
+    `sx={{mb: 4}}` już pokrywał odstęp, który `paragraph` by dodał.
+  - `Typography`/`Grid`'s skrótowe propsy systemowe (`fontWeight`,
+    `justifyContent`, `alignItems`) — usunięte, trzeba przenieść do `sx`.
+    Naprawione codemodem `npx @mui/codemod@latest v9.0.0/system-props
+    apps/web/src` — poprawił `Dashboard.tsx` (`fontWeight`), `Login.tsx`/
+    `Register.tsx` (`justifyContent`), `Settings.tsx` (`alignItems`).
+    **Bonus, nie był w błędach `tsc`:** ten sam codemod przeniósł też
+    `color="text.secondary"` do `sx` w `Categories.tsx` i
+    `ExpenseTable.tsx` — `tsc` to nie zgłosił (typ `color` na `Typography`
+    przyjmuje też dowolny `string`), ale to realna naprawa: w v9 system-prop
+    `color` (rozpoznający ścieżki motywu typu `text.secondary`) jest
+    usunięty z `Typography`, więc bez przeniesienia do `sx` te wartości
+    przestałyby się wizualnie stosować — cichy regres, który by nie złapał
+    sam build.
+  - 5 plików (`Categories.tsx`, `Dashboard.tsx`, `Login.tsx`, `Register.tsx`,
+    `Settings.tsx`) miało dodatkowo artefakty CRLF/LF z wcześniejszej sesji
+    (codemod z 5.1) niesprzątnięte na czas — wykryte i przywrócone przed
+    uruchomieniem codemodów z 5.2.
+- **Nowy problem niezależny od kodu repo:** `npm run test` posypał się z
+  `Error: Directory import '...react-transition-group\TransitionGroupContext'
+  is not supported resolving ES modules` — `@mui/material@9.1.1`'s
+  `internal/Transition.mjs` robi bare subpath import do
+  `react-transition-group` (pakiet bez `exports` map, tylko zagnieżdżone
+  `package.json` z polem `main` — wzorzec, który działa pod CJS/Vite, ale
+  nie pod natywnym ESM resolution Node, którego używa Vitest 4 w trybie
+  `environment: 'node'` dla zewnętrznych zależności). 9.1.1 to najnowszy
+  patch 9.x (sprawdzone `npm view @mui/material versions`) — nie ma
+  nowszej wersji, która by to naprawiała. **Workaround** w
+  `apps/web/vitest.config.ts`: `test.server.deps.inline:
+  ['react-transition-group', '@mui/material']` — wymusza przepuszczenie
+  obu pakietów przez transformer Vite (który poprawnie czyta zagnieżdżone
+  `package.json`), zamiast natywnego `import()` Node. Do flagowania
+  upstream jeśli się powtórzy przy kolejnych bumpach.
+- **Weryfikacja ✅:** `tsc` 0 błędów, `vite build` zielony, lint czysty,
+  `vitest run` 26/26 (po workaroundzie powyżej). Zrzuty ekranu (prawdziwa
+  przeglądarka, świeży użytkownik): Dashboard, Login, Register, NotFound,
+  Settings (light+dark) — wszystkie poprawne wizualnie. Dark/light theme
+  toggle w `ThemeProvider.tsx` zweryfikowany programowo (odczyt
+  `localStorage.themeMode`): toggle poprawnie przełącza, stan przetrwał
+  zarówno client-side navigation jak i hard reload — **brak regresji** od
+  `color-mix()` w CSS variables v9.
 
 ### Krok 5.3 — `@mui/x-date-pickers` `7.29.4 → 9.6.0`
 

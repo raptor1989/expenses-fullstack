@@ -201,7 +201,6 @@ export default function Expenses() {
                     Add Expense
                 </Button>
             </Box>
-
             <Paper sx={{ p: 2, mb: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <TextField
@@ -211,14 +210,16 @@ export default function Expenses() {
                         value={filters.search}
                         onChange={(e) => handleFilterChange('search', e.target.value)}
                         sx={{ flexGrow: 1, mr: 1 }}
-                        InputProps={{
-                            endAdornment: (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={handleApplyFilters}>
-                                        <SearchIcon />
-                                    </IconButton>
-                                </InputAdornment>
-                            )
+                        slotProps={{
+                            input: {
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton size="small" onClick={handleApplyFilters}>
+                                            <SearchIcon />
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            }
                         }}
                     />
                     <Button variant="outlined" startIcon={<FilterIcon />} onClick={() => setShowFilters(!showFilters)}>
@@ -269,14 +270,15 @@ export default function Expenses() {
                     </Grid>
                 )}
             </Paper>
-
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
                     <CircularProgress />
                 </Box>
             ) : expenses.length === 0 ? (
                 <Paper sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography variant="body1" color="text.secondary">
+                    <Typography variant="body1" sx={{
+                        color: "text.secondary"
+                    }}>
                         No expenses found. Add your first expense to get started!
                     </Typography>
                 </Paper>
@@ -299,7 +301,6 @@ export default function Expenses() {
                     </Box>
                 </>
             )}
-
             {/* Add/Edit Expense Form Dialog */}
             <ExpenseForm
                 open={formOpen}
@@ -309,7 +310,6 @@ export default function Expenses() {
                 initialValues={editExpense || undefined}
                 title={editExpense ? 'Edit Expense' : 'Add Expense'}
             />
-
             {/* Delete Confirmation Dialog */}
             <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
                 <DialogTitle>Confirm Delete</DialogTitle>
@@ -326,7 +326,6 @@ export default function Expenses() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
             {/* Notification Snackbar */}
             <Snackbar
                 open={notification.open}

@@ -23,7 +23,13 @@ export default function NotFound() {
                 <Typography variant="h4" gutterBottom>
                     Page Not Found
                 </Typography>
-                <Typography variant="body1" color="text.secondary" paragraph sx={{ maxWidth: '500px', mb: 4 }}>
+                <Typography
+                    variant="body1"
+                    sx={{
+                        color: "text.secondary",
+                        maxWidth: '500px',
+                        mb: 4
+                    }}>
                     The page you are looking for doesn't exist or has been moved.
                 </Typography>
                 <Button variant="contained" startIcon={<HomeIcon />} onClick={() => navigate('/')} size="large">

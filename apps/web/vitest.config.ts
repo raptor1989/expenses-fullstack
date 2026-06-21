@@ -8,6 +8,11 @@ export default defineConfig({
         }
     },
     test: {
-        environment: 'node'
+        environment: 'node',
+        server: {
+            deps: {
+                inline: ['react-transition-group', '@mui/material']
+            }
+        }
     }
 });

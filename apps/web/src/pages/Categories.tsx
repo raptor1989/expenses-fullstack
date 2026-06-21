@@ -178,14 +178,15 @@ export default function Categories() {
                     Add Category
                 </Button>
             </Box>
-
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
                     <CircularProgress />
                 </Box>
             ) : categories.length === 0 ? (
                 <Paper sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography variant="body1" color="text.secondary">
+                    <Typography variant="body1" sx={{
+                        color: "text.secondary"
+                    }}>
                         No categories found. Add your first category to get started!
                     </Typography>
                 </Paper>
@@ -218,7 +219,9 @@ export default function Categories() {
                                                 mr: 1
                                             }}
                                         />
-                                        <Typography variant="body2" color="text.secondary">
+                                        <Typography variant="body2" sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             {category.color || 'No color set'}
                                         </Typography>
                                     </Box>
@@ -246,7 +249,6 @@ export default function Categories() {
                     ))}
                 </Grid>
             )}
-
             {/* Add/Edit Category Dialog */}
             <Dialog open={dialogOpen} onClose={handleDialogClose}>
                 <DialogTitle>{dialogMode === 'add' ? 'Add Category' : 'Edit Category'}</DialogTitle>
@@ -302,7 +304,6 @@ export default function Categories() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
             {/* Delete Confirmation Dialog */}
             <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
                 <DialogTitle>Confirm Delete</DialogTitle>
@@ -323,7 +324,6 @@ export default function Categories() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
             {/* Notification Snackbar */}
             <Snackbar
                 open={notification.open}
