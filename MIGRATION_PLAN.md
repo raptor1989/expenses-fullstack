@@ -339,11 +339,22 @@ osobne sub-kroki, jeden pakiet/grupa na commit**, nie razem z Krokiem 4.1/4.2.
   brak udokumentowanego wymogu starszych przeglądarek w repo. Lint +
   wszystkie 26 testów web zielone.
 
-#### 4.3b — `@vitejs/plugin-react@4.5.1 → 6.x` (po Vite 7, bo plugin musi się zgadzać z core Vite)
+#### 4.3b — `@vitejs/plugin-react@4.5.1 → 6.x` (po Vite 7, bo plugin musi się zgadzać z core Vite) ✅ (skorygowano do `5.2.0`, patrz weryfikacja)
 
 - Sprawdzić peer-dep range względem zainstalowanego Vite po 4.3a.
-- **Weryfikacja:** `vite dev`, Fast Refresh działa (edytować komponent,
-  sprawdzić hot-reload bez full page reload).
+  **Odkryta niezgodność z planem:** `@vitejs/plugin-react@6.x` wymaga
+  `vite: ^8.0.0` jako peer (sprawdzone dla `6.0.0`/`6.0.1`/`6.0.2`) —
+  niekompatybilne z `vite@7.3.5` wybranym w Kroku 4.3a właśnie po to, by
+  **nie** skakać na v8 teraz. Najnowsza wersja `5.x` (`5.2.0`) wspiera
+  `vite: ^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0` — to jest
+  faktyczny właściwy cel przy zachowaniu Vite 7, nie `6.x`.
+- **Weryfikacja ✅:** zainstalowano `5.2.0` (bez ostrzeżeń peer-dep,
+  zgodne z `vite@7.3.5`). `tsc && vite build` zielony. Fast Refresh
+  potwierdzony w prawdziwej przeglądarce: edytowano `Login.tsx`, HMR
+  update zaaplikował się **bez** full page reload (JS context przeżył —
+  zweryfikowano markerem w `window`, nie tylko obserwacją wizualną) —
+  pierwsza edycja zajęła >15s (cold compile tego środowiska
+  sandboxowego), kolejna ~1s. Lint + wszystkie 26 testów web zielone.
 
 #### 4.3c — `vitest@^3.0.0 → ^4.x`
 
