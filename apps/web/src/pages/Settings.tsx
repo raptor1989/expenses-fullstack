@@ -5,7 +5,7 @@ import {
     Paper,
     TextField,
     Button,
-    Grid2,
+    Grid,
     Select,
     SelectChangeEvent,
     MenuItem,
@@ -97,8 +97,8 @@ export default function Settings() {
                 >
                     {({ isSubmitting, errors, touched }) => (
                         <Form>
-                            <Grid2 container spacing={2}>
-                                <Grid2 size={{ xs: 12, sm: 6 }}>
+                            <Grid container spacing={2}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Field name="email">
                                         {({ field }: FieldProps) => (
                                             <TextField
@@ -110,8 +110,8 @@ export default function Settings() {
                                             />
                                         )}
                                     </Field>
-                                </Grid2>
-                                <Grid2 size={{ xs: 12, sm: 6 }}>
+                                </Grid>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Field name="firstName">
                                         {({ field }: FieldProps) => (
                                             <TextField
@@ -123,8 +123,8 @@ export default function Settings() {
                                             />
                                         )}
                                     </Field>
-                                </Grid2>
-                                <Grid2 size={{ xs: 12, sm: 6 }}>
+                                </Grid>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Field name="lastName">
                                         {({ field }: FieldProps) => (
                                             <TextField
@@ -136,8 +136,8 @@ export default function Settings() {
                                             />
                                         )}
                                     </Field>
-                                </Grid2>
-                            </Grid2>
+                                </Grid>
+                            </Grid>
                             <Button
                                 type="submit"
                                 variant="contained"
@@ -173,8 +173,8 @@ export default function Settings() {
                 >
                     {({ isSubmitting, errors, touched }) => (
                         <Form>
-                            <Grid2 container spacing={2}>
-                                <Grid2 size={{ xs: 12, sm: 4 }}>
+                            <Grid container spacing={2}>
+                                <Grid size={{ xs: 12, sm: 4 }}>
                                     <Field name="currentPassword">
                                         {({ field }: FieldProps) => (
                                             <TextField
@@ -187,8 +187,8 @@ export default function Settings() {
                                             />
                                         )}
                                     </Field>
-                                </Grid2>
-                                <Grid2 size={{ xs: 12, sm: 4 }}>
+                                </Grid>
+                                <Grid size={{ xs: 12, sm: 4 }}>
                                     <Field name="newPassword">
                                         {({ field }: FieldProps) => (
                                             <TextField
@@ -201,8 +201,8 @@ export default function Settings() {
                                             />
                                         )}
                                     </Field>
-                                </Grid2>
-                                <Grid2 size={{ xs: 12, sm: 4 }}>
+                                </Grid>
+                                <Grid size={{ xs: 12, sm: 4 }}>
                                     <Field name="confirmPassword">
                                         {({ field }: FieldProps) => (
                                             <TextField
@@ -215,8 +215,8 @@ export default function Settings() {
                                             />
                                         )}
                                     </Field>
-                                </Grid2>
-                            </Grid2>
+                                </Grid>
+                            </Grid>
                             <Button
                                 type="submit"
                                 variant="contained"
@@ -235,8 +235,8 @@ export default function Settings() {
                 <Typography variant="h6" gutterBottom>
                     Preferences
                 </Typography>
-                <Grid2 container spacing={3} alignItems="center">
-                    <Grid2 size={{ xs: 12, sm: 6 }}>
+                <Grid container spacing={3} alignItems="center">
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <FormControl fullWidth>
                             <InputLabel id="currency-label">Currency</InputLabel>
                             <Select
@@ -253,14 +253,14 @@ export default function Settings() {
                                 ))}
                             </Select>
                         </FormControl>
-                    </Grid2>
-                    <Grid2 size={{ xs: 12, sm: 6 }}>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <ToggleButtonGroup value={settings.theme} exclusive onChange={handleThemeChange}>
                             <ToggleButton value="light">Light</ToggleButton>
                             <ToggleButton value="dark">Dark</ToggleButton>
                         </ToggleButtonGroup>
-                    </Grid2>
-                </Grid2>
+                    </Grid>
+                </Grid>
             </Paper>
 
             <Snackbar

@@ -20,7 +20,7 @@ import {
     DialogContentText,
     DialogActions,
     CircularProgress,
-    Grid2
+    Grid
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Add as AddIcon, Search as SearchIcon, FilterList as FilterIcon } from '@mui/icons-material';
@@ -227,24 +227,24 @@ export default function Expenses() {
                 </Box>
 
                 {showFilters && (
-                    <Grid2 container spacing={2} sx={{ mt: 2 }}>
-                        <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Grid container spacing={2} sx={{ mt: 2 }}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <DatePicker
                                 label="Start Date"
                                 value={filters.startDate}
                                 onChange={(date) => handleFilterChange('startDate', date)}
                                 slotProps={{ textField: { fullWidth: true, size: 'small' } }}
                             />
-                        </Grid2>
-                        <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <DatePicker
                                 label="End Date"
                                 value={filters.endDate}
                                 onChange={(date) => handleFilterChange('endDate', date)}
                                 slotProps={{ textField: { fullWidth: true, size: 'small' } }}
                             />
-                        </Grid2>
-                        <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>Category</InputLabel>
                                 <Select
@@ -260,13 +260,13 @@ export default function Expenses() {
                                     ))}
                                 </Select>
                             </FormControl>
-                        </Grid2>
-                        <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <Button variant="contained" color="primary" fullWidth onClick={handleApplyFilters}>
                                 Apply Filters
                             </Button>
-                        </Grid2>
-                    </Grid2>
+                        </Grid>
+                    </Grid>
                 )}
             </Paper>
 

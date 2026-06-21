@@ -9,7 +9,7 @@ import {
     ListItemText,
     CircularProgress,
     Button,
-    Grid2,
+    Grid,
     Card,
     Table,
     TableBody,
@@ -116,8 +116,8 @@ export default function Dashboard() {
             </Typography>
 
             {/* Summary Cards */}
-            <Grid2 container spacing={3} sx={{ mb: 4 }}>
-                <Grid2 size={{ xs: 12, md: 4, sm: 6 }}>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid size={{ xs: 12, md: 4, sm: 6 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -131,9 +131,9 @@ export default function Dashboard() {
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid2>
+                </Grid>
 
-                <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -147,9 +147,9 @@ export default function Dashboard() {
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid2>
+                </Grid>
 
-                <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -163,23 +163,23 @@ export default function Dashboard() {
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid2>
-            </Grid2>
+                </Grid>
+            </Grid>
 
             {/* Charts and Lists */}
-            <Grid2 container spacing={3}>
+            <Grid container spacing={3}>
                 {/* Simple Expense Form */}
-                <Grid2 size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography variant="h6">Add Expense</Typography>
                         </Box>
                         <SimpleExpenseForm categories={categories} />
                     </Paper>
-                </Grid2>
+                </Grid>
 
                 {/* Expenses by Category */}
-                <Grid2 size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2, height: 400 }}>
                         <Typography variant="h6" gutterBottom>
                             Expenses by Category
@@ -227,10 +227,10 @@ export default function Dashboard() {
                             )}
                         </Box>
                     </Paper>
-                </Grid2>
+                </Grid>
 
                 {/* Last 10 expenses */}
-                <Grid2 size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2, height: 400, overflow: 'auto' }}>
                         <Typography variant="h6" gutterBottom>
                             Last 10 expenses
@@ -283,10 +283,10 @@ export default function Dashboard() {
                             </Table>
                         </TableContainer>
                     </Paper>
-                </Grid2>
+                </Grid>
 
                 {/* Recent Expenses */}
-                <Grid2 size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2 }}>
                         <Box
                             sx={{
@@ -325,8 +325,8 @@ export default function Dashboard() {
                             </Typography>
                         )}
                     </Paper>
-                </Grid2>
-            </Grid2>
+                </Grid>
+            </Grid>
         </Box>
     );
 }

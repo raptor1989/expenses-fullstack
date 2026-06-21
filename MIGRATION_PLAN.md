@@ -446,15 +446,22 @@ Najwyższe ryzyko w całym planie — robić **na końcu**, w osobnej gałęzi o
 głównego `chore/deps-migration` (np. `chore/deps-migration-mui`), żeby
 reszta migracji mogła wejść do `develop` niezależnie i wcześniej.
 
-### Krok 5.1 — `@mui/material`/`@mui/icons-material` `6.4.12 → 7.0.x`
+### Krok 5.1 — `@mui/material`/`@mui/icons-material` `6.4.12 → 7.0.x` ✅
 
-- Codemod: `npx @mui/codemod@latest v7.0.0/grid-props apps/web/src`
-  (obsłuży `Grid2` → `Grid` w 6 plikach: `Login.tsx`, `Register.tsx`,
-  `Settings.tsx`, `Dashboard.tsx`, `Categories.tsx`, `Expenses.tsx`).
-  **Przeczytać diff** codemodu — w szczególności properties `size`/
-  `justifyContent` (patrz fix w `Login.tsx` z bieżącej sesji — to dokładnie
-  typ błędu, który codemod może nie wyłapać, bo wynikał z braku propsów, a
-  nie z ich obecności).
+- Codemod: `npx @mui/codemod@latest v7.0.0/grid-props apps/web/src`.
+  **Okazało się nieprzydatne** — ten konkretny codemod migruje tylko
+  *propsy* na elementach już nazwanych `Grid` (stare breakpointy
+  `xs`/`sm`/`item` → nowy prop `size`), **nie zmienia nazwy** `Grid2` →
+  `Grid`. Skoro repo już używa `Grid2` z propsem `size={{...}}` (MUI v6
+  Grid2 od początku miał nowe API), codemod znajdował 0 dopasowań —
+  faktycznie zmienił tylko końcówki linii (CRLF/LF) w 9 niezwiązanych
+  plikach (przez pełny re-parse/print recasta), bez żadnej zmiany treści;
+  te 9 plików zostały przywrócone (`git checkout --`), żeby nie wnosić
+  szumu do commita. Zamiast codemodu: ręczny `sed -i 's/\bGrid2\b/Grid/g'`
+  na dokładnie tych 6 plikach (czysta zamiana nazwy, bez zmiany propsów —
+  insert/delete liczby linii identyczne w `git diff --stat`).
+  **Przeczytano diff** — potwierdzono, że fix z `Login.tsx` z wcześniejszej
+  sesji (`justifyContent="space-between"`, `size="auto"`) jest zachowany.
 - Sprawdzone, że w kodzie **nie występują**: `onBackdropClick`, `Hidden`,
   `@mui/lab`, `createMuiTheme`, `InputLabel size="normal"` — te kroki
   migracyjne z oficjalnego guide są nieistotne dla tego repo.
@@ -462,9 +469,13 @@ reszta migracji mogła wejść do `develop` niezależnie i wcześniej.
   "@mui/material/styles/" apps/web/src` (repo importuje `useTheme` z
   `@mui/material/styles`, czyli 1 poziom — OK, ale zweryfikować po bumpie).
 - TypeScript ≥4.9 wymagany — już mamy 6.0.3 z Fazy 1.
-- **Weryfikacja:** `tsc` przechodzi, **wizualnie** przejrzeć wszystkie 6
-  plików z Grid (screenshot każdej strony: Login, Register, Settings,
-  Dashboard, Categories, Expenses) — nie tylko "kompiluje się".
+- **Weryfikacja ✅:** `tsc` + `vite build` zielone, lint czysty, 26/26
+  testów web. Zrzuty ekranu (prawdziwa przeglądarka) wszystkich 6 stron —
+  Login (linki poprawnie rozsunięte `space-between`), Register (First/Last
+  Name side-by-side), Dashboard (3 karty + 2-kolumnowy grid + donut),
+  Categories (4-kolumnowy grid kart), Expenses (search/filter row),
+  Settings (profil/hasło/preferencje) — wszystkie identyczne wizualnie z
+  layoutem przed bumpem, **0 błędów konsoli** na żadnej z nich.
 
 ### Krok 5.2 — `@mui/material`/`@mui/icons-material` `7.0.x → 9.1.1` (Material UI przeskakuje v8, idzie razem z MUI X v9)
 
