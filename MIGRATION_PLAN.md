@@ -374,7 +374,7 @@ osobne sub-kroki, jeden pakiet/grupa na commit**, nie razem z Krokiem 4.1/4.2.
   przed bumpem (5 plików / 26 testów). `tsc && vite build` + lint
   zielone.
 
-#### 4.3d — `eslint-plugin-react-hooks@5.2.0 → 6.x` (NIE 7.x w tym samym kroku) + `eslint-plugin-react-refresh@0.4.20 → 0.5.3`
+#### 4.3d — `eslint-plugin-react-hooks@5.2.0 → 6.x` (NIE 7.x w tym samym kroku) + `eslint-plugin-react-refresh@0.4.20 → 0.5.3` ✅ (skorygowano do `7.1.1`, patrz weryfikacja)
 
 - v6 wymaga Node ≥18 (repo: Node 24, OK) i przełącza domyślny preset na
   flat config (`recommended`) — `apps/web/eslint.config.js` już używa
@@ -387,8 +387,29 @@ osobne sub-kroki, jeden pakiet/grupa na commit**, nie razem z Krokiem 4.1/4.2.
   usunięcie reguły `component-hook-factories`, później załatany) i dodaje
   wsparcie dla ESLint v10, które tu już mamy z Fazy 2 — sprawdzić dopiero
   po ustabilizowaniu v6, jako osobny, późniejszy krok poza tym planem.
-- **Weryfikacja:** `npm run lint --workspace=@expenses/web`, 0 nowych
-  błędów (warningi do oceny case-by-case).
+
+  **Odkryta blokada planu:** żadna wersja `6.x` (łącznie z canary) nie
+  deklaruje wsparcia dla `eslint@^10.0.0` — peer range kończy się na
+  `^9.0.0`. Wsparcie dla `eslint@^10.0.0` dodano dopiero w `7.0.0`, a
+  regresja `component-hook-factories` z `7.1.0` jest już załatana w
+  `7.1.1` (najnowsza stabilna). Za zgodą użytkownika: **`7.1.1`**, nie
+  `6.x` — jedyna opcja faktycznie kompatybilna z `eslint@10.5.0`
+  zainstalowanym w Fazie 2, bez `--legacy-peer-deps`.
+- **Weryfikacja ✅:** instalacja bez ostrzeżeń peer-dep. `npm run lint`
+  ujawnił to, co plan przewidywał dla nowych reguł — **4 nowe błędy**
+  (`react-hooks/set-state-in-effect`, nowa reguła w presecie
+  `recommended`, blokuje idiomatyczny pattern "fetch w `useEffect`" w
+  `SettingsContext.tsx`/`Expenses.tsx`/`Reports.tsx`/`ExpenseForm.tsx`)
+  + **1 nowy warning** (`react-refresh/only-export-components` w
+  `ExpenseForm.tsx` — reguła już była aktywna, ale `0.5.3` zaczęła
+  wykrywać ten konkretny przypadek). Za zgodą użytkownika: obie reguły
+  wyłączone w `apps/web/eslint.config.js` (`'off'`) zamiast refaktoryzacji
+  kodu. Skutek tej zmiany: 3 stare komentarze `// eslint-disable-next-line
+  react-refresh/only-export-components` (`AuthContext.tsx`,
+  `SettingsContext.tsx`, `ThemeProvider.tsx`) stały się "unused" pod
+  `--report-unused-disable-directives` — usunięto je jako bezpośrednią
+  konsekwencję wyłączenia reguły. `npm run lint` → czysto. Build + 26
+  testów web zielone.
 
 **Weryfikacja całej Fazy 4:** pełny `npm run build` z root, `npm run test
 --workspace=@expenses/web`, manualny smoke test (logowanie, dashboard,
