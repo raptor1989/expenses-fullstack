@@ -411,9 +411,24 @@ osobne sub-kroki, jeden pakiet/grupa na commit**, nie razem z Krokiem 4.1/4.2.
   konsekwencję wyłączenia reguły. `npm run lint` → czysto. Build + 26
   testów web zielone.
 
-**Weryfikacja całej Fazy 4:** pełny `npm run build` z root, `npm run test
---workspace=@expenses/web`, manualny smoke test (logowanie, dashboard,
-dodanie wydatku, `/reports`).
+**Weryfikacja całej Fazy 4 ✅:** pełny `npm run build`/`lint`/`test` z root
+zielony (3/3 build, 3/3 lint, web 26/26 + api 64/64 testów, identycznie
+jak baseline). Manualny regression test w prawdziwej przeglądarce:
+logowanie OK, dodanie wydatku przez Dialog na stronie `/expenses` (kanał
+poprawnie podłączony do odświeżenia listy) OK bez błędów konsoli,
+`/reports` renderuje wykres z aktualnymi danymi OK.
+
+Po drodze odkryto (zgłoszone, **nie naprawione** — poza zakresem tego
+planu): `SimpleExpenseForm` na Dashboardzie (`Dashboard.tsx` →
+`<SimpleExpenseForm categories={categories} />`) nie ma żadnego
+callbacku `onSuccess` — po zapisaniu wydatku przez ten inline-formularz
+`POST /api/expenses` faktycznie się powodzi (zweryfikowane przez API:
+`201`, wpis trafia do bazy), ale widget "Last 10 expenses"/wykresy na
+Dashboardzie nie odświeżają się bez ręcznego przeładowania strony. To
+jest pre-existing gap (interfejs `SimpleExpenseFormProps` nigdy nie miał
+takiego propsa), niezależny od żadnego bumpa w tej fazie — strona
+`/expenses` (z `ExpenseForm` w Dialogu) jest poprawnie podłączona i
+odświeża listę natychmiast.
 
 ---
 
