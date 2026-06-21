@@ -126,6 +126,14 @@ przed bumpem, nie zakładać.
 przechodzi (3/3 build, 3/3 lint, web 26/26 + api 64/64 testów — identycznie
 jak baseline z Kroku 0.2), `pm2 start/stop` ręcznie sprawdzony w Kroku 1.2.
 
+**Poprawka po code review PR #2 (2026-06-21):** root `tsconfig.json` został
+przeoczony w Kroku 1.4 — `ignoreDeprecations` pozostał na `"5.0"`, mimo że
+`typescript` w root `package.json` poszedł na `6.0.3`. `npx tsc -p .`
+faktycznie failował na `TS5107`. Nieużywane przez żaden skrypt build/test
+(stąd `npm run build` nigdy tego nie wyłapał), ale `apps/web/tsconfig.json`
+dziedziczy ten root config przez `extends` — naprawione: `ignoreDeprecations`
+→ `"6.0"`, zgodnie z `apps/api`/`packages/shared`.
+
 ---
 
 ## Faza 2 — `packages/shared`
