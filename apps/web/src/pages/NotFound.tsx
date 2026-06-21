@@ -1,6 +1,7 @@
 import { Box, Button, Typography, Container } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { Home as HomeIcon } from '@mui/icons-material';
+import { secondaryTextSx } from '@/helpers/sxHelpers';
 
 export default function NotFound() {
     const navigate = useNavigate();
@@ -26,10 +27,11 @@ export default function NotFound() {
                 <Typography
                     variant="body1"
                     sx={{
-                        color: "text.secondary",
+                        ...secondaryTextSx,
                         maxWidth: '500px',
                         mb: 4
-                    }}>
+                    }}
+                >
                     The page you are looking for doesn't exist or has been moved.
                 </Typography>
                 <Button variant="contained" startIcon={<HomeIcon />} onClick={() => navigate('/')} size="large">

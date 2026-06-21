@@ -15,7 +15,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import { Formik, Field, FieldProps, Form } from 'formik';
-import { ExpenseSchema } from './ExpenseForm';
+import { ExpenseSchema } from './expenseSchema';
 import { useState } from 'react';
 import { createExpense } from '@/services/expenseService';
 

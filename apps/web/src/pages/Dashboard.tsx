@@ -31,7 +31,18 @@ import { useCategoryStore } from '@/store/categoryStore';
 import { Expense, ExpenseByCategory, ExpenseSummary } from '@expenses/shared';
 import SimpleExpenseForm from '@/components/SimpleExpenseForm';
 
-const CHART_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
+const CHART_COLORS = [
+    '#4e79a7',
+    '#f28e2b',
+    '#e15759',
+    '#76b7b2',
+    '#59a14f',
+    '#edc948',
+    '#b07aa1',
+    '#ff9da7',
+    '#9c755f',
+    '#bab0ac'
+];
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -124,7 +135,9 @@ export default function Dashboard() {
                                     <Typography color="textSecondary" gutterBottom variant="body2">
                                         Total Expenses (30 days)
                                     </Typography>
-                                    <Typography variant="h5">{formatCurrency(totalExpenses, settings.currency)}</Typography>
+                                    <Typography variant="h5">
+                                        {formatCurrency(totalExpenses, settings.currency)}
+                                    </Typography>
                                 </Box>
                                 <MoneyIcon sx={{ color: 'primary.main', fontSize: 40 }} />
                             </Box>
@@ -156,7 +169,9 @@ export default function Dashboard() {
                                     <Typography color="textSecondary" gutterBottom variant="body2">
                                         Average Daily Spend
                                     </Typography>
-                                    <Typography variant="h5">{formatCurrency(totalExpenses / 30, settings.currency)}</Typography>
+                                    <Typography variant="h5">
+                                        {formatCurrency(totalExpenses / 30, settings.currency)}
+                                    </Typography>
                                 </Box>
                                 <ReceiptIcon sx={{ color: 'warning.main', fontSize: 40 }} />
                             </Box>
@@ -305,9 +320,12 @@ export default function Dashboard() {
                                     <ListItem
                                         key={index}
                                         secondaryAction={
-                                            <Typography variant="body2" sx={{
-                                                fontWeight: "bold"
-                                            }}>
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    fontWeight: 'bold'
+                                                }}
+                                            >
                                                 {formatCurrency(category.value, settings.currency)}
                                             </Typography>
                                         }

@@ -143,9 +143,12 @@ export default function Register() {
                 >
                     Sign Up
                 </Button>
-                <Grid container sx={{
-                    justifyContent: "flex-end"
-                }}>
+                <Grid
+                    container
+                    sx={{
+                        justifyContent: 'flex-end'
+                    }}
+                >
                     <Grid size="auto">
                         <Link component={RouterLink} to="/login" variant="body2">
                             Already have an account? Sign in

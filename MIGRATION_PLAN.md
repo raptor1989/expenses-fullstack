@@ -591,6 +591,52 @@ DatePickerem [Dialog i inline] → edycja kategorii → ustawienia [light/dark]
 → NotFound → wylogowanie), wszystkie 6 stron z Grid sprawdzone wizualnie,
 0 błędów konsoli, `tsc`/`vite build`/lint/`vitest` zielone na każdym kroku.
 
+### Poprawki z code review PR #3 ✅
+
+Po code review PR #3 (`chore/deps-migration-mui` → `develop`) naprawiono
+5 zgłoszonych znalezisk:
+
+- **Puste linie usunięte przez codemod** (Expenses.tsx, Categories.tsx,
+  Settings.tsx — 13 miejsc łącznie) — przywrócone, bo nie miały związku
+  z migracją MUI (artefakt pełnego re-print recasta).
+- **Podwójne cudzysłowy w `sx` wygenerowanym przez codemod** (9 miejsc w
+  8 plikach) — zamienione na single quotes zgodnie z `.prettierrc`
+  (`singleQuote: true`). Pociągnęło to za sobą dodatkowe przeformatowanie
+  przez `prettier --write` w 5 plikach (Login/Register/Dashboard/
+  NotFound/Settings.tsx) — sam codemod generował JSX, które nie
+  przechodziło `prettier --check` poza samymi cudzysłowami (np. zbyt
+  długie linie, `<Grid container sx={{...}}>` w jednej linii zamiast
+  rozbicia na atrybuty) — zweryfikowano, że `develop`'s wersje tych
+  plików były 100% prettier-compliant przed PR, więc `--write` dotknęło
+  wyłącznie regionów wprowadzonych przez codemod, nic poza tym.
+- **`sx={{ color: 'text.secondary' }}` zduplikowane w 5 plikach** —
+  wyodrębnione do `apps/web/src/helpers/sxHelpers.ts`
+  (`secondaryTextSx`), użyte w `ExpenseTable.tsx`, `NotFound.tsx`
+  (przez spread, bo ten element ma też `maxWidth`/`mb`), `Categories.tsx`
+  (×2), `Expenses.tsx`.
+- **`ExpenseForm.test.ts` ciągnął całe MUI/x-date-pickers przez `import {
+  ExpenseSchema } from './ExpenseForm'`** — to był jedyny powód, dla
+  którego `vitest.config.ts`'s `server.deps.inline` workaround
+  (z Kroków 5.2/5.3) był potrzebny. Naprawione przez wydzielenie
+  `ExpenseSchema` do nowego `apps/web/src/components/expenseSchema.ts`
+  (bez importów React/MUI) i przepisanie 3 importów
+  (`ExpenseForm.tsx`, `SimpleExpenseForm.tsx`, `ExpenseForm.test.ts`).
+- **`vitest.config.ts`'s fragile `deps.inline` workaround** — po
+  powyższej naprawie żaden plik testowy nie importuje już MUI/
+  x-date-pickers, więc workaround przestał być potrzebny w ogóle.
+  Usunięty całkowicie (zamiast tylko generalizowany do regexa) — zgodnie
+  z zasadą "nie projektuj pod hipotetyczne przyszłe wymagania":
+  `vitest.config.ts` wrócił do stanu sprzed Kroku 5.2.
+  **Efekt:** `npm run test --workspace=@expenses/web` przyspieszył z
+  ~8s do ~0.7-0.8s (zniknął koszt transformacji całego drzewa
+  `@mui/material`+`@mui/x-date-pickers` przy każdym uruchomieniu).
+
+**Weryfikacja ✅:** `tsc` 0 błędów, `vite build` zielony, lint czysty,
+`vitest run` 26/26 (szybciej niż przed naprawą), `prettier --check`
+czysty na wszystkich dotkniętych plikach, zrzuty ekranu Login/Register/
+NotFound potwierdzają, że przeformatowany JSX renderuje się identycznie
+jak przed poprawkami.
+
 ---
 
 ## Tabela zbiorcza (do odznaczania w trakcie)

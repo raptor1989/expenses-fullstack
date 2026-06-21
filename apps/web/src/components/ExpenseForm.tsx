@@ -16,9 +16,9 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Formik, Form, Field, FieldProps } from 'formik';
-import * as Yup from 'yup';
 import { Expense, ExpenseCreateInput, Category } from '@expenses/shared';
 import dayjs from 'dayjs';
+import { ExpenseSchema } from './expenseSchema';
 
 interface ExpenseFormProps {
     open: boolean;
@@ -28,16 +28,6 @@ interface ExpenseFormProps {
     initialValues?: Expense;
     title?: string;
 }
-
-export const ExpenseSchema = Yup.object().shape({
-    amount: Yup.number()
-        .required('Amount is required')
-        .positive('Amount must be positive')
-        .min(0.01, 'Amount must be at least 0.01'),
-    description: Yup.string().max(100, 'Description is too long'),
-    categoryId: Yup.string().required('Category is required'),
-    date: Yup.date().required('Date is required').max(new Date(), 'Date cannot be in the future')
-});
 
 export default function ExpenseForm({
     open,

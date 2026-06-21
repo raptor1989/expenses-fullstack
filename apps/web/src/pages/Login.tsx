@@ -89,9 +89,12 @@ export default function Login() {
                 >
                     Sign In
                 </Button>
-                <Grid container sx={{
-                    justifyContent: "space-between"
-                }}>
+                <Grid
+                    container
+                    sx={{
+                        justifyContent: 'space-between'
+                    }}
+                >
                     <Grid size="auto">
                         <Link component={RouterLink} to="#" variant="body2">
                             Forgot password?

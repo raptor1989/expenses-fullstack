@@ -8,11 +8,6 @@ export default defineConfig({
         }
     },
     test: {
-        environment: 'node',
-        server: {
-            deps: {
-                inline: ['react-transition-group', '@mui/material', '@mui/x-date-pickers']
-            }
-        }
+        environment: 'node'
     }
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ExpenseSchema } from './ExpenseForm';
+import { ExpenseSchema } from './expenseSchema';
 
 const validExpense = {
     amount: 12.5,
