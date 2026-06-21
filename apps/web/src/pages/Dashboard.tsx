@@ -9,7 +9,7 @@ import {
     ListItemText,
     CircularProgress,
     Button,
-    Grid2,
+    Grid,
     Card,
     Table,
     TableBody,
@@ -31,7 +31,18 @@ import { useCategoryStore } from '@/store/categoryStore';
 import { Expense, ExpenseByCategory, ExpenseSummary } from '@expenses/shared';
 import SimpleExpenseForm from '@/components/SimpleExpenseForm';
 
-const CHART_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
+const CHART_COLORS = [
+    '#4e79a7',
+    '#f28e2b',
+    '#e15759',
+    '#76b7b2',
+    '#59a14f',
+    '#edc948',
+    '#b07aa1',
+    '#ff9da7',
+    '#9c755f',
+    '#bab0ac'
+];
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -114,10 +125,9 @@ export default function Dashboard() {
             <Typography variant="h4" gutterBottom>
                 Dashboard
             </Typography>
-
             {/* Summary Cards */}
-            <Grid2 container spacing={3} sx={{ mb: 4 }}>
-                <Grid2 size={{ xs: 12, md: 4, sm: 6 }}>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid size={{ xs: 12, md: 4, sm: 6 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -125,15 +135,17 @@ export default function Dashboard() {
                                     <Typography color="textSecondary" gutterBottom variant="body2">
                                         Total Expenses (30 days)
                                     </Typography>
-                                    <Typography variant="h5">{formatCurrency(totalExpenses, settings.currency)}</Typography>
+                                    <Typography variant="h5">
+                                        {formatCurrency(totalExpenses, settings.currency)}
+                                    </Typography>
                                 </Box>
                                 <MoneyIcon sx={{ color: 'primary.main', fontSize: 40 }} />
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid2>
+                </Grid>
 
-                <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -147,9 +159,9 @@ export default function Dashboard() {
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid2>
+                </Grid>
 
-                <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -157,29 +169,30 @@ export default function Dashboard() {
                                     <Typography color="textSecondary" gutterBottom variant="body2">
                                         Average Daily Spend
                                     </Typography>
-                                    <Typography variant="h5">{formatCurrency(totalExpenses / 30, settings.currency)}</Typography>
+                                    <Typography variant="h5">
+                                        {formatCurrency(totalExpenses / 30, settings.currency)}
+                                    </Typography>
                                 </Box>
                                 <ReceiptIcon sx={{ color: 'warning.main', fontSize: 40 }} />
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid2>
-            </Grid2>
-
+                </Grid>
+            </Grid>
             {/* Charts and Lists */}
-            <Grid2 container spacing={3}>
+            <Grid container spacing={3}>
                 {/* Simple Expense Form */}
-                <Grid2 size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography variant="h6">Add Expense</Typography>
                         </Box>
                         <SimpleExpenseForm categories={categories} />
                     </Paper>
-                </Grid2>
+                </Grid>
 
                 {/* Expenses by Category */}
-                <Grid2 size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2, height: 400 }}>
                         <Typography variant="h6" gutterBottom>
                             Expenses by Category
@@ -227,10 +240,10 @@ export default function Dashboard() {
                             )}
                         </Box>
                     </Paper>
-                </Grid2>
+                </Grid>
 
                 {/* Last 10 expenses */}
-                <Grid2 size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2, height: 400, overflow: 'auto' }}>
                         <Typography variant="h6" gutterBottom>
                             Last 10 expenses
@@ -283,10 +296,10 @@ export default function Dashboard() {
                             </Table>
                         </TableContainer>
                     </Paper>
-                </Grid2>
+                </Grid>
 
                 {/* Recent Expenses */}
-                <Grid2 size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2 }}>
                         <Box
                             sx={{
@@ -307,7 +320,12 @@ export default function Dashboard() {
                                     <ListItem
                                         key={index}
                                         secondaryAction={
-                                            <Typography variant="body2" fontWeight="bold">
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    fontWeight: 'bold'
+                                                }}
+                                            >
                                                 {formatCurrency(category.value, settings.currency)}
                                             </Typography>
                                         }
@@ -325,8 +343,8 @@ export default function Dashboard() {
                             </Typography>
                         )}
                     </Paper>
-                </Grid2>
-            </Grid2>
+                </Grid>
+            </Grid>
         </Box>
     );
 }

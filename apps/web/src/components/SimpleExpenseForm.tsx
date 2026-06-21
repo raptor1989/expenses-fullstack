@@ -15,7 +15,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import { Formik, Field, FieldProps, Form } from 'formik';
-import { ExpenseSchema } from './ExpenseForm';
+import { ExpenseSchema } from './expenseSchema';
 import { useState } from 'react';
 import { createExpense } from '@/services/expenseService';
 
@@ -121,16 +121,18 @@ const SimpleExpenseForm = ({ categories }: SimpleExpenseFormProps) => {
                                     {...field}
                                     label="Amount"
                                     type="number"
-                                    inputProps={{
-                                        step: 0.01,
-                                        min: 0
-                                    }}
                                     fullWidth
                                     error={touched.amount && Boolean(errors.amount)}
                                     helperText={touched.amount && errors.amount}
                                     onChange={(e) => {
                                         const value = parseFloat(e.target.value);
                                         form.setFieldValue('amount', isNaN(value) ? '' : value);
+                                    }}
+                                    slotProps={{
+                                        htmlInput: {
+                                            step: 0.01,
+                                            min: 0
+                                        }
                                     }}
                                 />
                             )}

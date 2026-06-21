@@ -22,7 +22,7 @@ import {
     InputAdornment,
     Tooltip,
     DialogContentText,
-    Grid2
+    Grid
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -31,6 +31,7 @@ import {
     ColorLens as ColorLensIcon
 } from '@mui/icons-material';
 import { useCategoryStore } from '@/store/categoryStore';
+import { secondaryTextSx } from '@/helpers/sxHelpers';
 import { Category } from '@expenses/shared';
 
 export default function Categories() {
@@ -185,14 +186,14 @@ export default function Categories() {
                 </Box>
             ) : categories.length === 0 ? (
                 <Paper sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography variant="body1" color="text.secondary">
+                    <Typography variant="body1" sx={secondaryTextSx}>
                         No categories found. Add your first category to get started!
                     </Typography>
                 </Paper>
             ) : (
-                <Grid2 container spacing={3}>
+                <Grid container spacing={3}>
                     {categories.map((category) => (
-                        <Grid2 size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={category.id}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={category.id}>
                             <Card
                                 sx={{
                                     borderLeft: `5px solid ${category.color || '#3f51b5'}`,
@@ -218,7 +219,7 @@ export default function Categories() {
                                                 mr: 1
                                             }}
                                         />
-                                        <Typography variant="body2" color="text.secondary">
+                                        <Typography variant="body2" sx={secondaryTextSx}>
                                             {category.color || 'No color set'}
                                         </Typography>
                                     </Box>
@@ -242,9 +243,9 @@ export default function Categories() {
                                     </Box>
                                 </CardActions>
                             </Card>
-                        </Grid2>
+                        </Grid>
                     ))}
-                </Grid2>
+                </Grid>
             )}
 
             {/* Add/Edit Category Dialog */}

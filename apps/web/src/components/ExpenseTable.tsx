@@ -15,6 +15,7 @@ import {
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { Expense } from '@expenses/shared';
 import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
+import { secondaryTextSx } from '@/helpers/sxHelpers';
 import { useSettings } from '@/hooks/useSettings';
 
 interface ExpenseTableProps {
@@ -30,7 +31,7 @@ export default function ExpenseTable({ expenses, categories, onEdit, onDelete }:
     if (!expenses || expenses.length === 0) {
         return (
             <Paper sx={{ p: 3, textAlign: 'center' }}>
-                <Typography variant="body1" color="text.secondary">
+                <Typography variant="body1" sx={secondaryTextSx}>
                     No expenses to display
                 </Typography>
             </Paper>

@@ -446,15 +446,22 @@ Najwyższe ryzyko w całym planie — robić **na końcu**, w osobnej gałęzi o
 głównego `chore/deps-migration` (np. `chore/deps-migration-mui`), żeby
 reszta migracji mogła wejść do `develop` niezależnie i wcześniej.
 
-### Krok 5.1 — `@mui/material`/`@mui/icons-material` `6.4.12 → 7.0.x`
+### Krok 5.1 — `@mui/material`/`@mui/icons-material` `6.4.12 → 7.0.x` ✅
 
-- Codemod: `npx @mui/codemod@latest v7.0.0/grid-props apps/web/src`
-  (obsłuży `Grid2` → `Grid` w 6 plikach: `Login.tsx`, `Register.tsx`,
-  `Settings.tsx`, `Dashboard.tsx`, `Categories.tsx`, `Expenses.tsx`).
-  **Przeczytać diff** codemodu — w szczególności properties `size`/
-  `justifyContent` (patrz fix w `Login.tsx` z bieżącej sesji — to dokładnie
-  typ błędu, który codemod może nie wyłapać, bo wynikał z braku propsów, a
-  nie z ich obecności).
+- Codemod: `npx @mui/codemod@latest v7.0.0/grid-props apps/web/src`.
+  **Okazało się nieprzydatne** — ten konkretny codemod migruje tylko
+  *propsy* na elementach już nazwanych `Grid` (stare breakpointy
+  `xs`/`sm`/`item` → nowy prop `size`), **nie zmienia nazwy** `Grid2` →
+  `Grid`. Skoro repo już używa `Grid2` z propsem `size={{...}}` (MUI v6
+  Grid2 od początku miał nowe API), codemod znajdował 0 dopasowań —
+  faktycznie zmienił tylko końcówki linii (CRLF/LF) w 9 niezwiązanych
+  plikach (przez pełny re-parse/print recasta), bez żadnej zmiany treści;
+  te 9 plików zostały przywrócone (`git checkout --`), żeby nie wnosić
+  szumu do commita. Zamiast codemodu: ręczny `sed -i 's/\bGrid2\b/Grid/g'`
+  na dokładnie tych 6 plikach (czysta zamiana nazwy, bez zmiany propsów —
+  insert/delete liczby linii identyczne w `git diff --stat`).
+  **Przeczytano diff** — potwierdzono, że fix z `Login.tsx` z wcześniejszej
+  sesji (`justifyContent="space-between"`, `size="auto"`) jest zachowany.
 - Sprawdzone, że w kodzie **nie występują**: `onBackdropClick`, `Hidden`,
   `@mui/lab`, `createMuiTheme`, `InputLabel size="normal"` — te kroki
   migracyjne z oficjalnego guide są nieistotne dla tego repo.
@@ -462,41 +469,173 @@ reszta migracji mogła wejść do `develop` niezależnie i wcześniej.
   "@mui/material/styles/" apps/web/src` (repo importuje `useTheme` z
   `@mui/material/styles`, czyli 1 poziom — OK, ale zweryfikować po bumpie).
 - TypeScript ≥4.9 wymagany — już mamy 6.0.3 z Fazy 1.
-- **Weryfikacja:** `tsc` przechodzi, **wizualnie** przejrzeć wszystkie 6
-  plików z Grid (screenshot każdej strony: Login, Register, Settings,
-  Dashboard, Categories, Expenses) — nie tylko "kompiluje się".
+- **Weryfikacja ✅:** `tsc` + `vite build` zielone, lint czysty, 26/26
+  testów web. Zrzuty ekranu (prawdziwa przeglądarka) wszystkich 6 stron —
+  Login (linki poprawnie rozsunięte `space-between`), Register (First/Last
+  Name side-by-side), Dashboard (3 karty + 2-kolumnowy grid + donut),
+  Categories (4-kolumnowy grid kart), Expenses (search/filter row),
+  Settings (profil/hasło/preferencje) — wszystkie identyczne wizualnie z
+  layoutem przed bumpem, **0 błędów konsoli** na żadnej z nich.
 
-### Krok 5.2 — `@mui/material`/`@mui/icons-material` `7.0.x → 9.1.1` (Material UI przeskakuje v8, idzie razem z MUI X v9)
+### Krok 5.2 — `@mui/material`/`@mui/icons-material` `7.0.x → 9.1.1` (Material UI przeskakuje v8, idzie razem z MUI X v9) ✅
 
-- Brak nowych udokumentowanych breaking changes w core komponentach
-  używanych w tym repo (Dialog, Select, TextField, Avatar, Alert, Button,
-  AppBar/sidebar w `MainLayout`) ponad to, co już obsłużone w 5.1.
-- **Weryfikacja:** powtórzyć smoke test z 5.1 (regresja między v7 i v9
-  jest mniej prawdopodobna niż między v6 i v7, ale sprawdzić ponownie
-  dark/light theme toggle w `ThemeProvider.tsx`, bo v9 rozszerza CSS
-  variables o `color-mix()` dla pochodnych kolorów).
+- **Plan był nieprecyzyjny** — "brak nowych breaking changes" się nie
+  potwierdziło. `tsc` po bumpie zgłosił 8 błędów:
+  - `TextField`'s `inputProps`/`InputProps` → usunięte na rzecz
+    `slotProps={{htmlInput: ...}}`/`slotProps={{input: ...}}`. Naprawione
+    oficjalnym codemodem `npx @mui/codemod@latest deprecations/text-field-props
+    apps/web/src` — poprawnie zmigrował `ExpenseForm.tsx`, `SimpleExpenseForm.tsx`
+    (oba `inputProps={{step,min}}`) i `Expenses.tsx` (`InputProps` z
+    `endAdornment` na search polu). Artefakt CRLF/LF na `vite-env.d.ts` —
+    przywrócony `git checkout --`.
+  - `Typography`'s `paragraph` prop — usunięty całkowicie. Naprawione
+    codemodem `npx @mui/codemod@latest deprecations/typography-props
+    apps/web/src` (`NotFound.tsx`) — usunął sam prop, bo istniejący
+    `sx={{mb: 4}}` już pokrywał odstęp, który `paragraph` by dodał.
+  - `Typography`/`Grid`'s skrótowe propsy systemowe (`fontWeight`,
+    `justifyContent`, `alignItems`) — usunięte, trzeba przenieść do `sx`.
+    Naprawione codemodem `npx @mui/codemod@latest v9.0.0/system-props
+    apps/web/src` — poprawił `Dashboard.tsx` (`fontWeight`), `Login.tsx`/
+    `Register.tsx` (`justifyContent`), `Settings.tsx` (`alignItems`).
+    **Bonus, nie był w błędach `tsc`:** ten sam codemod przeniósł też
+    `color="text.secondary"` do `sx` w `Categories.tsx` i
+    `ExpenseTable.tsx` — `tsc` to nie zgłosił (typ `color` na `Typography`
+    przyjmuje też dowolny `string`), ale to realna naprawa: w v9 system-prop
+    `color` (rozpoznający ścieżki motywu typu `text.secondary`) jest
+    usunięty z `Typography`, więc bez przeniesienia do `sx` te wartości
+    przestałyby się wizualnie stosować — cichy regres, który by nie złapał
+    sam build.
+  - 5 plików (`Categories.tsx`, `Dashboard.tsx`, `Login.tsx`, `Register.tsx`,
+    `Settings.tsx`) miało dodatkowo artefakty CRLF/LF z wcześniejszej sesji
+    (codemod z 5.1) niesprzątnięte na czas — wykryte i przywrócone przed
+    uruchomieniem codemodów z 5.2.
+- **Nowy problem niezależny od kodu repo:** `npm run test` posypał się z
+  `Error: Directory import '...react-transition-group\TransitionGroupContext'
+  is not supported resolving ES modules` — `@mui/material@9.1.1`'s
+  `internal/Transition.mjs` robi bare subpath import do
+  `react-transition-group` (pakiet bez `exports` map, tylko zagnieżdżone
+  `package.json` z polem `main` — wzorzec, który działa pod CJS/Vite, ale
+  nie pod natywnym ESM resolution Node, którego używa Vitest 4 w trybie
+  `environment: 'node'` dla zewnętrznych zależności). 9.1.1 to najnowszy
+  patch 9.x (sprawdzone `npm view @mui/material versions`) — nie ma
+  nowszej wersji, która by to naprawiała. **Workaround** w
+  `apps/web/vitest.config.ts`: `test.server.deps.inline:
+  ['react-transition-group', '@mui/material']` — wymusza przepuszczenie
+  obu pakietów przez transformer Vite (który poprawnie czyta zagnieżdżone
+  `package.json`), zamiast natywnego `import()` Node. Do flagowania
+  upstream jeśli się powtórzy przy kolejnych bumpach.
+- **Weryfikacja ✅:** `tsc` 0 błędów, `vite build` zielony, lint czysty,
+  `vitest run` 26/26 (po workaroundzie powyżej). Zrzuty ekranu (prawdziwa
+  przeglądarka, świeży użytkownik): Dashboard, Login, Register, NotFound,
+  Settings (light+dark) — wszystkie poprawne wizualnie. Dark/light theme
+  toggle w `ThemeProvider.tsx` zweryfikowany programowo (odczyt
+  `localStorage.themeMode`): toggle poprawnie przełącza, stan przetrwał
+  zarówno client-side navigation jak i hard reload — **brak regresji** od
+  `color-mix()` w CSS variables v9.
 
-### Krok 5.3 — `@mui/x-date-pickers` `7.29.4 → 9.6.0`
+### Krok 5.3 — `@mui/x-date-pickers` `7.29.4 → 9.6.0` ✅
 
-- Codemod: `npx @mui/x-codemod@latest v8.0.0/pickers/preset-safe apps/web/src`.
-- Breaking change realny dla tego repo: `enableAccessibleFieldDOMStructure`
-  usunięty, pole `DatePicker` renderuje teraz `PickersSectionList` zamiast
-  jednego `<input>`. Dotyczy `ExpenseForm.tsx`, `SimpleExpenseForm.tsx`,
-  `Expenses.tsx` (filtr daty) — sprawdzić:
-  - czy `formik`/`onChange` na `DatePicker` nadal dostaje `dayjs` object
-    (powinien — zmiana dotyczy tylko DOM struktury pola, nie value API);
-  - czy nie ma CSS/testów celujących w `input` wewnątrz pola daty (np.
-    `page.fill('input[name=...]')` w `driver.mjs` dla pól dat — **nie ma**,
-    driver fill’uje tylko `amount`/`description`, daty nie dotyka — OK).
-  - `AdapterDayjs`/`LocalizationProvider` w `main.tsx` — import bez zmian
-    (rename dotyczył tylko adapterów `date-fns`, nie `dayjs`).
-- **Weryfikacja:** otworzyć `ExpenseForm` (Dialog) i `SimpleExpenseForm`
-  (Dashboard), kliknąć DatePicker, wybrać datę, zapisać — potwierdzić że
-  wartość trafia do żądania POST/PUT z poprawnym formatem.
+- Peer deps sprawdzone przed bumpem (`npm view @mui/x-date-pickers@9.6.0
+  peerDependencies`): `@mui/material: "^7.3.0 || ^9.0.0"` — zgodne z
+  `9.1.1` z Kroku 5.2. Po `npm install` drzewo w pełni zdeduplikowane
+  (`npm ls @mui/material react-transition-group`): jedna kopia każdego.
+- Codemod: `npx @mui/x-codemod@latest v8.0.0/pickers/preset-safe
+  apps/web/src` — **0 zmian** (33 unmodified, 0 errors). Sprawdzone
+  `grep -rn "enableAccessibleFieldDOMStructure" apps/web/src` — brak
+  użyć, więc usunięcie tego propa w v8/v9 nic tu nie dotyka.
+- `enableAccessibleFieldDOMStructure` i tak usunięty (pole renderuje teraz
+  `PickersSectionList`), ale **nie wpłynęło na `tsc`** (0 błędów) ani na
+  `driver.mjs` (nie dotyka inputów dat, jak przewidziano w planie).
+  `AdapterDayjs`/`LocalizationProvider` w `main.tsx` bez zmian.
+- **Drugie wystąpienie problemu z Kroku 5.2:** `vitest run` znów rzucił
+  `Directory import ... react-transition-group/TransitionGroupContext`,
+  bo `ExpenseForm.tsx`/`SimpleExpenseForm.tsx`/`main.tsx` importują też
+  `@mui/x-date-pickers`, które samo również dociąga
+  `@mui/material/internal/Transition.mjs` — ale skoro
+  `@mui/x-date-pickers` nie był na liście `server.deps.inline`, Vitest
+  externalizował całą jego ścieżkę importu do natywnego resolvera Node
+  (workaround z 5.2 obejmował tylko `react-transition-group` i
+  `@mui/material`, nie pakiet, który je tranzytywnie importuje).
+  **Fix:** dodano `@mui/x-date-pickers` do tej samej listy `inline` w
+  `apps/web/vitest.config.ts`. Wniosek na przyszłość: ten workaround
+  trzeba rozszerzać o każdy pakiet w drzewie importów, który dociąga
+  `@mui/material`'s Transition, nie tylko o `@mui/material` samo.
+- **Weryfikacja ✅:** `tsc` 0 błędów, `vite build` zielony, lint czysty,
+  `vitest run` 26/26. End-to-end przez prawdziwą przeglądarkę (Playwright +
+  system Edge), z przechwyceniem rzeczywistego ciała żądania
+  `POST /api/expenses`:
+  - `ExpenseForm` (Dialog na `/expenses`): otwarcie kalendarza, wybór dnia
+    15, wypełnienie kategorii/kwoty/opisu, zapis → przechwycone
+    `{"date":"2026-06-15", ...}` — poprawny format, wiersz w tabeli
+    pokazuje `15.06.2026`.
+  - `SimpleExpenseForm` (inline na Dashboardzie): wybór dnia 10, zapis →
+    przechwycone `{"date":"2026-06-10", ...}` — poprawny format,
+    potwierdzenie "Expense added successfully!".
+  - Kalendarz popup renderuje się poprawnie wizualnie (siatka dni,
+    nawigacja miesiąca, podświetlenie wybranego dnia).
+  - **Drobna, niezwiązana z migracją obserwacja:** karta "Total Expenses
+    (30 days)" na Dashboardzie po zapisie przez `SimpleExpenseForm` nie
+    odświeżyła się o nowo dodaną kwotę (została przy poprzedniej wartości)
+    — nieprzebadane głębiej, bo poza zakresem Fazy 5 (DatePicker działa
+    poprawnie, to dotyczy odświeżania danych podsumowania). Flagowane, nie
+    naprawiane.
+  - **Nieudokumentowana zmiana w v9 znaleziona przy debugowaniu testu:**
+    klasa CSS dnia w kalendarzu zmieniła nazwę `MuiPickersDay-root` →
+    `MuiPickerDay-root` (liczba pojedyncza). Nie dotyka tego repo (nigdzie
+    nie celujemy w tę klasę), ale warto wiedzieć przy ewentualnym custom
+    styling w przyszłości.
 
-**Weryfikacja całej Fazy 5:** pełny regression UI test (logowanie →
-dashboard → dodanie wydatku z DatePickerem → edycja kategorii → ustawienia
-→ wylogowanie), wszystkie 6 stron z Grid sprawdzone wizualnie.
+**Weryfikacja całej Fazy 5 ✅:** pełny regression UI test wykonany w
+trakcie Kroków 5.1–5.3 (logowanie → dashboard → dodanie wydatku z
+DatePickerem [Dialog i inline] → edycja kategorii → ustawienia [light/dark]
+→ NotFound → wylogowanie), wszystkie 6 stron z Grid sprawdzone wizualnie,
+0 błędów konsoli, `tsc`/`vite build`/lint/`vitest` zielone na każdym kroku.
+
+### Poprawki z code review PR #3 ✅
+
+Po code review PR #3 (`chore/deps-migration-mui` → `develop`) naprawiono
+5 zgłoszonych znalezisk:
+
+- **Puste linie usunięte przez codemod** (Expenses.tsx, Categories.tsx,
+  Settings.tsx — 13 miejsc łącznie) — przywrócone, bo nie miały związku
+  z migracją MUI (artefakt pełnego re-print recasta).
+- **Podwójne cudzysłowy w `sx` wygenerowanym przez codemod** (9 miejsc w
+  8 plikach) — zamienione na single quotes zgodnie z `.prettierrc`
+  (`singleQuote: true`). Pociągnęło to za sobą dodatkowe przeformatowanie
+  przez `prettier --write` w 5 plikach (Login/Register/Dashboard/
+  NotFound/Settings.tsx) — sam codemod generował JSX, które nie
+  przechodziło `prettier --check` poza samymi cudzysłowami (np. zbyt
+  długie linie, `<Grid container sx={{...}}>` w jednej linii zamiast
+  rozbicia na atrybuty) — zweryfikowano, że `develop`'s wersje tych
+  plików były 100% prettier-compliant przed PR, więc `--write` dotknęło
+  wyłącznie regionów wprowadzonych przez codemod, nic poza tym.
+- **`sx={{ color: 'text.secondary' }}` zduplikowane w 5 plikach** —
+  wyodrębnione do `apps/web/src/helpers/sxHelpers.ts`
+  (`secondaryTextSx`), użyte w `ExpenseTable.tsx`, `NotFound.tsx`
+  (przez spread, bo ten element ma też `maxWidth`/`mb`), `Categories.tsx`
+  (×2), `Expenses.tsx`.
+- **`ExpenseForm.test.ts` ciągnął całe MUI/x-date-pickers przez `import {
+  ExpenseSchema } from './ExpenseForm'`** — to był jedyny powód, dla
+  którego `vitest.config.ts`'s `server.deps.inline` workaround
+  (z Kroków 5.2/5.3) był potrzebny. Naprawione przez wydzielenie
+  `ExpenseSchema` do nowego `apps/web/src/components/expenseSchema.ts`
+  (bez importów React/MUI) i przepisanie 3 importów
+  (`ExpenseForm.tsx`, `SimpleExpenseForm.tsx`, `ExpenseForm.test.ts`).
+- **`vitest.config.ts`'s fragile `deps.inline` workaround** — po
+  powyższej naprawie żaden plik testowy nie importuje już MUI/
+  x-date-pickers, więc workaround przestał być potrzebny w ogóle.
+  Usunięty całkowicie (zamiast tylko generalizowany do regexa) — zgodnie
+  z zasadą "nie projektuj pod hipotetyczne przyszłe wymagania":
+  `vitest.config.ts` wrócił do stanu sprzed Kroku 5.2.
+  **Efekt:** `npm run test --workspace=@expenses/web` przyspieszył z
+  ~8s do ~0.7-0.8s (zniknął koszt transformacji całego drzewa
+  `@mui/material`+`@mui/x-date-pickers` przy każdym uruchomieniu).
+
+**Weryfikacja ✅:** `tsc` 0 błędów, `vite build` zielony, lint czysty,
+`vitest run` 26/26 (szybciej niż przed naprawą), `prettier --check`
+czysty na wszystkich dotkniętych plikach, zrzuty ekranu Login/Register/
+NotFound potwierdzają, że przeformatowany JSX renderuje się identycznie
+jak przed poprawkami.
 
 ---
 
