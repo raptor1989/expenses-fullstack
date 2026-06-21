@@ -312,7 +312,7 @@ smoke test API (health, login, CORS) zrobiony w Kroku 3.3.
 To najgęściej upakowana faza pod względem breaking changes — robić **jako
 osobne sub-kroki, jeden pakiet/grupa na commit**, nie razem z Krokiem 4.1/4.2.
 
-#### 4.3a — `vite@6.3.5 → 7.x` (pierwszy przystanek, nie skakać prosto na 8)
+#### 4.3a — `vite@6.3.5 → 7.x` (pierwszy przystanek, nie skakać prosto na 8) ✅
 
 - Breaking changes realne dla tego repo:
   - Lightning CSS jako domyślny CSS minifier (zamiast esbuild) — sprawdzić
@@ -325,8 +325,19 @@ osobne sub-kroki, jeden pakiet/grupa na commit**, nie razem z Krokiem 4.1/4.2.
     sprawdzić, czy to nie psuje wsparcia dla najstarszego wspieranego
     przez projekt browsera (jeśli nie ma udokumentowanego requirementu,
     przyjąć nowy default).
-- **Weryfikacja:** `vite build` + `vite preview`, otworzyć w przeglądarce,
-  sprawdzić DevTools Console pod błędy.
+- **Weryfikacja ✅:** docelowo `7.3.5` (najnowszy w linii 7.x; v8 już
+  istnieje, potwierdzając przestrogę planu — nie skakać tam teraz).
+  `npx tsc && vite build` zielony (`@vitejs/plugin-react@4.5.1` mimo że
+  jeszcze nie podniesiony — bez ostrzeżeń peer-dep). Potwierdzono brak
+  `import.meta.hot` w kodzie. `vite preview` (build produkcyjny) →
+  zrzut ekranu strony `/login` w prawdziwej przeglądarce: stylowanie
+  Emotion/MUI nienaruszone przez nowy domyślny minifier (Lightning CSS)
+  — jedyny błąd w konsoli to CORS dla portu `4173` (nieobjętego
+  `ALLOWED_ORIGINS`), niezwiązany z Vite. `vite` (dev server) → pełny
+  smoke test logowania + dashboard (donut chart, daty) bez błędów
+  konsoli. Domyślny `build.target` (przesunięty wyżej) zaakceptowany —
+  brak udokumentowanego wymogu starszych przeglądarek w repo. Lint +
+  wszystkie 26 testów web zielone.
 
 #### 4.3b — `@vitejs/plugin-react@4.5.1 → 6.x` (po Vite 7, bo plugin musi się zgadzać z core Vite)
 
