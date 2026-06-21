@@ -533,27 +533,63 @@ reszta migracji mogła wejść do `develop` niezależnie i wcześniej.
   zarówno client-side navigation jak i hard reload — **brak regresji** od
   `color-mix()` w CSS variables v9.
 
-### Krok 5.3 — `@mui/x-date-pickers` `7.29.4 → 9.6.0`
+### Krok 5.3 — `@mui/x-date-pickers` `7.29.4 → 9.6.0` ✅
 
-- Codemod: `npx @mui/x-codemod@latest v8.0.0/pickers/preset-safe apps/web/src`.
-- Breaking change realny dla tego repo: `enableAccessibleFieldDOMStructure`
-  usunięty, pole `DatePicker` renderuje teraz `PickersSectionList` zamiast
-  jednego `<input>`. Dotyczy `ExpenseForm.tsx`, `SimpleExpenseForm.tsx`,
-  `Expenses.tsx` (filtr daty) — sprawdzić:
-  - czy `formik`/`onChange` na `DatePicker` nadal dostaje `dayjs` object
-    (powinien — zmiana dotyczy tylko DOM struktury pola, nie value API);
-  - czy nie ma CSS/testów celujących w `input` wewnątrz pola daty (np.
-    `page.fill('input[name=...]')` w `driver.mjs` dla pól dat — **nie ma**,
-    driver fill’uje tylko `amount`/`description`, daty nie dotyka — OK).
-  - `AdapterDayjs`/`LocalizationProvider` w `main.tsx` — import bez zmian
-    (rename dotyczył tylko adapterów `date-fns`, nie `dayjs`).
-- **Weryfikacja:** otworzyć `ExpenseForm` (Dialog) i `SimpleExpenseForm`
-  (Dashboard), kliknąć DatePicker, wybrać datę, zapisać — potwierdzić że
-  wartość trafia do żądania POST/PUT z poprawnym formatem.
+- Peer deps sprawdzone przed bumpem (`npm view @mui/x-date-pickers@9.6.0
+  peerDependencies`): `@mui/material: "^7.3.0 || ^9.0.0"` — zgodne z
+  `9.1.1` z Kroku 5.2. Po `npm install` drzewo w pełni zdeduplikowane
+  (`npm ls @mui/material react-transition-group`): jedna kopia każdego.
+- Codemod: `npx @mui/x-codemod@latest v8.0.0/pickers/preset-safe
+  apps/web/src` — **0 zmian** (33 unmodified, 0 errors). Sprawdzone
+  `grep -rn "enableAccessibleFieldDOMStructure" apps/web/src` — brak
+  użyć, więc usunięcie tego propa w v8/v9 nic tu nie dotyka.
+- `enableAccessibleFieldDOMStructure` i tak usunięty (pole renderuje teraz
+  `PickersSectionList`), ale **nie wpłynęło na `tsc`** (0 błędów) ani na
+  `driver.mjs` (nie dotyka inputów dat, jak przewidziano w planie).
+  `AdapterDayjs`/`LocalizationProvider` w `main.tsx` bez zmian.
+- **Drugie wystąpienie problemu z Kroku 5.2:** `vitest run` znów rzucił
+  `Directory import ... react-transition-group/TransitionGroupContext`,
+  bo `ExpenseForm.tsx`/`SimpleExpenseForm.tsx`/`main.tsx` importują też
+  `@mui/x-date-pickers`, które samo również dociąga
+  `@mui/material/internal/Transition.mjs` — ale skoro
+  `@mui/x-date-pickers` nie był na liście `server.deps.inline`, Vitest
+  externalizował całą jego ścieżkę importu do natywnego resolvera Node
+  (workaround z 5.2 obejmował tylko `react-transition-group` i
+  `@mui/material`, nie pakiet, który je tranzytywnie importuje).
+  **Fix:** dodano `@mui/x-date-pickers` do tej samej listy `inline` w
+  `apps/web/vitest.config.ts`. Wniosek na przyszłość: ten workaround
+  trzeba rozszerzać o każdy pakiet w drzewie importów, który dociąga
+  `@mui/material`'s Transition, nie tylko o `@mui/material` samo.
+- **Weryfikacja ✅:** `tsc` 0 błędów, `vite build` zielony, lint czysty,
+  `vitest run` 26/26. End-to-end przez prawdziwą przeglądarkę (Playwright +
+  system Edge), z przechwyceniem rzeczywistego ciała żądania
+  `POST /api/expenses`:
+  - `ExpenseForm` (Dialog na `/expenses`): otwarcie kalendarza, wybór dnia
+    15, wypełnienie kategorii/kwoty/opisu, zapis → przechwycone
+    `{"date":"2026-06-15", ...}` — poprawny format, wiersz w tabeli
+    pokazuje `15.06.2026`.
+  - `SimpleExpenseForm` (inline na Dashboardzie): wybór dnia 10, zapis →
+    przechwycone `{"date":"2026-06-10", ...}` — poprawny format,
+    potwierdzenie "Expense added successfully!".
+  - Kalendarz popup renderuje się poprawnie wizualnie (siatka dni,
+    nawigacja miesiąca, podświetlenie wybranego dnia).
+  - **Drobna, niezwiązana z migracją obserwacja:** karta "Total Expenses
+    (30 days)" na Dashboardzie po zapisie przez `SimpleExpenseForm` nie
+    odświeżyła się o nowo dodaną kwotę (została przy poprzedniej wartości)
+    — nieprzebadane głębiej, bo poza zakresem Fazy 5 (DatePicker działa
+    poprawnie, to dotyczy odświeżania danych podsumowania). Flagowane, nie
+    naprawiane.
+  - **Nieudokumentowana zmiana w v9 znaleziona przy debugowaniu testu:**
+    klasa CSS dnia w kalendarzu zmieniła nazwę `MuiPickersDay-root` →
+    `MuiPickerDay-root` (liczba pojedyncza). Nie dotyka tego repo (nigdzie
+    nie celujemy w tę klasę), ale warto wiedzieć przy ewentualnym custom
+    styling w przyszłości.
 
-**Weryfikacja całej Fazy 5:** pełny regression UI test (logowanie →
-dashboard → dodanie wydatku z DatePickerem → edycja kategorii → ustawienia
-→ wylogowanie), wszystkie 6 stron z Grid sprawdzone wizualnie.
+**Weryfikacja całej Fazy 5 ✅:** pełny regression UI test wykonany w
+trakcie Kroków 5.1–5.3 (logowanie → dashboard → dodanie wydatku z
+DatePickerem [Dialog i inline] → edycja kategorii → ustawienia [light/dark]
+→ NotFound → wylogowanie), wszystkie 6 stron z Grid sprawdzone wizualnie,
+0 błędów konsoli, `tsc`/`vite build`/lint/`vitest` zielone na każdym kroku.
 
 ---
 

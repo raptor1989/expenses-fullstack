@@ -11,7 +11,7 @@ export default defineConfig({
         environment: 'node',
         server: {
             deps: {
-                inline: ['react-transition-group', '@mui/material']
+                inline: ['react-transition-group', '@mui/material', '@mui/x-date-pickers']
             }
         }
     }
