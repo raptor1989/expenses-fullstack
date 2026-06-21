@@ -17,7 +17,6 @@ interface SettingsContextType {
     updateSettings: (data: UserSettingsUpdateInput) => Promise<UserSettings>;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components -- context object lives alongside its Provider intentionally
 export const SettingsContext = createContext<SettingsContextType>({
     settings: DEFAULT_SETTINGS,
     updateSettings: async () => DEFAULT_SETTINGS

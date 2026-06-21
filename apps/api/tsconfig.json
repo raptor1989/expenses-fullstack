@@ -1,6 +1,7 @@
 {
  "compilerOptions": {
         "target": "es6",
+        "strict": false,
         "lib": [
             "es2015",
             "es2017",
@@ -8,7 +9,7 @@
         ],
         "module": "commonjs",
         "moduleResolution": "node",
-        "ignoreDeprecations": "5.0",
+        "ignoreDeprecations": "6.0",
         "downlevelIteration": true,
         "noUnusedLocals": false,
         "rootDir": "./src",

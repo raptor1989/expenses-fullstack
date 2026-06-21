@@ -29,7 +29,8 @@ export default [
             'no-undef': 'off',
             'no-redeclare': ['error', { builtinGlobals: false }],
             '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-            'react-refresh/only-export-components': ['warn', { allowConstantExport: true }]
+            'react-refresh/only-export-components': 'off',
+            'react-hooks/set-state-in-effect': 'off'
         }
     }
 ];

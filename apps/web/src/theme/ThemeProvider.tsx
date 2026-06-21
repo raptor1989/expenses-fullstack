@@ -102,7 +102,6 @@ const ThemeContext = createContext<ThemeContextType>({
 });
 
 // Custom hook to use theme context
-// eslint-disable-next-line react-refresh/only-export-components -- hook lives alongside its Provider intentionally
 export const useThemeMode = () => {
     const context = useContext(ThemeContext);
 
