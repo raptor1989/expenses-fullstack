@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
     Typography,
@@ -20,7 +20,7 @@ import {
     DialogContentText,
     DialogActions,
     CircularProgress,
-    Grid2
+    Grid
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Add as AddIcon, Search as SearchIcon, FilterList as FilterIcon } from '@mui/icons-material';
@@ -28,15 +28,15 @@ import dayjs from 'dayjs';
 import ExpenseTable from '../components/ExpenseTable';
 import ExpenseForm from '../components/ExpenseForm';
 import { getExpenses, deleteExpense, createExpense, updateExpense } from '../services/expenseService';
-import { getCategories } from '../services/categoryService';
-import { Expense, ExpenseCreateInput, Category } from '@expenses/shared';
+import { useCategoryStore } from '@/store/categoryStore';
+import { secondaryTextSx } from '@/helpers/sxHelpers';
+import { Expense, ExpenseCreateInput } from '@expenses/shared';
 
 export default function Expenses() {
     // State variables
     const [loading, setLoading] = useState(true);
     const [expenses, setExpenses] = useState<Expense[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [categoriesMap, setCategoriesMap] = useState<Record<string, { name: string; color: string }>>({});
+    const { categories, fetchCategories } = useCategoryStore();
     const [pagination, setPagination] = useState({
         total: 0,
         page: 1,
@@ -77,8 +77,7 @@ export default function Expenses() {
                 total: response.pagination.total,
                 totalPages: response.pagination.totalPages
             }));
-        } catch (error) {
-            console.error('Failed to fetch expenses:', error);
+        } catch {
             setNotification({
                 open: true,
                 message: 'Failed to load expenses. Please try again later.',
@@ -89,30 +88,22 @@ export default function Expenses() {
         }
     }, [pagination.page, pagination.limit, filters.startDate, filters.endDate, filters.categoryId]);
 
-    // Fetch categories for dropdown and table display
-    const fetchCategories = useCallback(async () => {
-        try {
-            const fetchedCategories = await getCategories();
-            setCategories(fetchedCategories);
-
-            // Create a map for easier lookup in the table
-            const categoryMap: Record<string, { name: string; color: string }> = {};
-            fetchedCategories.forEach((category) => {
-                categoryMap[category.id] = {
-                    name: category.name,
-                    color: category.color || '#9e9e9e' // Default color if none is specified
-                };
-            });
-            setCategoriesMap(categoryMap);
-        } catch (error) {
-            console.error('Failed to fetch categories:', error);
-        }
-    }, []);
-
     // Initial data loading
     useEffect(() => {
         fetchCategories();
     }, [fetchCategories]);
+
+    // Map for easier category lookup in the table
+    const categoriesMap = useMemo(() => {
+        const categoryMap: Record<string, { name: string; color: string }> = {};
+        categories.forEach((category) => {
+            categoryMap[category.id] = {
+                name: category.name,
+                color: category.color || '#9e9e9e' // Default color if none is specified
+            };
+        });
+        return categoryMap;
+    }, [categories]);
 
     useEffect(() => {
         fetchExpenses();
@@ -158,8 +149,7 @@ export default function Expenses() {
                 message: 'Expense deleted successfully!',
                 severity: 'success'
             });
-        } catch (error) {
-            console.error('Failed to delete expense:', error);
+        } catch {
             setNotification({
                 open: true,
                 message: 'Failed to delete expense. Please try again.',
@@ -191,8 +181,7 @@ export default function Expenses() {
                 });
             }
             setFormOpen(false);
-        } catch (error) {
-            console.error('Failed to save expense:', error);
+        } catch {
             setNotification({
                 open: true,
                 message: `Failed to ${editExpense ? 'update' : 'create'} expense. Please try again.`,
@@ -223,14 +212,16 @@ export default function Expenses() {
                         value={filters.search}
                         onChange={(e) => handleFilterChange('search', e.target.value)}
                         sx={{ flexGrow: 1, mr: 1 }}
-                        InputProps={{
-                            endAdornment: (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={handleApplyFilters}>
-                                        <SearchIcon />
-                                    </IconButton>
-                                </InputAdornment>
-                            )
+                        slotProps={{
+                            input: {
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton size="small" onClick={handleApplyFilters}>
+                                            <SearchIcon />
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            }
                         }}
                     />
                     <Button variant="outlined" startIcon={<FilterIcon />} onClick={() => setShowFilters(!showFilters)}>
@@ -239,24 +230,24 @@ export default function Expenses() {
                 </Box>
 
                 {showFilters && (
-                    <Grid2 container spacing={2} sx={{ mt: 2 }}>
-                        <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Grid container spacing={2} sx={{ mt: 2 }}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <DatePicker
                                 label="Start Date"
                                 value={filters.startDate}
                                 onChange={(date) => handleFilterChange('startDate', date)}
                                 slotProps={{ textField: { fullWidth: true, size: 'small' } }}
                             />
-                        </Grid2>
-                        <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <DatePicker
                                 label="End Date"
                                 value={filters.endDate}
                                 onChange={(date) => handleFilterChange('endDate', date)}
                                 slotProps={{ textField: { fullWidth: true, size: 'small' } }}
                             />
-                        </Grid2>
-                        <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>Category</InputLabel>
                                 <Select
@@ -272,13 +263,13 @@ export default function Expenses() {
                                     ))}
                                 </Select>
                             </FormControl>
-                        </Grid2>
-                        <Grid2 size={{ xs: 12, sm: 6, md: 3 }}>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <Button variant="contained" color="primary" fullWidth onClick={handleApplyFilters}>
                                 Apply Filters
                             </Button>
-                        </Grid2>
-                    </Grid2>
+                        </Grid>
+                    </Grid>
                 )}
             </Paper>
 
@@ -288,7 +279,7 @@ export default function Expenses() {
                 </Box>
             ) : expenses.length === 0 ? (
                 <Paper sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography variant="body1" color="text.secondary">
+                    <Typography variant="body1" sx={secondaryTextSx}>
                         No expenses found. Add your first expense to get started!
                     </Typography>
                 </Paper>

@@ -2,13 +2,24 @@ import { Request, Response } from 'express';
 import { UserModel } from '../models/user.model';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import dotenv from 'dotenv';
 import ms from 'ms';
+
+const isProduction = process.env.NODE_ENV === 'production';
+
+function setAuthCookie(res: Response, token: string, expiresIn: string) {
+    const maxAge = ms(expiresIn as ms.StringValue);
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'strict',
+        maxAge
+    });
+}
 
 export class UserController {
     static async register(req: Request, res: Response) {
         try {
-            const { username, email, password, firstName, lastName } = req.body;
+            const { email, password, firstName, lastName } = req.body;
 
             const existingUser = await UserModel.findByEmail(email);
 
@@ -19,29 +30,29 @@ export class UserController {
                 });
             }
 
-            const user = await UserModel.create(username, email, password, firstName, lastName);
+            const user = await UserModel.create(email, password, firstName, lastName);
 
-            const secretKey = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
+            const secretKey = process.env.JWT_SECRET!;
             const expiresIn = (process.env.JWT_EXPIRES_IN as ms.StringValue) || '7D';
 
             const signOption: jwt.SignOptions = {
                 expiresIn
             };
 
-            const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, secretKey, signOption);
+            const token = jwt.sign({ id: user.id, email: user.email }, secretKey, signOption);
+
+            setAuthCookie(res, token, expiresIn);
 
             res.status(201).json({
                 message: 'User registered successfully',
                 user: {
                     id: user.id,
-                    username: user.username,
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
                     createdAt: user.createdAt,
                     updatedAt: user.updatedAt
-                },
-                token
+                }
             });
         } catch (error) {
             console.error('Registration error:', error);
@@ -74,27 +85,27 @@ export class UserController {
                 });
             }
 
-            const secretKey = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
+            const secretKey = process.env.JWT_SECRET!;
             const expiresIn = (process.env.JWT_EXPIRES_IN as ms.StringValue) || '7D';
 
             const signOption: jwt.SignOptions = {
                 expiresIn
             };
 
-            const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, secretKey, signOption);
+            const token = jwt.sign({ id: user.id, email: user.email }, secretKey, signOption);
+
+            setAuthCookie(res, token, expiresIn);
 
             res.status(200).json({
                 message: 'Login successful',
                 user: {
                     id: user.id,
-                    username: user.username,
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
                     createdAt: user.createdAt,
                     updatedAt: user.updatedAt
-                },
-                token
+                }
             });
         } catch (error) {
             console.error('Login error:', error);
@@ -103,6 +114,11 @@ export class UserController {
                 code: 'login_failed'
             });
         }
+    }
+
+    static logout(req: Request, res: Response) {
+        res.clearCookie('token', { httpOnly: true, secure: isProduction, sameSite: 'strict' });
+        res.status(200).json({ message: 'Logged out successfully' });
     }
 
     static async getProfile(req: Request, res: Response) {
@@ -126,7 +142,6 @@ export class UserController {
             res.status(200).json({
                 user: {
                     id: user.id,
-                    username: user.username,
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
@@ -143,6 +158,47 @@ export class UserController {
         }
     }
 
+    static async changePassword(req: Request, res: Response) {
+        try {
+            if (!req.user) {
+                return res.status(401).json({
+                    message: 'Authentication required',
+                    code: 'auth_required'
+                });
+            }
+
+            const { currentPassword, newPassword } = req.body;
+
+            const currentHash = await UserModel.findPasswordById(req.user.id);
+
+            if (!currentHash) {
+                return res.status(404).json({
+                    message: 'User not found',
+                    code: 'user_not_found'
+                });
+            }
+
+            const isPasswordValid = await bcrypt.compare(currentPassword, currentHash);
+
+            if (!isPasswordValid) {
+                return res.status(400).json({
+                    message: 'Current password is incorrect',
+                    code: 'invalid_credentials'
+                });
+            }
+
+            await UserModel.updatePassword(req.user.id, newPassword);
+
+            res.status(200).json({ message: 'Password changed successfully' });
+        } catch (error) {
+            console.error('Change password error:', error);
+            res.status(500).json({
+                message: 'Failed to change password',
+                code: 'password_change_failed'
+            });
+        }
+    }
+
     static async updateProfile(req: Request, res: Response) {
         try {
             if (!req.user) {
@@ -152,13 +208,12 @@ export class UserController {
                 });
             }
 
-            const { firstName, lastName, email, username } = req.body;
+            const { firstName, lastName, email } = req.body;
 
             const updatedUser = await UserModel.update(req.user.id, {
                 firstName,
                 lastName,
-                email,
-                username
+                email
             });
 
             if (!updatedUser) {
@@ -172,7 +227,6 @@ export class UserController {
                 message: 'Profile updated successfully',
                 user: {
                     id: updatedUser.id,
-                    username: updatedUser.username,
                     email: updatedUser.email,
                     firstName: updatedUser.firstName,
                     lastName: updatedUser.lastName,

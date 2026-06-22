@@ -7,6 +7,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import { ThemeProvider } from './theme/ThemeProvider';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
@@ -16,7 +17,9 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <CssBaseline />
                     <AuthProvider>
-                        <App />
+                        <SettingsProvider>
+                            <App />
+                        </SettingsProvider>
                     </AuthProvider>
                 </LocalizationProvider>
             </ThemeProvider>

@@ -19,14 +19,21 @@ const runMigrations = async () => {
             await client.query(`
         CREATE TABLE IF NOT EXISTS users (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          username VARCHAR(50) UNIQUE NOT NULL,
           email VARCHAR(100) UNIQUE NOT NULL,
-          password VARCHAR(100) NOT NULL,
+          password TEXT NOT NULL,
           first_name VARCHAR(50),
           last_name VARCHAR(50),
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         )
+      `);
+
+            await client.query(`
+        ALTER TABLE users ALTER COLUMN password TYPE TEXT
+      `);
+
+            await client.query(`
+        ALTER TABLE users DROP COLUMN IF EXISTS username
       `);
 
             await client.query(`
@@ -58,6 +65,22 @@ const runMigrations = async () => {
       `);
 
             await client.query(`
+        CREATE TABLE IF NOT EXISTS user_settings (
+          user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+          currency VARCHAR(3) NOT NULL DEFAULT 'PLN',
+          theme VARCHAR(5) NOT NULL DEFAULT 'light' CHECK (theme IN ('light', 'dark')),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+            await client.query(`
+        INSERT INTO user_settings (user_id)
+        SELECT id FROM users
+        ON CONFLICT (user_id) DO NOTHING
+      `);
+
+            await client.query(`
         CREATE OR REPLACE FUNCTION create_default_categories()
         RETURNS TRIGGER AS $$
         BEGIN
@@ -81,7 +104,25 @@ const runMigrations = async () => {
         EXECUTE FUNCTION create_default_categories();
       `);
 
-            const tables = ['users', 'categories', 'expenses'];
+            await client.query(`
+        CREATE OR REPLACE FUNCTION create_default_settings()
+        RETURNS TRIGGER AS $$
+        BEGIN
+          INSERT INTO user_settings (user_id) VALUES (NEW.id);
+          RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+      `);
+
+            await client.query(`
+        DROP TRIGGER IF EXISTS create_settings_for_new_user ON users;
+        CREATE TRIGGER create_settings_for_new_user
+        AFTER INSERT ON users
+        FOR EACH ROW
+        EXECUTE FUNCTION create_default_settings();
+      `);
+
+            const tables = ['users', 'categories', 'expenses', 'user_settings'];
 
             for (const table of tables) {
                 await client.query(`

@@ -34,6 +34,10 @@ A full-stack TypeScript application for managing household expenses. Built with 
 - TypeScript
 - PM2 (production process management)
 
+### Testing
+- Jest + ts-jest (test runner)
+- Supertest (HTTP integration testing)
+
 ## Project Structure
 
 ```
@@ -104,6 +108,76 @@ Build all packages and apps:
 ```bash
 npm run build
 ```
+
+## Testing
+
+Integration tests run against a dedicated PostgreSQL database (`expenses_test_db`) and cover the full HTTP stack — middleware, validation, authentication, and database queries.
+
+### Prerequisites
+
+Create the test database (done automatically on first run, but PostgreSQL must be running):
+
+```bash
+# The test setup creates expenses_test_db automatically
+```
+
+Configure test environment variables in `apps/api/.env.test`:
+
+```env
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=expenses_test_db
+JWT_SECRET=test-secret-key-for-integration-tests
+```
+
+### Running Tests
+
+```bash
+# Run all integration tests (from the API package)
+cd apps/api
+npm test
+
+# Run from the monorepo root
+npm test --workspace=apps/api
+
+# Run a specific test file
+cd apps/api
+npm test -- --testPathPattern=auth
+```
+
+### Test Suites
+
+| Suite | File | Tests |
+|---|---|---|
+| Auth & Users | `auth.test.ts` | Register, login, profile CRUD, logout |
+| Categories | `categories.test.ts` | CRUD, user isolation, FK constraints |
+| Expenses | `expenses.test.ts` | CRUD, pagination, date/category filtering, user isolation |
+| Analytics | `analytics.test.ts` | Expense summary by category, monthly breakdown |
+
+### Test Architecture
+
+```
+apps/api/
+├── jest.config.js
+├── tsconfig.test.json
+├── .env.test
+└── src/__tests__/
+    ├── helpers/
+    │   ├── setup.ts       # globalSetup: creates DB, runs migrations
+    │   ├── teardown.ts    # globalTeardown
+    │   ├── env.ts         # loads .env.test before app imports
+    │   ├── db.ts          # test pool, truncateAllTables()
+    │   ├── auth.ts        # registerAndLogin() helper
+    │   └── fixtures.ts    # factory functions for test data
+    ├── auth.test.ts
+    ├── categories.test.ts
+    ├── expenses.test.ts
+    └── analytics.test.ts
+```
+
+Each test file truncates all tables in `beforeEach`/`afterEach` to guarantee isolation. Tests run serially (`--runInBand`) to avoid cross-test database conflicts.
 
 ### Deployment
 

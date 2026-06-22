@@ -7,7 +7,6 @@ declare global {
             user?: {
                 id: string;
                 email: string;
-                username: string;
             };
         }
     }
@@ -15,7 +14,9 @@ declare global {
 
 export const auth = (req: Request, res: Response, next: NextFunction) => {
     try {
-        const token = req.header('Authorization')?.replace('Bearer ', '');
+        const cookieToken = req.cookies?.token;
+        const headerToken = req.header('Authorization')?.replace('Bearer ', '');
+        const token = cookieToken || headerToken;
 
         if (!token) {
             return res.status(401).json({
@@ -24,18 +25,16 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
             });
         }
 
-        const secretKey = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
+        const secretKey = process.env.JWT_SECRET!;
 
         const decoded = jwt.verify(token, secretKey) as {
             id: string;
             email: string;
-            username: string;
         };
 
         req.user = {
             id: decoded.id,
-            email: decoded.email,
-            username: decoded.username
+            email: decoded.email
         };
 
         next();

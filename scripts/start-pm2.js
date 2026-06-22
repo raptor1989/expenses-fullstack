@@ -23,7 +23,7 @@ const processes = [
     name: 'expenses-web',
     cwd: path.resolve(__dirname, '../apps/web'),
     script: 'npm',
-    args: 'run preview',
+    args: 'run serve:dist',
     instances: 1,
     autorestart: true,
     watch: false,

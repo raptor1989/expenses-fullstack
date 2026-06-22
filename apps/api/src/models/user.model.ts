@@ -3,13 +3,7 @@ import pool from '../db/index';
 import bcrypt from 'bcryptjs';
 
 export class UserModel {
-    static async create(
-        username: string,
-        email: string,
-        password: string,
-        firstName?: string,
-        lastName?: string
-    ): Promise<User> {
+    static async create(email: string, password: string, firstName?: string, lastName?: string): Promise<User> {
         const client = await pool.connect();
 
         try {
@@ -17,12 +11,12 @@ export class UserModel {
             const hashedPassword = await bcrypt.hash(password, salt);
 
             const query = `
-        INSERT INTO users (username, email, password, first_name, last_name)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, username, email, first_name as "firstName", last_name as "lastName", created_at as "createdAt", updated_at as "updatedAt"
+        INSERT INTO users (email, password, first_name, last_name)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, email, first_name as "firstName", last_name as "lastName", created_at as "createdAt", updated_at as "updatedAt"
       `;
 
-            const values = [username, email, hashedPassword, firstName, lastName];
+            const values = [email, hashedPassword, firstName, lastName];
             const result = await client.query(query, values);
 
             return result.rows[0];
@@ -36,7 +30,7 @@ export class UserModel {
 
         try {
             const query = `
-        SELECT id, username, email, password, first_name as "firstName", last_name as "lastName", 
+        SELECT id, email, password, first_name as "firstName", last_name as "lastName",
                created_at as "createdAt", updated_at as "updatedAt"
         FROM users
         WHERE email = $1
@@ -54,12 +48,41 @@ export class UserModel {
         }
     }
 
+    static async findPasswordById(id: string): Promise<string | null> {
+        const client = await pool.connect();
+
+        try {
+            const result = await client.query('SELECT password FROM users WHERE id = $1', [id]);
+
+            if (result.rows.length === 0) {
+                return null;
+            }
+
+            return result.rows[0].password;
+        } finally {
+            client.release();
+        }
+    }
+
+    static async updatePassword(id: string, newPassword: string): Promise<void> {
+        const client = await pool.connect();
+
+        try {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+            await client.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, id]);
+        } finally {
+            client.release();
+        }
+    }
+
     static async findById(id: string): Promise<User | null> {
         const client = await pool.connect();
 
         try {
             const query = `
-        SELECT id, username, email, first_name as "firstName", last_name as "lastName", 
+        SELECT id, email, first_name as "firstName", last_name as "lastName",
                created_at as "createdAt", updated_at as "updatedAt"
         FROM users
         WHERE id = $1
@@ -81,16 +104,11 @@ export class UserModel {
         const client = await pool.connect();
 
         try {
-            const { firstName, lastName, email, username } = updateData;
+            const { firstName, lastName, email } = updateData;
 
             const updateFields = [];
             const values = [id];
             let valueCounter = 2;
-
-            if (username !== undefined) {
-                updateFields.push(`username = $${valueCounter++}`);
-                values.push(username);
-            }
 
             if (email !== undefined) {
                 updateFields.push(`email = $${valueCounter++}`);
@@ -115,7 +133,7 @@ export class UserModel {
         UPDATE users
         SET ${updateFields.join(', ')}
         WHERE id = $1
-        RETURNING id, username, email, first_name as "firstName", last_name as "lastName", 
+        RETURNING id, email, first_name as "firstName", last_name as "lastName",
                  created_at as "createdAt", updated_at as "updatedAt"
       `;
 

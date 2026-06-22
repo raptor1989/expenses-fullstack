@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Avatar, Button, TextField, Link, Box, Typography, Alert, Grid2 } from '@mui/material';
+import { Avatar, Button, TextField, Link, Box, Typography, Alert, Grid } from '@mui/material';
 import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
+import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
 
 // Validation schema
@@ -28,8 +29,8 @@ export default function Login() {
                 await login(values.email, values.password);
                 navigate('/');
             } catch (err) {
-                if (err instanceof Error) {
-                    setError(err.message);
+                if (axios.isAxiosError(err)) {
+                    setError(err.response?.data?.message || 'An error occurred during login.');
                 } else {
                     setError('An error occurred during login.');
                 }
@@ -45,13 +46,11 @@ export default function Login() {
             <Typography component="h1" variant="h5">
                 Sign in
             </Typography>
-
             {error && (
                 <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
                     {error}
                 </Alert>
             )}
-
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 1, width: '100%' }}>
                 <TextField
                     margin="normal"
@@ -90,18 +89,23 @@ export default function Login() {
                 >
                     Sign In
                 </Button>
-                <Grid2 container>
-                    <Grid2>
+                <Grid
+                    container
+                    sx={{
+                        justifyContent: 'space-between'
+                    }}
+                >
+                    <Grid size="auto">
                         <Link component={RouterLink} to="#" variant="body2">
                             Forgot password?
                         </Link>
-                    </Grid2>
-                    <Grid2>
+                    </Grid>
+                    <Grid size="auto">
                         <Link component={RouterLink} to="/register" variant="body2">
                             {"Don't have an account? Sign Up"}
                         </Link>
-                    </Grid2>
-                </Grid2>
+                    </Grid>
+                </Grid>
             </Box>
         </>
     );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     Box,
     Typography,
@@ -9,7 +9,7 @@ import {
     ListItemText,
     CircularProgress,
     Button,
-    Grid2,
+    Grid,
     Card,
     Table,
     TableBody,
@@ -26,19 +26,33 @@ import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
 import { useThemeMode } from '@/theme/ThemeProvider';
-import { getCategories } from '../services/categoryService';
-import { Category, Expense, ExpenseByCategory, ExpenseSummary } from '@expenses/shared';
+import { useSettings } from '@/hooks/useSettings';
+import { useCategoryStore } from '@/store/categoryStore';
+import { Expense, ExpenseByCategory, ExpenseSummary } from '@expenses/shared';
 import SimpleExpenseForm from '@/components/SimpleExpenseForm';
+
+const CHART_COLORS = [
+    '#4e79a7',
+    '#f28e2b',
+    '#e15759',
+    '#76b7b2',
+    '#59a14f',
+    '#edc948',
+    '#b07aa1',
+    '#ff9da7',
+    '#9c755f',
+    '#bab0ac'
+];
 
 export default function Dashboard() {
     const navigate = useNavigate();
     const { mode } = useThemeMode();
+    const { settings } = useSettings();
     const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState<ExpenseSummary | undefined>(undefined);
     const [expensesByCategory, setExpensesByCategory] = useState<ExpenseByCategory[]>([]);
     const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
-    const [categoriesMap, setCategoriesMap] = useState<Record<string, { name: string; color: string }>>({});
-    const [categories, setCategories] = useState<Category[]>([]);
+    const { categories, fetchCategories } = useCategoryStore();
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -54,25 +68,23 @@ export default function Dashboard() {
                 setSummary(summaryData);
 
                 // Transform category breakdown for pie chart
-                const categoryData = summaryData.categoryBreakdown.map((item) => ({
+                const categoryData = summaryData.categoryBreakdown.map((item, index) => ({
                     id: item.categoryName,
                     label: item.categoryName,
                     value: item.totalAmount,
-                    color: item.color || `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`
+                    color: item.color || CHART_COLORS[index % CHART_COLORS.length]
                 }));
                 setExpensesByCategory(categoryData);
 
                 // Fetch last 10 expenses
                 try {
-                    // In a real app, you'd call the API
                     const recentData = await getExpenses();
                     setRecentExpenses(recentData.expenses);
-                } catch (error) {
-                    console.error('Error fetching recent expenses:', error);
+                } catch {
                     setRecentExpenses([]);
                 }
-            } catch (error) {
-                console.error('Error fetching dashboard data:', error);
+            } catch {
+                // summary unavailable — UI shows zeroed state
             } finally {
                 setLoading(false);
             }
@@ -81,29 +93,22 @@ export default function Dashboard() {
         fetchDashboardData();
     }, []);
 
-    // Fetch categories for dropdown and table display
-    const fetchCategories = useCallback(async () => {
-        try {
-            const fetchedCategories = await getCategories();
-            setCategories(fetchedCategories);
-            // Create a map for easier lookup in the table
-            const categoryMap: Record<string, { name: string; color: string }> = {};
-            fetchedCategories.forEach((category) => {
-                categoryMap[category.id] = {
-                    name: category.name,
-                    color: category.color || '#9e9e9e' // Default color if none is specified
-                };
-            });
-            setCategoriesMap(categoryMap);
-        } catch (error) {
-            console.error('Failed to fetch categories:', error);
-        }
-    }, []);
-
     // Initial data loading
     useEffect(() => {
         fetchCategories();
     }, [fetchCategories]);
+
+    // Map for easier category lookup in the recent expenses table
+    const categoriesMap = useMemo(() => {
+        const categoryMap: Record<string, { name: string; color: string }> = {};
+        categories.forEach((category) => {
+            categoryMap[category.id] = {
+                name: category.name,
+                color: category.color || '#9e9e9e' // Default color if none is specified
+            };
+        });
+        return categoryMap;
+    }, [categories]);
 
     if (loading) {
         return (
@@ -120,10 +125,9 @@ export default function Dashboard() {
             <Typography variant="h4" gutterBottom>
                 Dashboard
             </Typography>
-
             {/* Summary Cards */}
-            <Grid2 container spacing={3} sx={{ mb: 4 }}>
-                <Grid2 size={{ xs: 12, md: 4, sm: 6 }}>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid size={{ xs: 12, md: 4, sm: 6 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -131,15 +135,17 @@ export default function Dashboard() {
                                     <Typography color="textSecondary" gutterBottom variant="body2">
                                         Total Expenses (30 days)
                                     </Typography>
-                                    <Typography variant="h5">{totalExpenses.toFixed(2)} zł</Typography>
+                                    <Typography variant="h5">
+                                        {formatCurrency(totalExpenses, settings.currency)}
+                                    </Typography>
                                 </Box>
                                 <MoneyIcon sx={{ color: 'primary.main', fontSize: 40 }} />
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid2>
+                </Grid>
 
-                <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -153,9 +159,9 @@ export default function Dashboard() {
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid2>
+                </Grid>
 
-                <Grid2 size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -163,29 +169,30 @@ export default function Dashboard() {
                                     <Typography color="textSecondary" gutterBottom variant="body2">
                                         Average Daily Spend
                                     </Typography>
-                                    <Typography variant="h5">{(totalExpenses / 30).toFixed(2)} zł</Typography>
+                                    <Typography variant="h5">
+                                        {formatCurrency(totalExpenses / 30, settings.currency)}
+                                    </Typography>
                                 </Box>
                                 <ReceiptIcon sx={{ color: 'warning.main', fontSize: 40 }} />
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid2>
-            </Grid2>
-
+                </Grid>
+            </Grid>
             {/* Charts and Lists */}
-            <Grid2 container spacing={3}>
+            <Grid container spacing={3}>
                 {/* Simple Expense Form */}
-                <Grid2 size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography variant="h6">Add Expense</Typography>
                         </Box>
                         <SimpleExpenseForm categories={categories} />
                     </Paper>
-                </Grid2>
+                </Grid>
 
                 {/* Expenses by Category */}
-                <Grid2 size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2, height: 400 }}>
                         <Typography variant="h6" gutterBottom>
                             Expenses by Category
@@ -233,10 +240,10 @@ export default function Dashboard() {
                             )}
                         </Box>
                     </Paper>
-                </Grid2>
+                </Grid>
 
                 {/* Last 10 expenses */}
-                <Grid2 size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2, height: 400, overflow: 'auto' }}>
                         <Typography variant="h6" gutterBottom>
                             Last 10 expenses
@@ -273,7 +280,9 @@ export default function Dashboard() {
                                                         'Unknown Category'
                                                     )}
                                                 </TableCell>
-                                                <TableCell align="right">{formatCurrency(expense.amount)}</TableCell>
+                                                <TableCell align="right">
+                                                    {formatCurrency(expense.amount, settings.currency)}
+                                                </TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
@@ -287,10 +296,10 @@ export default function Dashboard() {
                             </Table>
                         </TableContainer>
                     </Paper>
-                </Grid2>
+                </Grid>
 
                 {/* Recent Expenses */}
-                <Grid2 size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2 }}>
                         <Box
                             sx={{
@@ -311,8 +320,13 @@ export default function Dashboard() {
                                     <ListItem
                                         key={index}
                                         secondaryAction={
-                                            <Typography variant="body2" fontWeight="bold">
-                                                {formatCurrency(category.value)}
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    fontWeight: 'bold'
+                                                }}
+                                            >
+                                                {formatCurrency(category.value, settings.currency)}
                                             </Typography>
                                         }
                                     >
@@ -329,8 +343,8 @@ export default function Dashboard() {
                             </Typography>
                         )}
                     </Paper>
-                </Grid2>
-            </Grid2>
+                </Grid>
+            </Grid>
         </Box>
     );
 }

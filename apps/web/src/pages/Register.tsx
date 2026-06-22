@@ -4,13 +4,13 @@ import { Avatar, Button, TextField, Link, Grid, Box, Typography, Alert } from '@
 import { PersonAddOutlined as PersonAddOutlinedIcon } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
+import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
 
 // Validation schema
 const validationSchema = yup.object({
     firstName: yup.string().trim(),
     lastName: yup.string().trim(),
-    username: yup.string().min(3, 'Username should be of minimum 3 characters length').required('Username is required'),
     email: yup.string().email('Enter a valid email').required('Email is required'),
     password: yup.string().min(8, 'Password should be of minimum 8 characters length').required('Password is required'),
     confirmPassword: yup
@@ -28,7 +28,6 @@ export default function Register() {
         initialValues: {
             firstName: '',
             lastName: '',
-            username: '',
             email: '',
             password: '',
             confirmPassword: ''
@@ -36,11 +35,11 @@ export default function Register() {
         validationSchema: validationSchema,
         onSubmit: async (values) => {
             try {
-                await register(values.username, values.email, values.password, values.firstName, values.lastName);
+                await register(values.email, values.password, values.firstName, values.lastName);
                 navigate('/');
             } catch (err) {
-                if (err instanceof Error) {
-                    setError(err.message);
+                if (axios.isAxiosError(err)) {
+                    setError(err.response?.data?.message || 'An error occurred during registration.');
                 } else {
                     setError('An error occurred during registration.');
                 }
@@ -56,16 +55,14 @@ export default function Register() {
             <Typography component="h1" variant="h5">
                 Sign up
             </Typography>
-
             {error && (
                 <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
                     {error}
                 </Alert>
             )}
-
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 3, width: '100%' }}>
-                <Grid2 container spacing={2}>
-                    <Grid2 xs={12} sm={6}>
+                <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField
                             autoComplete="given-name"
                             name="firstName"
@@ -78,8 +75,8 @@ export default function Register() {
                             error={formik.touched.firstName && Boolean(formik.errors.firstName)}
                             helperText={formik.touched.firstName && formik.errors.firstName}
                         />
-                    </Grid2>
-                    <Grid2 xs={12} sm={6}>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                         <TextField
                             fullWidth
                             id="lastName"
@@ -92,22 +89,8 @@ export default function Register() {
                             error={formik.touched.lastName && Boolean(formik.errors.lastName)}
                             helperText={formik.touched.lastName && formik.errors.lastName}
                         />
-                    </Grid2>
-                    <Grid2 xs={12}>
-                        <TextField
-                            fullWidth
-                            id="username"
-                            label="Username"
-                            name="username"
-                            autoComplete="username"
-                            value={formik.values.username}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            error={formik.touched.username && Boolean(formik.errors.username)}
-                            helperText={formik.touched.username && formik.errors.username}
-                        />
-                    </Grid2>
-                    <Grid2 xs={12}>
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
                         <TextField
                             fullWidth
                             id="email"
@@ -120,8 +103,8 @@ export default function Register() {
                             error={formik.touched.email && Boolean(formik.errors.email)}
                             helperText={formik.touched.email && formik.errors.email}
                         />
-                    </Grid2>
-                    <Grid2 xs={12}>
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
                         <TextField
                             fullWidth
                             name="password"
@@ -135,8 +118,8 @@ export default function Register() {
                             error={formik.touched.password && Boolean(formik.errors.password)}
                             helperText={formik.touched.password && formik.errors.password}
                         />
-                    </Grid2>
-                    <Grid2 xs={12}>
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
                         <TextField
                             fullWidth
                             name="confirmPassword"
@@ -149,8 +132,8 @@ export default function Register() {
                             error={formik.touched.confirmPassword && Boolean(formik.errors.confirmPassword)}
                             helperText={formik.touched.confirmPassword && formik.errors.confirmPassword}
                         />
-                    </Grid2>
-                </Grid2>
+                    </Grid>
+                </Grid>
                 <Button
                     type="submit"
                     fullWidth
@@ -160,13 +143,18 @@ export default function Register() {
                 >
                     Sign Up
                 </Button>
-                <Grid2 container justifyContent="flex-end">
-                    <Grid2>
+                <Grid
+                    container
+                    sx={{
+                        justifyContent: 'flex-end'
+                    }}
+                >
+                    <Grid size="auto">
                         <Link component={RouterLink} to="/login" variant="body2">
                             Already have an account? Sign in
                         </Link>
-                    </Grid2>
-                </Grid2>
+                    </Grid>
+                </Grid>
             </Box>
         </>
     );

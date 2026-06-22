@@ -235,7 +235,7 @@ export class ExpenseModel {
 
         try {
             const monthlyTotalsQuery = `
-        SELECT 
+        SELECT
             TO_CHAR(date, 'Month') as "month",
             EXTRACT(MONTH FROM date) as month_num,
             EXTRACT(YEAR FROM date) as "year",
@@ -246,62 +246,70 @@ export class ExpenseModel {
         ORDER BY month_num
       `;
 
-            const monthlyTotals = await client.query(monthlyTotalsQuery, [userId, year]);
+            const categoryBreakdownQuery = `
+        SELECT
+            EXTRACT(MONTH FROM e.date) as month_num,
+            c.name as "categoryName",
+            SUM(e.amount) as "amount"
+        FROM expenses e
+        JOIN categories c ON e.category_id = c.id
+        WHERE e.user_id = $1 AND EXTRACT(YEAR FROM e.date) = $2
+        GROUP BY EXTRACT(MONTH FROM e.date), c.id, c.name
+        ORDER BY month_num, "amount" DESC
+      `;
 
-            const results: ExpenseByMonth[] = [];
+            const topExpensesQuery = `
+        WITH ranked_expenses AS (
+            SELECT
+                id, amount, description, date,
+                category_id as "categoryId", user_id as "userId",
+                created_at as "createdAt", updated_at as "updatedAt",
+                EXTRACT(MONTH FROM date) as month_num,
+                ROW_NUMBER() OVER (PARTITION BY EXTRACT(MONTH FROM date) ORDER BY amount DESC) as rn
+            FROM expenses
+            WHERE user_id = $1 AND EXTRACT(YEAR FROM date) = $2
+        )
+        SELECT id, amount, description, date, "categoryId", "userId", "createdAt", "updatedAt", month_num
+        FROM ranked_expenses
+        WHERE rn <= 5
+        ORDER BY month_num, amount DESC
+      `;
 
-            for (const monthData of monthlyTotals.rows) {
-                const categoryQuery = `
-          SELECT 
-              c.id as "categoryId",
-              c.name as "categoryName",
-              SUM(e.amount) as "amount"
-          FROM expenses e
-          JOIN categories c ON e.category_id = c.id
-          WHERE e.user_id = $1 
-            AND EXTRACT(YEAR FROM e.date) = $2
-            AND EXTRACT(MONTH FROM e.date) = $3
-          GROUP BY c.id, c.name
-          ORDER BY "amount" DESC
-        `;
+            const [monthlyTotals, categoryBreakdown, topExpenses] = await Promise.all([
+                client.query(monthlyTotalsQuery, [userId, year]),
+                client.query(categoryBreakdownQuery, [userId, year]),
+                client.query(topExpensesQuery, [userId, year])
+            ]);
 
-                const categoryResults = await client.query(categoryQuery, [userId, year, monthData.month_num]);
+            const totalByCategoryByMonth = new Map<number, Record<string, number>>();
+            categoryBreakdown.rows.forEach((row) => {
+                const monthNum = Number(row.month_num);
+                if (!totalByCategoryByMonth.has(monthNum)) {
+                    totalByCategoryByMonth.set(monthNum, {});
+                }
+                totalByCategoryByMonth.get(monthNum)![row.categoryName] = parseFloat(row.amount);
+            });
 
-                const totalByCategory: Record<string, number> = {};
-                categoryResults.rows.forEach((cat) => {
-                    totalByCategory[cat.categoryName] = parseFloat(cat.amount);
-                });
+            const topFiveByMonth = new Map<number, Expense[]>();
+            topExpenses.rows.forEach((row) => {
+                const monthNum = Number(row.month_num);
+                if (!topFiveByMonth.has(monthNum)) {
+                    topFiveByMonth.set(monthNum, []);
+                }
+                const { month_num, ...expense } = row;
+                topFiveByMonth.get(monthNum)!.push({ ...expense, amount: parseFloat(expense.amount) });
+            });
 
-                const topExpensesQuery = `
-          SELECT 
-              id, amount, description, date, 
-              category_id as "categoryId", user_id as "userId",
-              created_at as "createdAt", updated_at as "updatedAt"
-          FROM expenses
-          WHERE user_id = $1 
-            AND EXTRACT(YEAR FROM date) = $2
-            AND EXTRACT(MONTH FROM date) = $3
-          ORDER BY amount DESC
-          LIMIT 5
-        `;
-
-                const topExpenses = await client.query(topExpensesQuery, [userId, year, monthData.month_num]);
-
-                const topFiveMostExpensive = topExpenses.rows.map((row) => ({
-                    ...row,
-                    amount: parseFloat(row.amount)
-                }));
-
-                results.push({
+            return monthlyTotals.rows.map((monthData) => {
+                const monthNum = Number(monthData.month_num);
+                return {
                     month: monthData.month.trim(),
                     year: parseInt(monthData.year),
                     total: parseFloat(monthData.total),
-                    totalByCategory,
-                    topFiveMostExpensive
-                });
-            }
-
-            return results;
+                    totalByCategory: totalByCategoryByMonth.get(monthNum) ?? {},
+                    topFiveMostExpensive: topFiveByMonth.get(monthNum) ?? []
+                };
+            });
         } finally {
             client.release();
         }

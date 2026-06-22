@@ -1,6 +1,5 @@
 export interface User {
     id: string;
-    username: string;
     email: string;
     firstName?: string;
     lastName?: string;
@@ -15,7 +14,7 @@ export interface UserCredentials {
 
 export interface AuthResponse {
     user: Omit<User, 'password'>;
-    token: string;
+    token?: string;
 }
 
 export interface Category {
@@ -53,23 +52,6 @@ export interface ExpenseUpdateInput {
     categoryId?: string;
 }
 
-export interface Budget {
-    id: string;
-    amount: number;
-    categoryId: string;
-    userId: string;
-    startDate: Date;
-    endDate: Date;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-export interface BudgetProgress {
-    spent: number;
-    percentage: number;
-    remaining: number;
-}
-
 export interface ExpenseSummary {
     totalAmount: number;
     categoryBreakdown: Array<{
@@ -104,4 +86,22 @@ export interface ExpenseByCategory {
     label: string;
     value: number;
     color: string;
+}
+
+export const SUPPORTED_CURRENCIES = ['PLN', 'USD', 'EUR', 'GBP'] as const;
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+
+export type ThemeMode = 'light' | 'dark';
+
+export interface UserSettings {
+    userId: string;
+    currency: SupportedCurrency;
+    theme: ThemeMode;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface UserSettingsUpdateInput {
+    currency?: SupportedCurrency;
+    theme?: ThemeMode;
 }
