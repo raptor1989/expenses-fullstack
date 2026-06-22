@@ -1,0 +1,116 @@
+# Azure Pipeline: build + test, a wdrożenie (SSH) na VM produkcyjny.
+#
+# Wymagane przygotowanie po stronie Azure DevOps (nie da się zrobić tylko
+# z tego pliku):
+#   1. Service connection typu "SSH" do VM produkcyjnego, nazwany tak jak
+#      w zmiennej `sshServiceConnection` poniżej.
+#   2. Na docelowym VM zainstalowane: Node.js >= 20, npm, PostgreSQL
+#      osiągalny z VM, oraz `pm2` dostępne globalnie lub przez `npx pm2`.
+#   3. Na VM, w katalogu `deployPath`, muszą już istnieć pliki sekretów,
+#      które NIE są w repo (są w .gitignore): `apps/api/.env` oraz
+#      `apps/web/.env.production`. Ten pipeline ich nie tworzy i nie
+#      nadpisuje — patrz DEPLOYMENT.md, sekcje 2-3.
+#   4. Pierwsza migracja bazy (`npm run db:migrate`) powinna być
+#      wykonana ręcznie przed pierwszym deployem; pipeline odpala ją przy
+#      każdym deployu, więc migracje w `apps/api/src/db/migrate.ts` muszą
+#      być idempotentne.
+
+trigger:
+    branches:
+        include:
+            - master
+
+pr:
+    branches:
+        include:
+            - master
+            - develop
+
+variables:
+    nodeVersion: '20.x'
+    sshServiceConnection: 'production-vm' # nazwa SSH service connection w Azure DevOps
+    deployPath: '/var/www/expenses-fullstack'
+
+stages:
+    - stage: BuildAndTest
+      displayName: 'Build, lint, test'
+      jobs:
+          - job: BuildTest
+            pool:
+                vmImage: 'ubuntu-latest'
+
+            services:
+                postgres: postgres:17
+
+            variables:
+                POSTGRES_USER: postgres
+                POSTGRES_PASSWORD: postgres
+                POSTGRES_DB: expenses_test_db
+
+            steps:
+                - task: NodeTool@0
+                  inputs:
+                      versionSpec: $(nodeVersion)
+                  displayName: 'Install Node.js'
+
+                - script: npm install
+                  displayName: 'npm install'
+
+                - script: npm run build
+                  displayName: 'npm run build'
+
+                - script: npm run lint
+                  displayName: 'npm run lint'
+
+                - script: npm test
+                  displayName: 'npm test'
+                  env:
+                      DB_HOST: localhost
+                      DB_PORT: 5432
+                      DB_USER: postgres
+                      DB_PASSWORD: postgres
+                      DB_NAME: expenses_test_db
+
+    - stage: Deploy
+      displayName: 'Deploy na VM produkcyjny'
+      dependsOn: BuildAndTest
+      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+      jobs:
+          - deployment: DeployVM
+            environment: 'production'
+            pool:
+                vmImage: 'ubuntu-latest'
+            strategy:
+                runOnce:
+                    deploy:
+                        steps:
+                            - checkout: self
+
+                            - task: CopyFilesOverSSH@0
+                              displayName: 'Kopiowanie kodu na VM (bez node_modules/.git)'
+                              inputs:
+                                  sshEndpoint: $(sshServiceConnection)
+                                  sourceFolder: '$(Build.SourcesDirectory)'
+                                  contents: |
+                                      **
+                                      !**/node_modules/**
+                                      !.git/**
+                                  targetFolder: $(deployPath)
+                                  overwrite: true
+
+                            - task: SSH@0
+                              displayName: 'Instalacja zależności, build, migracja, restart PM2'
+                              inputs:
+                                  sshEndpoint: $(sshServiceConnection)
+                                  runOptions: 'inline'
+                                  inline: |
+                                      set -e
+                                      cd $(deployPath)
+                                      npm install
+                                      npm run build
+                                      cd apps/api
+                                      NODE_ENV=production npm run db:migrate
+                                      cd ../..
+                                      npx pm2 delete expenses-api expenses-web || true
+                                      node scripts/start-pm2.js
+                                      npx pm2 save
