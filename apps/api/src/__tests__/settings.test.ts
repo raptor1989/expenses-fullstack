@@ -67,7 +67,7 @@ describe('PUT /api/settings', () => {
         expect(res.status).toBe(401);
     });
 
-    it('does not affect another user\'s settings', async () => {
+    it("does not affect another user's settings", async () => {
         const { cookie: cookieA } = await registerAndLogin(userFixture());
         const { cookie: cookieB } = await registerAndLogin(userFixture());
 

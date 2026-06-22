@@ -18,10 +18,7 @@ afterEach(async () => {
 /** Helper: create a user with a custom category and return both */
 async function setupUserWithCategory() {
     const auth = await registerAndLogin(userFixture());
-    const catRes = await request(app)
-        .post('/api/categories')
-        .set('Cookie', auth.cookie)
-        .send(categoryFixture());
+    const catRes = await request(app).post('/api/categories').set('Cookie', auth.cookie).send(categoryFixture());
     return { auth, categoryId: catRes.body.category.id as string };
 }
 
@@ -100,14 +97,9 @@ describe('GET /api/expenses', () => {
     it('returns paginated expenses for the current user', async () => {
         const { auth, categoryId } = await setupUserWithCategory();
 
-        await request(app)
-            .post('/api/expenses')
-            .set('Cookie', auth.cookie)
-            .send(expenseFixture(categoryId));
+        await request(app).post('/api/expenses').set('Cookie', auth.cookie).send(expenseFixture(categoryId));
 
-        const res = await request(app)
-            .get('/api/expenses')
-            .set('Cookie', auth.cookie);
+        const res = await request(app).get('/api/expenses').set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
         expect(res.body.expenses).toHaveLength(1);
@@ -125,9 +117,7 @@ describe('GET /api/expenses', () => {
                 .send(expenseFixture(categoryId, { description: `Expense ${i}` }));
         }
 
-        const res = await request(app)
-            .get('/api/expenses?limit=2&page=1')
-            .set('Cookie', auth.cookie);
+        const res = await request(app).get('/api/expenses?limit=2&page=1').set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
         expect(res.body.expenses).toHaveLength(2);
@@ -164,9 +154,7 @@ describe('GET /api/expenses', () => {
             .set('Cookie', authB.cookie)
             .send(expenseFixture(catB, { description: 'B expense' }));
 
-        const res = await request(app)
-            .get('/api/expenses')
-            .set('Cookie', authA.cookie);
+        const res = await request(app).get('/api/expenses').set('Cookie', authA.cookie);
 
         expect(res.status).toBe(200);
         expect(res.body.expenses).toHaveLength(0);
@@ -183,26 +171,19 @@ describe('GET /api/expenses/:id', () => {
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId));
 
-        const res = await request(app)
-            .get(`/api/expenses/${created.body.expense.id}`)
-            .set('Cookie', auth.cookie);
+        const res = await request(app).get(`/api/expenses/${created.body.expense.id}`).set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
         expect(res.body.expense.id).toBe(created.body.expense.id);
     });
 
-    it('returns 404 for another user\'s expense', async () => {
+    it("returns 404 for another user's expense", async () => {
         const { auth: authA } = await setupUserWithCategory();
         const { auth: authB, categoryId: catB } = await setupUserWithCategory();
 
-        const created = await request(app)
-            .post('/api/expenses')
-            .set('Cookie', authB.cookie)
-            .send(expenseFixture(catB));
+        const created = await request(app).post('/api/expenses').set('Cookie', authB.cookie).send(expenseFixture(catB));
 
-        const res = await request(app)
-            .get(`/api/expenses/${created.body.expense.id}`)
-            .set('Cookie', authA.cookie);
+        const res = await request(app).get(`/api/expenses/${created.body.expense.id}`).set('Cookie', authA.cookie);
 
         expect(res.status).toBe(404);
     });
@@ -236,14 +217,11 @@ describe('PUT /api/expenses/:id', () => {
         expect(res.body.expense.description).toBe('Updated');
     });
 
-    it('returns 404 when updating another user\'s expense', async () => {
+    it("returns 404 when updating another user's expense", async () => {
         const { auth: authA } = await setupUserWithCategory();
         const { auth: authB, categoryId: catB } = await setupUserWithCategory();
 
-        const created = await request(app)
-            .post('/api/expenses')
-            .set('Cookie', authB.cookie)
-            .send(expenseFixture(catB));
+        const created = await request(app).post('/api/expenses').set('Cookie', authB.cookie).send(expenseFixture(catB));
 
         const res = await request(app)
             .put(`/api/expenses/${created.body.expense.id}`)
@@ -262,25 +240,18 @@ describe('DELETE /api/expenses/:id', () => {
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId));
 
-        const res = await request(app)
-            .delete(`/api/expenses/${created.body.expense.id}`)
-            .set('Cookie', auth.cookie);
+        const res = await request(app).delete(`/api/expenses/${created.body.expense.id}`).set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
     });
 
-    it('returns 404 when deleting another user\'s expense', async () => {
+    it("returns 404 when deleting another user's expense", async () => {
         const { auth: authA } = await setupUserWithCategory();
         const { auth: authB, categoryId: catB } = await setupUserWithCategory();
 
-        const created = await request(app)
-            .post('/api/expenses')
-            .set('Cookie', authB.cookie)
-            .send(expenseFixture(catB));
+        const created = await request(app).post('/api/expenses').set('Cookie', authB.cookie).send(expenseFixture(catB));
 
-        const res = await request(app)
-            .delete(`/api/expenses/${created.body.expense.id}`)
-            .set('Cookie', authA.cookie);
+        const res = await request(app).delete(`/api/expenses/${created.body.expense.id}`).set('Cookie', authA.cookie);
 
         expect(res.status).toBe(404);
     });

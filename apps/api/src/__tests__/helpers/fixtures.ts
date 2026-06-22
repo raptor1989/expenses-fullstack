@@ -9,7 +9,7 @@ export function userFixture(overrides?: Partial<{ email: string; password: strin
     return {
         email: `testuser${n}@example.com`,
         password: 'Password123!',
-        ...overrides,
+        ...overrides
     };
 }
 
@@ -19,16 +19,19 @@ export function categoryFixture(overrides?: Partial<{ name: string; color: strin
         name: `Category ${n}`,
         color: '#AABBCC',
         icon: 'tag',
-        ...overrides,
+        ...overrides
     };
 }
 
-export function expenseFixture(categoryId: string, overrides?: Partial<{ amount: number; description: string; date: string }>) {
+export function expenseFixture(
+    categoryId: string,
+    overrides?: Partial<{ amount: number; description: string; date: string }>
+) {
     return {
         amount: 42.5,
         description: 'Test expense',
         date: '2025-01-15',
         categoryId,
-        ...overrides,
+        ...overrides
     };
 }

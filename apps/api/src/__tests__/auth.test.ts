@@ -22,7 +22,7 @@ describe('POST /api/users/register', () => {
 
         expect(res.status).toBe(201);
         expect(res.body.user).toMatchObject({
-            email: data.email,
+            email: data.email
         });
         expect(res.body.user.password).toBeUndefined();
         expect(res.headers['set-cookie']).toBeDefined();
@@ -54,7 +54,6 @@ describe('POST /api/users/register', () => {
         expect(res.status).toBe(400);
         expect(res.body.code).toBe('validation_error');
     });
-
 });
 
 describe('POST /api/users/login', () => {
@@ -62,9 +61,7 @@ describe('POST /api/users/login', () => {
         const data = userFixture();
         await request(app).post('/api/users/register').send(data);
 
-        const res = await request(app)
-            .post('/api/users/login')
-            .send({ email: data.email, password: data.password });
+        const res = await request(app).post('/api/users/login').send({ email: data.email, password: data.password });
 
         expect(res.status).toBe(200);
         expect(res.headers['set-cookie']).toBeDefined();
@@ -98,9 +95,7 @@ describe('GET /api/users/profile', () => {
         const data = userFixture();
         const { cookie } = await registerAndLogin(data);
 
-        const res = await request(app)
-            .get('/api/users/profile')
-            .set('Cookie', cookie);
+        const res = await request(app).get('/api/users/profile').set('Cookie', cookie);
 
         expect(res.status).toBe(200);
         expect(res.body.user.email).toBe(data.email);
@@ -130,9 +125,7 @@ describe('PUT /api/users/profile', () => {
     });
 
     it('returns 401 when not authenticated', async () => {
-        const res = await request(app)
-            .put('/api/users/profile')
-            .send({ firstName: 'John' });
+        const res = await request(app).put('/api/users/profile').send({ firstName: 'John' });
 
         expect(res.status).toBe(401);
     });
@@ -196,9 +189,7 @@ describe('POST /api/users/logout', () => {
     it('clears the auth cookie', async () => {
         const { cookie } = await registerAndLogin(userFixture());
 
-        const res = await request(app)
-            .post('/api/users/logout')
-            .set('Cookie', cookie);
+        const res = await request(app).post('/api/users/logout').set('Cookie', cookie);
 
         expect(res.status).toBe(200);
         const setCookie = res.headers['set-cookie'] as unknown as string[] | undefined;

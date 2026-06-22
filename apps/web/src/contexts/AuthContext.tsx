@@ -8,12 +8,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     isLoading: boolean;
     login: (email: string, password: string) => Promise<void>;
-    register: (
-        email: string,
-        password: string,
-        firstName?: string,
-        lastName?: string
-    ) => Promise<void>;
+    register: (email: string, password: string, firstName?: string, lastName?: string) => Promise<void>;
     logout: () => Promise<void>;
     updateUser: (user: User) => void;
 }
@@ -62,12 +57,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
     };
 
-    const register = async (
-        email: string,
-        password: string,
-        firstName?: string,
-        lastName?: string
-    ) => {
+    const register = async (email: string, password: string, firstName?: string, lastName?: string) => {
         setIsLoading(true);
         try {
             const response = await registerUser({

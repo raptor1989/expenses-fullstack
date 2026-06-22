@@ -7,5 +7,5 @@ import dotenv from 'dotenv';
  * Uses override:true to ensure .env.test always wins over existing env vars.
  */
 export function loadTestEnv() {
-    dotenv.config({ path: path.resolve(__dirname, '../../../.env.test'), override: true });
+    dotenv.config({ path: path.resolve(__dirname, '../../../.env.test'), override: true, quiet: true });
 }

@@ -3,12 +3,7 @@ import pool from '../db/index';
 import bcrypt from 'bcryptjs';
 
 export class UserModel {
-    static async create(
-        email: string,
-        password: string,
-        firstName?: string,
-        lastName?: string
-    ): Promise<User> {
+    static async create(email: string, password: string, firstName?: string, lastName?: string): Promise<User> {
         const client = await pool.connect();
 
         try {

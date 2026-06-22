@@ -119,9 +119,7 @@ export default function MainLayout() {
                                 }
                             }}
                             selected={
-                                item.path === '/'
-                                    ? location.pathname === '/'
-                                    : location.pathname.startsWith(item.path)
+                                item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path)
                             }
                         >
                             <ListItemIcon>{item.icon}</ListItemIcon>

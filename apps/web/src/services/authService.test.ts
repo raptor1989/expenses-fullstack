@@ -11,7 +11,14 @@ const { apiMock } = vi.hoisted(() => ({
 
 vi.mock('./api', () => ({ default: apiMock }));
 
-import { loginUser, registerUser, logoutUser, fetchCurrentUser, updateUserProfile, changePassword } from './authService';
+import {
+    loginUser,
+    registerUser,
+    logoutUser,
+    fetchCurrentUser,
+    updateUserProfile,
+    changePassword
+} from './authService';
 
 beforeEach(() => {
     vi.clearAllMocks();

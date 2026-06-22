@@ -29,6 +29,6 @@ export async function registerAndLogin(userData: {
         token,
         cookie: rawCookie,
         userId: res.body.user.id,
-        email: res.body.user.email,
+        email: res.body.user.email
     };
 }

@@ -39,7 +39,15 @@ describe('categoryService', () => {
     });
 
     it('createCategory posts name/color/icon and unwraps the created category', async () => {
-        const category = { id: '1', name: 'Fuel', color: '#FF0000', icon: 'fuel', userId: 'u1', createdAt: '', updatedAt: '' };
+        const category = {
+            id: '1',
+            name: 'Fuel',
+            color: '#FF0000',
+            icon: 'fuel',
+            userId: 'u1',
+            createdAt: '',
+            updatedAt: ''
+        };
         apiMock.post.mockResolvedValue({ data: { message: 'ok', category } });
 
         const result = await createCategory('Fuel', '#FF0000', 'fuel');
@@ -54,7 +62,11 @@ describe('categoryService', () => {
 
         const result = await updateCategory('1', 'Fuel 2');
 
-        expect(apiMock.put).toHaveBeenCalledWith('/categories/1', { name: 'Fuel 2', color: undefined, icon: undefined });
+        expect(apiMock.put).toHaveBeenCalledWith('/categories/1', {
+            name: 'Fuel 2',
+            color: undefined,
+            icon: undefined
+        });
         expect(result).toEqual(category);
     });
 

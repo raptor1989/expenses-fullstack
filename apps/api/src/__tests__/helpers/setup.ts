@@ -4,7 +4,7 @@ import { Pool } from 'pg';
 
 export default async function globalSetup() {
     // Load test environment variables before anything else
-    dotenv.config({ path: path.resolve(__dirname, '../../../.env.test') });
+    dotenv.config({ path: path.resolve(__dirname, '../../../.env.test'), quiet: true });
 
     const dbName = process.env.DB_NAME || 'expenses_test_db';
     const dbConfig = {
@@ -12,16 +12,13 @@ export default async function globalSetup() {
         password: process.env.DB_PASSWORD || 'postgres',
         host: process.env.DB_HOST || 'localhost',
         port: Number(process.env.DB_PORT) || 5432,
-        ssl: false,
+        ssl: false
     };
 
     // Create test database if it doesn't exist (connect to default 'postgres' db)
     const adminPool = new Pool({ ...dbConfig, database: 'postgres' });
     try {
-        const { rows } = await adminPool.query(
-            `SELECT 1 FROM pg_database WHERE datname = $1`,
-            [dbName]
-        );
+        const { rows } = await adminPool.query(`SELECT 1 FROM pg_database WHERE datname = $1`, [dbName]);
         if (rows.length === 0) {
             // Database names cannot be parameterised; dbName comes from our own .env.test
             await adminPool.query(`CREATE DATABASE "${dbName}"`);

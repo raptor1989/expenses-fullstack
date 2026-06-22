@@ -11,7 +11,14 @@ const { apiMock } = vi.hoisted(() => ({
 
 vi.mock('./api', () => ({ default: apiMock }));
 
-import { getExpenses, createExpense, updateExpense, deleteExpense, getExpenseSummary, getExpensesByMonth } from './expenseService';
+import {
+    getExpenses,
+    createExpense,
+    updateExpense,
+    deleteExpense,
+    getExpenseSummary,
+    getExpensesByMonth
+} from './expenseService';
 
 beforeEach(() => {
     vi.clearAllMocks();

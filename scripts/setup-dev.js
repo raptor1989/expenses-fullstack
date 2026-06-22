@@ -10,6 +10,8 @@ const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+const dotenv = require('dotenv');
+const { Pool } = require('pg');
 
 
 const DB_NAME = 'expenses_db';
@@ -53,98 +55,80 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
+// Connects to the 'postgres' maintenance database using the same credentials
+// the API itself uses (read from .env), rather than shelling out to the
+// psql CLI, which may not be installed or on PATH.
+function getAdminPool() {
+  return new Pool({
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'postgres',
+    host: process.env.DB_HOST || 'localhost',
+    port: Number(process.env.DB_PORT) || 5432,
+    database: 'postgres',
+    connectionTimeoutMillis: 3000,
+  });
+}
+
 async function checkPostgreSQL() {
   log('Checking PostgreSQL...', colors.cyan);
+  const pool = getAdminPool();
   try {
-    if (process.platform === 'win32') {
-      
-      try {
-        execSync('sc query postgresql', { stdio: 'ignore' });
-        log('PostgreSQL service is running ✓', colors.green);
-        return true;
-      } catch (error) {
-        
-        try {
-          execSync('powershell -Command "Test-NetConnection -ComputerName localhost -Port 5432 | Out-Null"', { stdio: 'ignore' });
-          log('PostgreSQL is running ✓', colors.green);
-          return true;
-        } catch (connError) {
-          log('PostgreSQL is not running or not installed ✗', colors.red);
-          log('Please make sure PostgreSQL is installed and running', colors.yellow);
-          return false;
-        }
-      }
-    } else {
-      
-      execSync('pg_isready', { stdio: 'ignore' });
-      log('PostgreSQL is running ✓', colors.green);
-      return true;
-    }
+    const client = await pool.connect();
+    client.release();
+    log('PostgreSQL is running ✓', colors.green);
+    return true;
   } catch (error) {
     log('PostgreSQL is not running or not installed ✗', colors.red);
     log('Please make sure PostgreSQL is installed and running', colors.yellow);
+    log(`Error: ${error.message}`, colors.red);
     return false;
+  } finally {
+    await pool.end();
   }
 }
 
 
 async function checkDatabase() {
-  log(`Checking if database '${DB_NAME}' exists...`, colors.cyan);
+  const dbName = process.env.DB_NAME || DB_NAME;
+  log(`Checking if database '${dbName}' exists...`, colors.cyan);
+  const pool = getAdminPool();
   try {
-    if (process.platform === 'win32') {
-      
-      
-      const output = execSync(
-        `psql -U postgres -t -c "SELECT COUNT(*) FROM pg_database WHERE datname='${DB_NAME}'"`, 
-        {
-          env: { ...process.env, PGPASSWORD: 'postgres' } 
-        }
-      ).toString().trim();
-      
-      
-      if (output === '0') {
-        log(`Database '${DB_NAME}' does not exist ✗`, colors.yellow);
-        return false;
-      } else {
-        log(`Database '${DB_NAME}' exists ✓`, colors.green);
-        return true;
-      }
-    } else {
-       Unix-based check
-      execSync(`psql -lqt | cut -d \\| -f 1 | grep -qw ${DB_NAME}`, { stdio: 'ignore' });
-      log(`Database '${DB_NAME}' exists ✓`, colors.green);
-      return true;
+    const { rows } = await pool.query('SELECT 1 FROM pg_database WHERE datname = $1', [dbName]);
+    if (rows.length === 0) {
+      log(`Database '${dbName}' does not exist ✗`, colors.yellow);
+      return false;
     }
-  } catch (error) {
-    log(`Error checking if database exists: ${error.message}`, colors.red);
-    log(`Assuming database '${DB_NAME}' does not exist ✗`, colors.yellow);
-    return false;
-  }
-}
-
- Create database
-async function createDatabase() {
-  log(`Creating database '${DB_NAME}'...`, colors.cyan);
-  try {
-    if (process.platform === 'win32') {
-       Windows-specific command
-      execSync(`psql -U postgres -c "CREATE DATABASE ${DB_NAME}"`, {
-        env: { ...process.env, PGPASSWORD: 'postgres' }  Assumes postgres password is 'postgres'
-      });
-    } else {
-       Unix-based command
-      execSync(`createdb ${DB_NAME}`);
-    }
-    log(`Database '${DB_NAME}' created successfully ✓`, colors.green);
+    log(`Database '${dbName}' exists ✓`, colors.green);
     return true;
   } catch (error) {
-    log(`Failed to create database '${DB_NAME}' ✗`, colors.red);
-    log(`Error: ${error.message}`, colors.red);
+    log(`Error checking if database exists: ${error.message}`, colors.red);
+    log(`Assuming database '${dbName}' does not exist ✗`, colors.yellow);
     return false;
+  } finally {
+    await pool.end();
   }
 }
 
- Check if .env file exists and create if not
+// Create database
+async function createDatabase() {
+  const dbName = process.env.DB_NAME || DB_NAME;
+  log(`Creating database '${dbName}'...`, colors.cyan);
+  const pool = getAdminPool();
+  try {
+    // Database names cannot be parameterised; dbName comes from our own .env
+    await pool.query(`CREATE DATABASE "${dbName}"`);
+    log(`Database '${dbName}' created successfully ✓`, colors.green);
+    return true;
+  } catch (error) {
+    log(`Failed to create database '${dbName}' ✗`, colors.red);
+    log(`Error: ${error.message}`, colors.red);
+    return false;
+  } finally {
+    await pool.end();
+  }
+}
+
+// Check if .env file exists and create if not
 async function setupEnvFile() {
   log('Checking .env file...', colors.cyan);
   if (!fs.existsSync(ENV_FILE)) {
@@ -171,7 +155,7 @@ JWT_EXPIRES_IN=7D`;
   }
 }
 
- Run database migrations
+// Run database migrations
 async function runMigrations() {
   log('Running database migrations...', colors.cyan);
   try {
@@ -185,21 +169,22 @@ async function runMigrations() {
   }
 }
 
- Main function
+// Main function
 async function main() {
   log('------ Expenses API Setup ------', colors.magenta);
 
-   Check PostgreSQL
+  // Setup environment file, then load it so DB_* vars are available
+  await setupEnvFile();
+  dotenv.config({ path: ENV_FILE, quiet: true });
+
+  // Check PostgreSQL
   const postgresRunning = await checkPostgreSQL();
   if (!postgresRunning) {
     rl.close();
     process.exit(1);
   }
 
-   Setup environment file
-  await setupEnvFile();
-
-   Check and create database if needed
+  // Check and create database if needed
   const dbExists = await checkDatabase();
   if (!dbExists) {
     const dbCreated = await createDatabase();
@@ -209,7 +194,7 @@ async function main() {
     }
   }
 
-   Run migrations
+  // Run migrations
   const migrationsSuccessful = await runMigrations();
   if (!migrationsSuccessful) {
     rl.close();
@@ -221,11 +206,11 @@ async function main() {
   log('------ Setup Complete! ------', colors.magenta);
   log('Starting development server...', colors.cyan);
 
-   Start the development server
+  // Start the development server
   execSync('npm run dev', { stdio: 'ignore' });
 }
 
- Run the script
+// Run the script
 main().catch(error => {
   console.error('Setup failed:', error);
   process.exit(1);
