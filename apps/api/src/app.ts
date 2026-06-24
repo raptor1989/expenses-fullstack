@@ -16,10 +16,10 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/api/users', userRoutes);
-app.use('/api/expenses', expenseRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/settings', settingsRoutes);
+app.use('/users', userRoutes);
+app.use('/expenses', expenseRoutes);
+app.use('/categories', categoryRoutes);
+app.use('/settings', settingsRoutes);
 
 app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok', message: 'API is running' });
