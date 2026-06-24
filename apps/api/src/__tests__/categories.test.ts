@@ -15,18 +15,18 @@ afterEach(async () => {
     await truncateAllTables();
 });
 
-describe('GET /api/categories', () => {
+describe('GET /categories', () => {
     it('returns the 5 default categories created at registration', async () => {
         const { cookie } = await registerAndLogin(userFixture());
 
-        const res = await request(app).get('/api/categories').set('Cookie', cookie);
+        const res = await request(app).get('/categories').set('Cookie', cookie);
 
         expect(res.status).toBe(200);
         expect(res.body.categories).toHaveLength(5);
     });
 
     it('returns 401 when unauthenticated', async () => {
-        const res = await request(app).get('/api/categories');
+        const res = await request(app).get('/categories');
         expect(res.status).toBe(401);
     });
 
@@ -36,11 +36,11 @@ describe('GET /api/categories', () => {
 
         // User B creates an extra category
         await request(app)
-            .post('/api/categories')
+            .post('/categories')
             .set('Cookie', cookieB)
             .send(categoryFixture({ name: 'B Only' }));
 
-        const res = await request(app).get('/api/categories').set('Cookie', cookieA);
+        const res = await request(app).get('/categories').set('Cookie', cookieA);
 
         expect(res.status).toBe(200);
         const names = res.body.categories.map((c: { name: string }) => c.name);
@@ -48,12 +48,12 @@ describe('GET /api/categories', () => {
     });
 });
 
-describe('POST /api/categories', () => {
+describe('POST /categories', () => {
     it('creates a new category and returns 201', async () => {
         const { cookie } = await registerAndLogin(userFixture());
         const data = categoryFixture();
 
-        const res = await request(app).post('/api/categories').set('Cookie', cookie).send(data);
+        const res = await request(app).post('/categories').set('Cookie', cookie).send(data);
 
         expect(res.status).toBe(201);
         expect(res.body.category.name).toBe(data.name);
@@ -62,7 +62,7 @@ describe('POST /api/categories', () => {
     it('returns 400 when name is missing', async () => {
         const { cookie } = await registerAndLogin(userFixture());
 
-        const res = await request(app).post('/api/categories').set('Cookie', cookie).send({ color: '#AABBCC' });
+        const res = await request(app).post('/categories').set('Cookie', cookie).send({ color: '#AABBCC' });
 
         expect(res.status).toBe(400);
     });
@@ -71,7 +71,7 @@ describe('POST /api/categories', () => {
         const { cookie } = await registerAndLogin(userFixture());
 
         const res = await request(app)
-            .post('/api/categories')
+            .post('/categories')
             .set('Cookie', cookie)
             .send(categoryFixture({ name: 'A'.repeat(101) }));
 
@@ -83,7 +83,7 @@ describe('POST /api/categories', () => {
         const { cookie } = await registerAndLogin(userFixture());
 
         const res = await request(app)
-            .post('/api/categories')
+            .post('/categories')
             .set('Cookie', cookie)
             .send(categoryFixture({ color: 'red' }));
 
@@ -92,18 +92,18 @@ describe('POST /api/categories', () => {
     });
 
     it('returns 401 when unauthenticated', async () => {
-        const res = await request(app).post('/api/categories').send(categoryFixture());
+        const res = await request(app).post('/categories').send(categoryFixture());
 
         expect(res.status).toBe(401);
     });
 });
 
-describe('GET /api/categories/:id', () => {
+describe('GET /categories/:id', () => {
     it('returns own category by id', async () => {
         const { cookie } = await registerAndLogin(userFixture());
-        const created = await request(app).post('/api/categories').set('Cookie', cookie).send(categoryFixture());
+        const created = await request(app).post('/categories').set('Cookie', cookie).send(categoryFixture());
 
-        const res = await request(app).get(`/api/categories/${created.body.category.id}`).set('Cookie', cookie);
+        const res = await request(app).get(`/categories/${created.body.category.id}`).set('Cookie', cookie);
 
         expect(res.status).toBe(200);
         expect(res.body.category.id).toBe(created.body.category.id);
@@ -113,9 +113,9 @@ describe('GET /api/categories/:id', () => {
         const { cookie: cookieA } = await registerAndLogin(userFixture());
         const { cookie: cookieB } = await registerAndLogin(userFixture());
 
-        const created = await request(app).post('/api/categories').set('Cookie', cookieB).send(categoryFixture());
+        const created = await request(app).post('/categories').set('Cookie', cookieB).send(categoryFixture());
 
-        const res = await request(app).get(`/api/categories/${created.body.category.id}`).set('Cookie', cookieA);
+        const res = await request(app).get(`/categories/${created.body.category.id}`).set('Cookie', cookieA);
 
         expect(res.status).toBe(404);
     });
@@ -124,20 +124,20 @@ describe('GET /api/categories/:id', () => {
         const { cookie } = await registerAndLogin(userFixture());
 
         const res = await request(app)
-            .get('/api/categories/00000000-0000-0000-0000-000000000000')
+            .get('/categories/00000000-0000-0000-0000-000000000000')
             .set('Cookie', cookie);
 
         expect(res.status).toBe(404);
     });
 });
 
-describe('PUT /api/categories/:id', () => {
+describe('PUT /categories/:id', () => {
     it('updates category name', async () => {
         const { cookie } = await registerAndLogin(userFixture());
-        const created = await request(app).post('/api/categories').set('Cookie', cookie).send(categoryFixture());
+        const created = await request(app).post('/categories').set('Cookie', cookie).send(categoryFixture());
 
         const res = await request(app)
-            .put(`/api/categories/${created.body.category.id}`)
+            .put(`/categories/${created.body.category.id}`)
             .set('Cookie', cookie)
             .send({ name: 'Updated Name' });
 
@@ -149,10 +149,10 @@ describe('PUT /api/categories/:id', () => {
         const { cookie: cookieA } = await registerAndLogin(userFixture());
         const { cookie: cookieB } = await registerAndLogin(userFixture());
 
-        const created = await request(app).post('/api/categories').set('Cookie', cookieB).send(categoryFixture());
+        const created = await request(app).post('/categories').set('Cookie', cookieB).send(categoryFixture());
 
         const res = await request(app)
-            .put(`/api/categories/${created.body.category.id}`)
+            .put(`/categories/${created.body.category.id}`)
             .set('Cookie', cookieA)
             .send({ name: 'Hijacked' });
 
@@ -160,25 +160,25 @@ describe('PUT /api/categories/:id', () => {
     });
 });
 
-describe('DELETE /api/categories/:id', () => {
+describe('DELETE /categories/:id', () => {
     it('deletes a category with no linked expenses and returns 200', async () => {
         const { cookie } = await registerAndLogin(userFixture());
-        const created = await request(app).post('/api/categories').set('Cookie', cookie).send(categoryFixture());
+        const created = await request(app).post('/categories').set('Cookie', cookie).send(categoryFixture());
 
-        const res = await request(app).delete(`/api/categories/${created.body.category.id}`).set('Cookie', cookie);
+        const res = await request(app).delete(`/categories/${created.body.category.id}`).set('Cookie', cookie);
 
         expect(res.status).toBe(200);
     });
 
     it('returns 400 with category_has_expenses when expenses exist', async () => {
         const { cookie } = await registerAndLogin(userFixture());
-        const catRes = await request(app).post('/api/categories').set('Cookie', cookie).send(categoryFixture());
+        const catRes = await request(app).post('/categories').set('Cookie', cookie).send(categoryFixture());
 
         const categoryId = catRes.body.category.id;
 
-        await request(app).post('/api/expenses').set('Cookie', cookie).send(expenseFixture(categoryId));
+        await request(app).post('/expenses').set('Cookie', cookie).send(expenseFixture(categoryId));
 
-        const res = await request(app).delete(`/api/categories/${categoryId}`).set('Cookie', cookie);
+        const res = await request(app).delete(`/categories/${categoryId}`).set('Cookie', cookie);
 
         expect(res.status).toBe(400);
         expect(res.body.code).toBe('category_has_expenses');
@@ -188,9 +188,9 @@ describe('DELETE /api/categories/:id', () => {
         const { cookie: cookieA } = await registerAndLogin(userFixture());
         const { cookie: cookieB } = await registerAndLogin(userFixture());
 
-        const created = await request(app).post('/api/categories').set('Cookie', cookieB).send(categoryFixture());
+        const created = await request(app).post('/categories').set('Cookie', cookieB).send(categoryFixture());
 
-        const res = await request(app).delete(`/api/categories/${created.body.category.id}`).set('Cookie', cookieA);
+        const res = await request(app).delete(`/categories/${created.body.category.id}`).set('Cookie', cookieA);
 
         expect(res.status).toBe(404);
     });

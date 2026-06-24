@@ -18,16 +18,16 @@ afterEach(async () => {
 /** Helper: create a user with a custom category and return both */
 async function setupUserWithCategory() {
     const auth = await registerAndLogin(userFixture());
-    const catRes = await request(app).post('/api/categories').set('Cookie', auth.cookie).send(categoryFixture());
+    const catRes = await request(app).post('/categories').set('Cookie', auth.cookie).send(categoryFixture());
     return { auth, categoryId: catRes.body.category.id as string };
 }
 
-describe('POST /api/expenses', () => {
+describe('POST /expenses', () => {
     it('creates an expense and returns 201', async () => {
         const { auth, categoryId } = await setupUserWithCategory();
 
         const res = await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId));
 
@@ -40,7 +40,7 @@ describe('POST /api/expenses', () => {
         const { auth, categoryId } = await setupUserWithCategory();
 
         const res = await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send({ description: 'Test', date: '2025-01-15', categoryId });
 
@@ -52,7 +52,7 @@ describe('POST /api/expenses', () => {
         const { auth, categoryId } = await setupUserWithCategory();
 
         const res = await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId, { amount: -10 }));
 
@@ -64,7 +64,7 @@ describe('POST /api/expenses', () => {
         const { auth, categoryId } = await setupUserWithCategory();
 
         const res = await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send({ amount: 10, date: '2025-01-15', categoryId });
 
@@ -76,7 +76,7 @@ describe('POST /api/expenses', () => {
         const { auth, categoryId } = await setupUserWithCategory();
 
         const res = await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId, { date: '15-01-2025' }));
 
@@ -86,20 +86,20 @@ describe('POST /api/expenses', () => {
 
     it('returns 401 when unauthenticated', async () => {
         const res = await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .send({ amount: 10, description: 'Test', date: '2025-01-15', categoryId: 'anything' });
 
         expect(res.status).toBe(401);
     });
 });
 
-describe('GET /api/expenses', () => {
+describe('GET /expenses', () => {
     it('returns paginated expenses for the current user', async () => {
         const { auth, categoryId } = await setupUserWithCategory();
 
-        await request(app).post('/api/expenses').set('Cookie', auth.cookie).send(expenseFixture(categoryId));
+        await request(app).post('/expenses').set('Cookie', auth.cookie).send(expenseFixture(categoryId));
 
-        const res = await request(app).get('/api/expenses').set('Cookie', auth.cookie);
+        const res = await request(app).get('/expenses').set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
         expect(res.body.expenses).toHaveLength(1);
@@ -112,12 +112,12 @@ describe('GET /api/expenses', () => {
         // Create 3 expenses
         for (let i = 0; i < 3; i++) {
             await request(app)
-                .post('/api/expenses')
+                .post('/expenses')
                 .set('Cookie', auth.cookie)
                 .send(expenseFixture(categoryId, { description: `Expense ${i}` }));
         }
 
-        const res = await request(app).get('/api/expenses?limit=2&page=1').set('Cookie', auth.cookie);
+        const res = await request(app).get('/expenses?limit=2&page=1').set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
         expect(res.body.expenses).toHaveLength(2);
@@ -128,17 +128,17 @@ describe('GET /api/expenses', () => {
         const { auth, categoryId } = await setupUserWithCategory();
 
         await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId, { date: '2025-01-10' }));
 
         await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId, { date: '2025-06-20' }));
 
         const res = await request(app)
-            .get('/api/expenses?startDate=2025-01-01&endDate=2025-03-31')
+            .get('/expenses?startDate=2025-01-01&endDate=2025-03-31')
             .set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
@@ -150,11 +150,11 @@ describe('GET /api/expenses', () => {
         const { auth: authB, categoryId: catB } = await setupUserWithCategory();
 
         await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', authB.cookie)
             .send(expenseFixture(catB, { description: 'B expense' }));
 
-        const res = await request(app).get('/api/expenses').set('Cookie', authA.cookie);
+        const res = await request(app).get('/expenses').set('Cookie', authA.cookie);
 
         expect(res.status).toBe(200);
         expect(res.body.expenses).toHaveLength(0);
@@ -163,15 +163,15 @@ describe('GET /api/expenses', () => {
     });
 });
 
-describe('GET /api/expenses/:id', () => {
+describe('GET /expenses/:id', () => {
     it('returns own expense by id', async () => {
         const { auth, categoryId } = await setupUserWithCategory();
         const created = await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId));
 
-        const res = await request(app).get(`/api/expenses/${created.body.expense.id}`).set('Cookie', auth.cookie);
+        const res = await request(app).get(`/expenses/${created.body.expense.id}`).set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
         expect(res.body.expense.id).toBe(created.body.expense.id);
@@ -181,9 +181,9 @@ describe('GET /api/expenses/:id', () => {
         const { auth: authA } = await setupUserWithCategory();
         const { auth: authB, categoryId: catB } = await setupUserWithCategory();
 
-        const created = await request(app).post('/api/expenses').set('Cookie', authB.cookie).send(expenseFixture(catB));
+        const created = await request(app).post('/expenses').set('Cookie', authB.cookie).send(expenseFixture(catB));
 
-        const res = await request(app).get(`/api/expenses/${created.body.expense.id}`).set('Cookie', authA.cookie);
+        const res = await request(app).get(`/expenses/${created.body.expense.id}`).set('Cookie', authA.cookie);
 
         expect(res.status).toBe(404);
     });
@@ -192,23 +192,23 @@ describe('GET /api/expenses/:id', () => {
         const { auth } = await setupUserWithCategory();
 
         const res = await request(app)
-            .get('/api/expenses/00000000-0000-0000-0000-000000000000')
+            .get('/expenses/00000000-0000-0000-0000-000000000000')
             .set('Cookie', auth.cookie);
 
         expect(res.status).toBe(404);
     });
 });
 
-describe('PUT /api/expenses/:id', () => {
+describe('PUT /expenses/:id', () => {
     it('updates expense amount and description', async () => {
         const { auth, categoryId } = await setupUserWithCategory();
         const created = await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId));
 
         const res = await request(app)
-            .put(`/api/expenses/${created.body.expense.id}`)
+            .put(`/expenses/${created.body.expense.id}`)
             .set('Cookie', auth.cookie)
             .send({ amount: 99.99, description: 'Updated' });
 
@@ -221,10 +221,10 @@ describe('PUT /api/expenses/:id', () => {
         const { auth: authA } = await setupUserWithCategory();
         const { auth: authB, categoryId: catB } = await setupUserWithCategory();
 
-        const created = await request(app).post('/api/expenses').set('Cookie', authB.cookie).send(expenseFixture(catB));
+        const created = await request(app).post('/expenses').set('Cookie', authB.cookie).send(expenseFixture(catB));
 
         const res = await request(app)
-            .put(`/api/expenses/${created.body.expense.id}`)
+            .put(`/expenses/${created.body.expense.id}`)
             .set('Cookie', authA.cookie)
             .send({ amount: 1 });
 
@@ -232,15 +232,15 @@ describe('PUT /api/expenses/:id', () => {
     });
 });
 
-describe('DELETE /api/expenses/:id', () => {
+describe('DELETE /expenses/:id', () => {
     it('deletes own expense', async () => {
         const { auth, categoryId } = await setupUserWithCategory();
         const created = await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId));
 
-        const res = await request(app).delete(`/api/expenses/${created.body.expense.id}`).set('Cookie', auth.cookie);
+        const res = await request(app).delete(`/expenses/${created.body.expense.id}`).set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
     });
@@ -249,9 +249,9 @@ describe('DELETE /api/expenses/:id', () => {
         const { auth: authA } = await setupUserWithCategory();
         const { auth: authB, categoryId: catB } = await setupUserWithCategory();
 
-        const created = await request(app).post('/api/expenses').set('Cookie', authB.cookie).send(expenseFixture(catB));
+        const created = await request(app).post('/expenses').set('Cookie', authB.cookie).send(expenseFixture(catB));
 
-        const res = await request(app).delete(`/api/expenses/${created.body.expense.id}`).set('Cookie', authA.cookie);
+        const res = await request(app).delete(`/expenses/${created.body.expense.id}`).set('Cookie', authA.cookie);
 
         expect(res.status).toBe(404);
     });

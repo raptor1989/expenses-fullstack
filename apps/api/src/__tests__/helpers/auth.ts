@@ -14,7 +14,7 @@ export async function registerAndLogin(userData: {
     firstName?: string;
     lastName?: string;
 }): Promise<AuthResult> {
-    const res = await request(app).post('/api/users/register').send(userData);
+    const res = await request(app).post('/users/register').send(userData);
 
     if (res.status !== 201) {
         throw new Error(`Registration failed (${res.status}): ${JSON.stringify(res.body)}`);

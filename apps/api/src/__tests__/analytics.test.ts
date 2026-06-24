@@ -15,24 +15,24 @@ afterEach(async () => {
     await truncateAllTables();
 });
 
-describe('GET /api/expenses/summary', () => {
+describe('GET /expenses/summary', () => {
     it('returns category breakdown for a date range', async () => {
         const auth = await registerAndLogin(userFixture());
-        const catRes = await request(app).post('/api/categories').set('Cookie', auth.cookie).send(categoryFixture());
+        const catRes = await request(app).post('/categories').set('Cookie', auth.cookie).send(categoryFixture());
         const categoryId = catRes.body.category.id as string;
 
         await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId, { amount: 100, date: '2025-02-10' }));
 
         await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId, { amount: 50, date: '2025-02-15' }));
 
         const res = await request(app)
-            .get('/api/expenses/summary?startDate=2025-02-01&endDate=2025-02-28')
+            .get('/expenses/summary?startDate=2025-02-01&endDate=2025-02-28')
             .set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
@@ -45,7 +45,7 @@ describe('GET /api/expenses/summary', () => {
         const auth = await registerAndLogin(userFixture());
 
         const res = await request(app)
-            .get('/api/expenses/summary?startDate=2020-01-01&endDate=2020-01-31')
+            .get('/expenses/summary?startDate=2020-01-01&endDate=2020-01-31')
             .set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
@@ -56,7 +56,7 @@ describe('GET /api/expenses/summary', () => {
     it('returns 400 when startDate is missing', async () => {
         const auth = await registerAndLogin(userFixture());
 
-        const res = await request(app).get('/api/expenses/summary?endDate=2025-02-28').set('Cookie', auth.cookie);
+        const res = await request(app).get('/expenses/summary?endDate=2025-02-28').set('Cookie', auth.cookie);
 
         expect(res.status).toBe(400);
     });
@@ -64,29 +64,29 @@ describe('GET /api/expenses/summary', () => {
     it('returns 400 when endDate is missing', async () => {
         const auth = await registerAndLogin(userFixture());
 
-        const res = await request(app).get('/api/expenses/summary?startDate=2025-02-01').set('Cookie', auth.cookie);
+        const res = await request(app).get('/expenses/summary?startDate=2025-02-01').set('Cookie', auth.cookie);
 
         expect(res.status).toBe(400);
     });
 });
 
-describe('GET /api/expenses/by-month', () => {
+describe('GET /expenses/by-month', () => {
     it('returns monthly breakdown for a given year', async () => {
         const auth = await registerAndLogin(userFixture());
-        const catRes = await request(app).post('/api/categories').set('Cookie', auth.cookie).send(categoryFixture());
+        const catRes = await request(app).post('/categories').set('Cookie', auth.cookie).send(categoryFixture());
         const categoryId = catRes.body.category.id as string;
 
         await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId, { amount: 200, date: '2025-03-05' }));
 
         await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(categoryId, { amount: 80, date: '2025-07-20' }));
 
-        const res = await request(app).get('/api/expenses/by-month?year=2025').set('Cookie', auth.cookie);
+        const res = await request(app).get('/expenses/by-month?year=2025').set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
         expect(Array.isArray(res.body.monthlyData)).toBe(true);
@@ -104,33 +104,33 @@ describe('GET /api/expenses/by-month', () => {
     it('returns per-month category breakdown and top expenses', async () => {
         const auth = await registerAndLogin(userFixture());
         const groceriesRes = await request(app)
-            .post('/api/categories')
+            .post('/categories')
             .set('Cookie', auth.cookie)
             .send(categoryFixture({ name: 'Groceries' }));
         const groceriesId = groceriesRes.body.category.id as string;
 
         const fuelRes = await request(app)
-            .post('/api/categories')
+            .post('/categories')
             .set('Cookie', auth.cookie)
             .send(categoryFixture({ name: 'Fuel' }));
         const fuelId = fuelRes.body.category.id as string;
 
         await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(groceriesId, { amount: 100, date: '2025-03-05', description: 'Big shop' }));
 
         await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(groceriesId, { amount: 50, date: '2025-03-12', description: 'Top up' }));
 
         await request(app)
-            .post('/api/expenses')
+            .post('/expenses')
             .set('Cookie', auth.cookie)
             .send(expenseFixture(fuelId, { amount: 60, date: '2025-03-20', description: 'Fill tank' }));
 
-        const res = await request(app).get('/api/expenses/by-month?year=2025').set('Cookie', auth.cookie);
+        const res = await request(app).get('/expenses/by-month?year=2025').set('Cookie', auth.cookie);
 
         expect(res.status).toBe(200);
         const months = res.body.monthlyData as Array<{
@@ -153,13 +153,13 @@ describe('GET /api/expenses/by-month', () => {
     it('returns 400 when year is missing', async () => {
         const auth = await registerAndLogin(userFixture());
 
-        const res = await request(app).get('/api/expenses/by-month').set('Cookie', auth.cookie);
+        const res = await request(app).get('/expenses/by-month').set('Cookie', auth.cookie);
 
         expect(res.status).toBe(400);
     });
 
     it('returns 401 when unauthenticated', async () => {
-        const res = await request(app).get('/api/expenses/by-month?year=2025');
+        const res = await request(app).get('/expenses/by-month?year=2025');
         expect(res.status).toBe(401);
     });
 });

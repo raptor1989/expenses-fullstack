@@ -15,28 +15,28 @@ afterEach(async () => {
     await truncateAllTables();
 });
 
-describe('GET /api/settings', () => {
+describe('GET /settings', () => {
     it('returns default settings created for a new user', async () => {
         const { cookie } = await registerAndLogin(userFixture());
 
-        const res = await request(app).get('/api/settings').set('Cookie', cookie);
+        const res = await request(app).get('/settings').set('Cookie', cookie);
 
         expect(res.status).toBe(200);
         expect(res.body.settings).toMatchObject({ currency: 'PLN', theme: 'light' });
     });
 
     it('returns 401 when unauthenticated', async () => {
-        const res = await request(app).get('/api/settings');
+        const res = await request(app).get('/settings');
         expect(res.status).toBe(401);
     });
 });
 
-describe('PUT /api/settings', () => {
+describe('PUT /settings', () => {
     it('updates currency and theme', async () => {
         const { cookie } = await registerAndLogin(userFixture());
 
         const res = await request(app)
-            .put('/api/settings')
+            .put('/settings')
             .set('Cookie', cookie)
             .send({ currency: 'USD', theme: 'dark' });
 
@@ -47,7 +47,7 @@ describe('PUT /api/settings', () => {
     it('returns 400 for an unsupported currency', async () => {
         const { cookie } = await registerAndLogin(userFixture());
 
-        const res = await request(app).put('/api/settings').set('Cookie', cookie).send({ currency: 'XYZ' });
+        const res = await request(app).put('/settings').set('Cookie', cookie).send({ currency: 'XYZ' });
 
         expect(res.status).toBe(400);
         expect(res.body.code).toBe('validation_error');
@@ -56,14 +56,14 @@ describe('PUT /api/settings', () => {
     it('returns 400 for an invalid theme', async () => {
         const { cookie } = await registerAndLogin(userFixture());
 
-        const res = await request(app).put('/api/settings').set('Cookie', cookie).send({ theme: 'blue' });
+        const res = await request(app).put('/settings').set('Cookie', cookie).send({ theme: 'blue' });
 
         expect(res.status).toBe(400);
         expect(res.body.code).toBe('validation_error');
     });
 
     it('returns 401 when unauthenticated', async () => {
-        const res = await request(app).put('/api/settings').send({ currency: 'USD' });
+        const res = await request(app).put('/settings').send({ currency: 'USD' });
         expect(res.status).toBe(401);
     });
 
@@ -71,9 +71,9 @@ describe('PUT /api/settings', () => {
         const { cookie: cookieA } = await registerAndLogin(userFixture());
         const { cookie: cookieB } = await registerAndLogin(userFixture());
 
-        await request(app).put('/api/settings').set('Cookie', cookieA).send({ currency: 'USD' });
+        await request(app).put('/settings').set('Cookie', cookieA).send({ currency: 'USD' });
 
-        const res = await request(app).get('/api/settings').set('Cookie', cookieB);
+        const res = await request(app).get('/settings').set('Cookie', cookieB);
 
         expect(res.body.settings.currency).toBe('PLN');
     });
