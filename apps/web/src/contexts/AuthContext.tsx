@@ -31,14 +31,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Check if there's an active session (cookie) when the app loads
+    // Check if there's an active session (cookie) when the app loads.
+    // No session is a normal 200 response with user: null, not a 401.
     useEffect(() => {
         const checkAuth = async () => {
             try {
                 const userData = await fetchCurrentUser();
                 setUser(userData);
             } catch {
-                // No active session
+                // Failed to reach the API
             } finally {
                 setIsLoading(false);
             }

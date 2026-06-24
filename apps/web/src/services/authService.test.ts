@@ -60,10 +60,16 @@ describe('authService', () => {
 
         const result = await fetchCurrentUser();
 
-        expect(apiMock.get).toHaveBeenCalledWith('/users/profile', {
-            headers: { 'X-Skip-Auth-Redirect': 'true' }
-        });
+        expect(apiMock.get).toHaveBeenCalledWith('/users/session');
         expect(result).toEqual(user);
+    });
+
+    it('fetchCurrentUser returns null when there is no active session', async () => {
+        apiMock.get.mockResolvedValue({ data: { user: null } });
+
+        const result = await fetchCurrentUser();
+
+        expect(result).toBeNull();
     });
 
     it('updateUserProfile puts the partial user and unwraps the updated user', async () => {

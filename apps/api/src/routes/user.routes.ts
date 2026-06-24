@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { body } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 import { UserController } from '../controllers/user.controller';
-import { auth } from '../middlewares/auth.middleware';
+import { auth, optionalAuth } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
 
 const router = express.Router();
@@ -39,6 +39,16 @@ router.post('/register', authLimiter, registerValidation, validate, (req: Reques
 router.post('/login', authLimiter, loginValidation, validate, (req: Request, res: Response) => {
     UserController.login(req, res);
 });
+
+router.get(
+    '/session',
+    (req: Request, res: Response, next: NextFunction) => {
+        optionalAuth(req, res, next);
+    },
+    (req: Request, res: Response) => {
+        UserController.getSession(req, res);
+    }
+);
 
 router.get(
     '/profile',

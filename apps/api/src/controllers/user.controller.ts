@@ -121,6 +121,37 @@ export class UserController {
         res.status(200).json({ message: 'Logged out successfully' });
     }
 
+    static async getSession(req: Request, res: Response) {
+        try {
+            if (!req.user) {
+                return res.status(200).json({ user: null });
+            }
+
+            const user = await UserModel.findById(req.user.id);
+
+            if (!user) {
+                return res.status(200).json({ user: null });
+            }
+
+            res.status(200).json({
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    createdAt: user.createdAt,
+                    updatedAt: user.updatedAt
+                }
+            });
+        } catch (error) {
+            console.error('Get session error:', error);
+            res.status(500).json({
+                message: 'Failed to get session',
+                code: 'session_fetch_failed'
+            });
+        }
+    }
+
     static async getProfile(req: Request, res: Response) {
         try {
             if (!req.user) {

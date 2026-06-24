@@ -22,12 +22,8 @@ export const logoutUser = async (): Promise<void> => {
     await api.post('/users/logout');
 };
 
-export const fetchCurrentUser = async (): Promise<User> => {
-    // Skip the global 401 redirect: this call only checks whether a session
-    // cookie exists, so an unauthenticated 401 here is expected, not an error.
-    const response = await api.get<{ user: User }>('/users/profile', {
-        headers: { 'X-Skip-Auth-Redirect': 'true' }
-    });
+export const fetchCurrentUser = async (): Promise<User | null> => {
+    const response = await api.get<{ user: User | null }>('/users/session');
     return response.data.user;
 };
 
