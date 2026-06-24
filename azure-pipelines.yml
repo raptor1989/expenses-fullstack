@@ -109,6 +109,6 @@ stages:
                                       set -e
                                       cd $(deployPath)
                                       npm install
-                                      npm run build
+                                      npm run build 2>&1
                                       pm2 reload expenses-api expenses-web
                                       pm2 restart expenses-api expenses-web
