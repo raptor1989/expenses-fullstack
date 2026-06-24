@@ -25,8 +25,8 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Add as AddIcon, Search as SearchIcon, FilterList as FilterIcon } from '@mui/icons-material';
 import dayjs from 'dayjs';
-import ExpenseTable from '../components/ExpenseTable';
-import ExpenseForm from '../components/ExpenseForm';
+import ExpenseTable from '../components/expenses/ExpenseTable';
+import ExpenseForm from '../components/expenses/ExpenseForm';
 import { getExpenses, deleteExpense, createExpense, updateExpense } from '../services/expenseService';
 import { useCategoryStore } from '@/store/categoryStore';
 import { secondaryTextSx } from '@/helpers/sxHelpers';

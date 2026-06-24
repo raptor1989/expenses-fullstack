@@ -25,24 +25,12 @@ import { getExpenses, getExpenseSummary } from '../services/expenseService';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { formatCurrency, formatDateTime } from '@/helpers/formatHelpers';
+import { CHART_COLORS } from '@/helpers/chartHelpers';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { useSettings } from '@/hooks/useSettings';
 import { useCategoryStore } from '@/store/categoryStore';
 import { Expense, ExpenseByCategory, ExpenseSummary } from '@expenses/shared';
-import SimpleExpenseForm from '@/components/SimpleExpenseForm';
-
-const CHART_COLORS = [
-    '#4e79a7',
-    '#f28e2b',
-    '#e15759',
-    '#76b7b2',
-    '#59a14f',
-    '#edc948',
-    '#b07aa1',
-    '#ff9da7',
-    '#9c755f',
-    '#bab0ac'
-];
+import SimpleExpenseForm from '@/components/expenses/SimpleExpenseForm';
 
 export default function Dashboard() {
     const navigate = useNavigate();
