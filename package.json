@@ -8,6 +8,7 @@
         "packages/*"
     ],
     "scripts": {
+        "predev": "node scripts/free-ports.js 5173 4000",
         "dev": "turbo run dev",
         "setup": "node scripts/setup-dev.js",
         "build": "turbo run build",

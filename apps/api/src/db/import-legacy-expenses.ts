@@ -4,6 +4,15 @@ import pool, { testConnection } from './index';
 
 // Edit these before running. LEGACY_USER_ID must be an existing user UUID,
 // and each CATEGORY_MAP value must be a category UUID owned by that user.
+// const LEGACY_USER_ID = '2fcc78a3-7720-41c7-867d-73911813e0da';
+// const CATEGORY_MAP: Record<number, string> = {
+//     1: '437490f4-7a63-4035-bc37-88f4c290ff39',
+//     2: '3aec7ae9-d36a-4ca7-b9a8-05de71fc0c5a',
+//     3: 'c8ba0db4-2045-45e2-9856-12141cb15cc8'
+// };
+
+// const FUEL_CATEGORY_ID = 'ecf19949-908b-44e6-b961-aec1317d0940';
+
 const LEGACY_USER_ID = '32abc717-f147-4d7b-ba17-cc0798f9f8dd';
 const CATEGORY_MAP: Record<number, string> = {
     1: '538d8462-7a2e-4feb-88a7-ae9bde9d2498',
@@ -13,7 +22,7 @@ const CATEGORY_MAP: Record<number, string> = {
 
 const FUEL_CATEGORY_ID = '18322cbd-5c6c-417e-a439-c02c03f9296a';
 
-const CSV_PATH = path.join(__dirname, 'data-1782128424527.csv');
+const CSV_PATH = path.join(__dirname, 'data-1782309360018.csv');
 const DRY_RUN = process.argv.includes('--dry-run');
 
 const FUEL_KEYWORDS_REGEX = /paliwo|lpg/i;
@@ -146,17 +155,29 @@ const printDryRunSummary = (rows: LegacyRow[], categoryNamesById: Map<string, st
     }
 };
 
+const BATCH_SIZE = 1000;
+const COLUMNS_PER_ROW = 7;
+
 const importRows = async (rows: LegacyRow[]) => {
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
 
-        for (const row of rows) {
+        for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+            const batch = rows.slice(i, i + BATCH_SIZE);
+            const values: unknown[] = [];
+            const placeholders = batch.map((row, batchIndex) => {
+                const base = batchIndex * COLUMNS_PER_ROW;
+                values.push(row.amount, row.description, row.date, row.categoryId, LEGACY_USER_ID, row.date, row.date);
+
+                return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7})`;
+            });
+
             await client.query(
-                `INSERT INTO expenses (amount, description, date, category_id, user_id)
-         VALUES ($1, $2, $3, $4, $5)`,
-                [row.amount, row.description, row.date, row.categoryId, LEGACY_USER_ID]
+                `INSERT INTO expenses (amount, description, date, category_id, user_id, created_at, updated_at)
+         VALUES ${placeholders.join(', ')}`,
+                values
             );
         }
 

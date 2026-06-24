@@ -12,3 +12,7 @@ export const formatCurrency = (amount: number, currency: string = defaultCurrenc
 export const formatDate = (date: Date | string): string => {
     return new Date(date).toLocaleDateString(locale);
 };
+
+export const formatDateTime = (date: Date | string): string => {
+    return new Date(date).toLocaleString(locale);
+}

@@ -24,7 +24,7 @@ import { ResponsivePie } from '@nivo/pie';
 import { getExpenses, getExpenseSummary } from '../services/expenseService';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
+import { formatCurrency, formatDateTime } from '@/helpers/formatHelpers';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { useSettings } from '@/hooks/useSettings';
 import { useCategoryStore } from '@/store/categoryStore';
@@ -262,7 +262,7 @@ export default function Dashboard() {
                                     {recentExpenses.length > 0 ? (
                                         recentExpenses.map((expense) => (
                                             <TableRow key={expense.id}>
-                                                <TableCell>{formatDate(expense.date)}</TableCell>
+                                                <TableCell>{formatDateTime(expense.createdAt)}</TableCell>
                                                 <TableCell>{expense.description}</TableCell>
                                                 <TableCell>
                                                     {categoriesMap[expense.categoryId] ? (
