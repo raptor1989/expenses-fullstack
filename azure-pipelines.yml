@@ -15,6 +15,17 @@
 #      każdym deployu, więc migracje w `apps/api/src/db/migrate.ts` muszą
 #      być idempotentne.
 
+resources:
+    containers:
+        - container: postgres
+          image: postgres:17
+          ports:
+              - 5432:5432
+          env:
+              POSTGRES_USER: postgres
+              POSTGRES_PASSWORD: postgres
+              POSTGRES_DB: expenses_test_db
+
 trigger:
     branches:
         include:
@@ -32,12 +43,7 @@ stages:
                 vmImage: 'ubuntu-latest'
 
             services:
-                postgres: postgres:17
-
-            variables:
-                POSTGRES_USER: postgres
-                POSTGRES_PASSWORD: postgres
-                POSTGRES_DB: expenses_test_db
+                postgres: postgres
 
             steps:
                 - task: NodeTool@0
