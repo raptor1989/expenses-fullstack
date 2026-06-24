@@ -20,16 +20,8 @@ trigger:
         include:
             - master
 
-pr:
-    branches:
-        include:
-            - master
-            - develop
-
-variables:
-    nodeVersion: '20.x'
-    sshServiceConnection: 'production-vm' # nazwa SSH service connection w Azure DevOps
-    deployPath: '/var/www/expenses-fullstack'
+pool:
+  name: Default
 
 stages:
     - stage: BuildAndTest
@@ -89,7 +81,7 @@ stages:
                             - task: CopyFilesOverSSH@0
                               displayName: 'Kopiowanie kodu na VM (bez node_modules/.git)'
                               inputs:
-                                  sshEndpoint: $(sshServiceConnection)
+                                  sshEndpoint: 'server-local-su'
                                   sourceFolder: '$(Build.SourcesDirectory)'
                                   contents: |
                                       **
@@ -99,18 +91,14 @@ stages:
                                   overwrite: true
 
                             - task: SSH@0
-                              displayName: 'Instalacja zależności, build, migracja, restart PM2'
+                              displayName: 'Instalacja zależności, build, restart PM2'
                               inputs:
-                                  sshEndpoint: $(sshServiceConnection)
+                                  sshEndpoint: 'server-local-su'
                                   runOptions: 'inline'
                                   inline: |
                                       set -e
                                       cd $(deployPath)
                                       npm install
                                       npm run build
-                                      cd apps/api
-                                      NODE_ENV=production npm run db:migrate
-                                      cd ../..
-                                      npx pm2 delete expenses-api expenses-web || true
-                                      node scripts/start-pm2.js
-                                      npx pm2 save
+                                      pm2 reload expenses-api expenses-web
+                                      pm2 restart expenses-api expenses-web
