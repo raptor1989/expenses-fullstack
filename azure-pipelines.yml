@@ -42,7 +42,8 @@ stages:
             steps:
                 - task: NodeTool@0
                   inputs:
-                      versionSpec: $(nodeVersion)
+                    versionSource: 'spec'
+                    versionSpec: '24'
                   displayName: 'Install Node.js'
 
                 - script: npm install
