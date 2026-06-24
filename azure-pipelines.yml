@@ -81,7 +81,7 @@ stages:
                             - task: CopyFilesOverSSH@0
                               displayName: 'Kopiowanie kodu na VM (bez node_modules/.git)'
                               inputs:
-                                  sshEndpoint: 'server-local-su'
+                                  sshEndpoint: 'mikrus-vps-expenses'
                                   sourceFolder: '$(Build.SourcesDirectory)'
                                   contents: |
                                       **
@@ -93,7 +93,7 @@ stages:
                             - task: SSH@0
                               displayName: 'Instalacja zależności, build, restart PM2'
                               inputs:
-                                  sshEndpoint: 'server-local-su'
+                                  sshEndpoint: 'mikrus-vps-expenses'
                                   runOptions: 'inline'
                                   inline: |
                                       set -e
