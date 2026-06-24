@@ -34,6 +34,9 @@ trigger:
 pool:
   name: Default
 
+variables:
+    deployPath: /var/app/expenses-fullstack
+
 stages:
     - stage: BuildAndTest
       displayName: 'Build, lint, test'
@@ -71,7 +74,7 @@ stages:
                       DB_NAME: expenses_test_db
 
     - stage: Deploy
-      displayName: 'Deploy na VM produkcyjny'
+      displayName: 'Deploy to production VM'
       dependsOn: BuildAndTest
       condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
       jobs:
@@ -86,7 +89,7 @@ stages:
                             - checkout: self
 
                             - task: CopyFilesOverSSH@0
-                              displayName: 'Kopiowanie kodu na VM (bez node_modules/.git)'
+                              displayName: 'Copy code to VM (excluding node_modules/.git)'
                               inputs:
                                   sshEndpoint: 'mikrus-vps-expenses'
                                   sourceFolder: '$(Build.SourcesDirectory)'
@@ -98,7 +101,7 @@ stages:
                                   overwrite: true
 
                             - task: SSH@0
-                              displayName: 'Instalacja zależności, build, restart PM2'
+                              displayName: 'Install dependencies, build, restart PM2'
                               inputs:
                                   sshEndpoint: 'mikrus-vps-expenses'
                                   runOptions: 'inline'
