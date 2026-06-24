@@ -123,9 +123,7 @@ describe('GET /categories/:id', () => {
     it('returns 404 for a non-existent id', async () => {
         const { cookie } = await registerAndLogin(userFixture());
 
-        const res = await request(app)
-            .get('/categories/00000000-0000-0000-0000-000000000000')
-            .set('Cookie', cookie);
+        const res = await request(app).get('/categories/00000000-0000-0000-0000-000000000000').set('Cookie', cookie);
 
         expect(res.status).toBe(404);
     });

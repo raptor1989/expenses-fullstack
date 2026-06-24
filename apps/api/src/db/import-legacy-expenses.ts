@@ -121,10 +121,10 @@ const validate = async (rows: LegacyRow[]): Promise<Map<string, string>> => {
         const categoryNamesById = new Map<string, string>();
 
         for (const categoryId of categoryIdsUsed) {
-            const categoryResult = await client.query(
-                'SELECT name FROM categories WHERE id = $1 AND user_id = $2',
-                [categoryId, LEGACY_USER_ID]
-            );
+            const categoryResult = await client.query('SELECT name FROM categories WHERE id = $1 AND user_id = $2', [
+                categoryId,
+                LEGACY_USER_ID
+            ]);
 
             if (categoryResult.rows.length === 0) {
                 throw new Error(`Category ${categoryId} does not exist for user ${LEGACY_USER_ID}`);
@@ -149,9 +149,7 @@ const printDryRunSummary = (rows: LegacyRow[], categoryNamesById: Map<string, st
         const total = rowsForCategory.reduce((sum, row) => sum + row.amount, 0);
         const categoryName = categoryNamesById.get(categoryId);
 
-        console.log(
-            `  ${categoryId} ("${categoryName}"): ${rowsForCategory.length} rows, total ${total.toFixed(2)}`
-        );
+        console.log(`  ${categoryId} ("${categoryName}"): ${rowsForCategory.length} rows, total ${total.toFixed(2)}`);
     }
 };
 

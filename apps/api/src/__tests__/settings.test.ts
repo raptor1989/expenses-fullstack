@@ -35,10 +35,7 @@ describe('PUT /settings', () => {
     it('updates currency and theme', async () => {
         const { cookie } = await registerAndLogin(userFixture());
 
-        const res = await request(app)
-            .put('/settings')
-            .set('Cookie', cookie)
-            .send({ currency: 'USD', theme: 'dark' });
+        const res = await request(app).put('/settings').set('Cookie', cookie).send({ currency: 'USD', theme: 'dark' });
 
         expect(res.status).toBe(200);
         expect(res.body.settings).toMatchObject({ currency: 'USD', theme: 'dark' });

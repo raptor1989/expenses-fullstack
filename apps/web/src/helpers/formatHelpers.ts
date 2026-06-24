@@ -15,4 +15,4 @@ export const formatDate = (date: Date | string): string => {
 
 export const formatDateTime = (date: Date | string): string => {
     return new Date(date).toLocaleString(locale);
-}
+};
