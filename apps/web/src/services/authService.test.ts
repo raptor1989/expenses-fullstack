@@ -17,7 +17,9 @@ import {
     logoutUser,
     fetchCurrentUser,
     updateUserProfile,
-    changePassword
+    changePassword,
+    forgotPassword,
+    resetPassword
 } from './authService';
 
 beforeEach(() => {
@@ -73,12 +75,12 @@ describe('authService', () => {
     });
 
     it('updateUserProfile puts the partial user and unwraps the updated user', async () => {
-        const user = { id: '1', email: 'e@x.com', firstName: 'New' };
+        const user = { id: '1', email: 'new@x.com' };
         apiMock.put.mockResolvedValue({ data: { message: 'ok', user } });
 
-        const result = await updateUserProfile({ firstName: 'New' });
+        const result = await updateUserProfile({ email: 'new@x.com' });
 
-        expect(apiMock.put).toHaveBeenCalledWith('/users/profile', { firstName: 'New' });
+        expect(apiMock.put).toHaveBeenCalledWith('/users/profile', { email: 'new@x.com' });
         expect(result).toEqual(user);
     });
 
@@ -91,5 +93,23 @@ describe('authService', () => {
             currentPassword: 'oldpw',
             newPassword: 'newpw'
         });
+    });
+
+    it('forgotPassword posts the email and returns the message', async () => {
+        apiMock.post.mockResolvedValue({ data: { message: 'ok' } });
+
+        const result = await forgotPassword('e@x.com');
+
+        expect(apiMock.post).toHaveBeenCalledWith('/users/forgot-password', { email: 'e@x.com' });
+        expect(result).toEqual({ message: 'ok' });
+    });
+
+    it('resetPassword posts the token and new password and returns the message', async () => {
+        apiMock.post.mockResolvedValue({ data: { message: 'ok' } });
+
+        const result = await resetPassword('sometoken', 'newpw');
+
+        expect(apiMock.post).toHaveBeenCalledWith('/users/reset-password', { token: 'sometoken', newPassword: 'newpw' });
+        expect(result).toEqual({ message: 'ok' });
     });
 });

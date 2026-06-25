@@ -3,7 +3,7 @@ loadTestEnv();
 
 import request from 'supertest';
 import app from '../app';
-import { truncateAllTables } from './helpers/db';
+import { truncateAllTables, getTestPool } from './helpers/db';
 import { userFixture } from './helpers/fixtures';
 import { registerAndLogin } from './helpers/auth';
 
@@ -14,6 +14,15 @@ beforeEach(async () => {
 afterEach(async () => {
     await truncateAllTables();
 });
+
+function extractToken(logSpy: jest.SpyInstance): string {
+    const call = logSpy.mock.calls.find((args) => String(args[0]).includes('Password reset link'));
+    const match = call ? String(call[0]).match(/token=([a-f0-9]+)/) : null;
+    if (!match) {
+        throw new Error('Reset link was not logged to the console');
+    }
+    return match[1];
+}
 
 describe('POST /users/register', () => {
     it('creates a new user and returns 201 with user data', async () => {
@@ -134,22 +143,18 @@ describe('GET /users/profile', () => {
 });
 
 describe('PUT /users/profile', () => {
-    it('updates first and last name', async () => {
+    it('updates the email', async () => {
         const data = userFixture();
         const { cookie } = await registerAndLogin(data);
 
-        const res = await request(app)
-            .put('/users/profile')
-            .set('Cookie', cookie)
-            .send({ firstName: 'John', lastName: 'Doe' });
+        const res = await request(app).put('/users/profile').set('Cookie', cookie).send({ email: 'updated@example.com' });
 
         expect(res.status).toBe(200);
-        expect(res.body.user.firstName).toBe('John');
-        expect(res.body.user.lastName).toBe('Doe');
+        expect(res.body.user.email).toBe('updated@example.com');
     });
 
     it('returns 401 when not authenticated', async () => {
-        const res = await request(app).put('/users/profile').send({ firstName: 'John' });
+        const res = await request(app).put('/users/profile').send({ email: 'updated@example.com' });
 
         expect(res.status).toBe(401);
     });
@@ -206,6 +211,121 @@ describe('PUT /users/password', () => {
             .send({ currentPassword: 'x', newPassword: 'NewPassword123!' });
 
         expect(res.status).toBe(401);
+    });
+});
+
+describe('POST /users/forgot-password', () => {
+    it('returns 200 with a generic message when the email is registered', async () => {
+        const data = userFixture();
+        await request(app).post('/users/register').send(data);
+
+        const res = await request(app).post('/users/forgot-password').send({ email: data.email });
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toMatch(/if that email is registered/i);
+    });
+
+    it('returns the same generic message when the email is not registered', async () => {
+        const res = await request(app).post('/users/forgot-password').send({ email: 'nobody@example.com' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toMatch(/if that email is registered/i);
+    });
+
+    it('returns 400 for an invalid email format', async () => {
+        const res = await request(app).post('/users/forgot-password').send({ email: 'not-an-email' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+    });
+
+    it('logs a reset link only for emails that exist', async () => {
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+        await request(app).post('/users/forgot-password').send({ email: 'nobody@example.com' });
+        expect(logSpy.mock.calls.some((args) => String(args[0]).includes('Password reset link'))).toBe(false);
+
+        const data = userFixture();
+        await request(app).post('/users/register').send(data);
+        await request(app).post('/users/forgot-password').send({ email: data.email });
+        expect(logSpy.mock.calls.some((args) => String(args[0]).includes('Password reset link'))).toBe(true);
+
+        logSpy.mockRestore();
+    });
+});
+
+describe('POST /users/reset-password', () => {
+    it('resets the password with a valid token and allows login with the new password', async () => {
+        const data = userFixture();
+        await request(app).post('/users/register').send(data);
+
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        await request(app).post('/users/forgot-password').send({ email: data.email });
+        const token = extractToken(logSpy);
+        logSpy.mockRestore();
+
+        const res = await request(app).post('/users/reset-password').send({ token, newPassword: 'NewPassword123!' });
+
+        expect(res.status).toBe(200);
+
+        const loginRes = await request(app)
+            .post('/users/login')
+            .send({ email: data.email, password: 'NewPassword123!' });
+
+        expect(loginRes.status).toBe(200);
+    });
+
+    it('returns 400 with reset_token_invalid for a bogus token', async () => {
+        const res = await request(app)
+            .post('/users/reset-password')
+            .send({ token: 'a'.repeat(64), newPassword: 'NewPassword123!' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('reset_token_invalid');
+    });
+
+    it('returns 400 with reset_token_expired for an expired token', async () => {
+        const data = userFixture();
+        await request(app).post('/users/register').send(data);
+
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        await request(app).post('/users/forgot-password').send({ email: data.email });
+        const token = extractToken(logSpy);
+        logSpy.mockRestore();
+
+        await getTestPool().query("UPDATE users SET reset_token_expires_at = NOW() - INTERVAL '1 hour' WHERE email = $1", [
+            data.email
+        ]);
+
+        const res = await request(app).post('/users/reset-password').send({ token, newPassword: 'NewPassword123!' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('reset_token_expired');
+    });
+
+    it('returns 400 when the new password is too short', async () => {
+        const res = await request(app)
+            .post('/users/reset-password')
+            .send({ token: 'a'.repeat(64), newPassword: 'short' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+    });
+
+    it('rejects reusing the same token after a successful reset', async () => {
+        const data = userFixture();
+        await request(app).post('/users/register').send(data);
+
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        await request(app).post('/users/forgot-password').send({ email: data.email });
+        const token = extractToken(logSpy);
+        logSpy.mockRestore();
+
+        await request(app).post('/users/reset-password').send({ token, newPassword: 'NewPassword123!' });
+        const res = await request(app).post('/users/reset-password').send({ token, newPassword: 'AnotherPassword456!' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('reset_token_invalid');
     });
 });
 

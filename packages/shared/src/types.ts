@@ -1,8 +1,6 @@
 export interface User {
     id: string;
     email: string;
-    firstName?: string;
-    lastName?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -10,6 +8,15 @@ export interface User {
 export interface UserCredentials {
     email: string;
     password: string;
+}
+
+export interface ForgotPasswordInput {
+    email: string;
+}
+
+export interface ResetPasswordInput {
+    token: string;
+    newPassword: string;
 }
 
 export interface AuthResponse {

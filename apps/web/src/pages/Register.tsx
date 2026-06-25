@@ -9,8 +9,6 @@ import { useAuth } from '../hooks/useAuth';
 
 // Validation schema
 const validationSchema = yup.object({
-    firstName: yup.string().trim(),
-    lastName: yup.string().trim(),
     email: yup.string().email('Enter a valid email').required('Email is required'),
     password: yup.string().min(8, 'Password should be of minimum 8 characters length').required('Password is required'),
     confirmPassword: yup
@@ -26,8 +24,6 @@ export default function Register() {
 
     const formik = useFormik({
         initialValues: {
-            firstName: '',
-            lastName: '',
             email: '',
             password: '',
             confirmPassword: ''
@@ -35,7 +31,7 @@ export default function Register() {
         validationSchema: validationSchema,
         onSubmit: async (values) => {
             try {
-                await register(values.email, values.password, values.firstName, values.lastName);
+                await register(values.email, values.password);
                 navigate('/');
             } catch (err) {
                 if (axios.isAxiosError(err)) {
@@ -62,34 +58,6 @@ export default function Register() {
             )}
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 3, width: '100%' }}>
                 <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField
-                            autoComplete="given-name"
-                            name="firstName"
-                            fullWidth
-                            id="firstName"
-                            label="First Name"
-                            value={formik.values.firstName}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            error={formik.touched.firstName && Boolean(formik.errors.firstName)}
-                            helperText={formik.touched.firstName && formik.errors.firstName}
-                        />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField
-                            fullWidth
-                            id="lastName"
-                            label="Last Name"
-                            name="lastName"
-                            autoComplete="family-name"
-                            value={formik.values.lastName}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            error={formik.touched.lastName && Boolean(formik.errors.lastName)}
-                            helperText={formik.touched.lastName && formik.errors.lastName}
-                        />
-                    </Grid>
                     <Grid size={{ xs: 12 }}>
                         <TextField
                             fullWidth

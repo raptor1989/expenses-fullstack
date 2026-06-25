@@ -12,14 +12,13 @@ const authLimiter = rateLimit({
     max: 20,
     message: { message: 'Too many attempts, please try again later.', code: 'rate_limit_exceeded' },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === 'test'
 });
 
 const registerValidation = [
     body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail(),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-    body('firstName').optional().trim().isLength({ max: 100 }).withMessage('First name too long'),
-    body('lastName').optional().trim().isLength({ max: 100 }).withMessage('Last name too long')
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
 ];
 
 const loginValidation = [
@@ -32,12 +31,27 @@ const changePasswordValidation = [
     body('newPassword').isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
 ];
 
+const forgotPasswordValidation = [body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail()];
+
+const resetPasswordValidation = [
+    body('token').notEmpty().withMessage('Token is required'),
+    body('newPassword').isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+];
+
 router.post('/register', authLimiter, registerValidation, validate, (req: Request, res: Response) => {
     UserController.register(req, res);
 });
 
 router.post('/login', authLimiter, loginValidation, validate, (req: Request, res: Response) => {
     UserController.login(req, res);
+});
+
+router.post('/forgot-password', authLimiter, forgotPasswordValidation, validate, (req: Request, res: Response) => {
+    UserController.forgotPassword(req, res);
+});
+
+router.post('/reset-password', authLimiter, resetPasswordValidation, validate, (req: Request, res: Response) => {
+    UserController.resetPassword(req, res);
 });
 
 router.get(
