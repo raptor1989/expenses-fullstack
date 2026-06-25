@@ -96,7 +96,7 @@ export default function Login() {
                     }}
                 >
                     <Grid size="auto">
-                        <Link component={RouterLink} to="#" variant="body2">
+                        <Link component={RouterLink} to="/forgot-password" variant="body2">
                             Forgot password?
                         </Link>
                     </Grid>

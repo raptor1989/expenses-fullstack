@@ -1,11 +1,9 @@
-import { AuthResponse, User } from '@expenses/shared';
+import { AuthResponse, ForgotPasswordInput, ResetPasswordInput, User } from '@expenses/shared';
 import api from './api';
 
 interface RegisterParams {
     email: string;
     password: string;
-    firstName?: string;
-    lastName?: string;
 }
 
 export const loginUser = async (email: string, password: string): Promise<AuthResponse> => {
@@ -34,4 +32,17 @@ export const updateUserProfile = async (userData: Partial<User>): Promise<User> 
 
 export const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
     await api.put('/users/password', { currentPassword, newPassword });
+};
+
+export const forgotPassword = async (email: string): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>('/users/forgot-password', { email } satisfies ForgotPasswordInput);
+    return response.data;
+};
+
+export const resetPassword = async (token: string, newPassword: string): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>('/users/reset-password', {
+        token,
+        newPassword
+    } satisfies ResetPasswordInput);
+    return response.data;
 };

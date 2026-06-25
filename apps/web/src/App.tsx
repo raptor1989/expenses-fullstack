@@ -13,6 +13,8 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import NotFound from './pages/NotFound';
 
 // Protected route component
@@ -47,6 +49,22 @@ function App() {
                 element={
                     <AuthLayout>
                         <Register />
+                    </AuthLayout>
+                }
+            />
+            <Route
+                path="/forgot-password"
+                element={
+                    <AuthLayout>
+                        <ForgotPassword />
+                    </AuthLayout>
+                }
+            />
+            <Route
+                path="/reset-password"
+                element={
+                    <AuthLayout>
+                        <ResetPassword />
                     </AuthLayout>
                 }
             />

@@ -174,7 +174,7 @@ export default function MainLayout() {
                         color="inherit"
                     >
                         <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-                            {user?.firstName?.[0] || 'U'}
+                            {user?.email?.[0]?.toUpperCase() || 'U'}
                         </Avatar>
                     </IconButton>
                     <Menu

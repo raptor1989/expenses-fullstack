@@ -3,7 +3,7 @@ import pool from '../db/index';
 import bcrypt from 'bcryptjs';
 
 export class UserModel {
-    static async create(email: string, password: string, firstName?: string, lastName?: string): Promise<User> {
+    static async create(email: string, password: string): Promise<User> {
         const client = await pool.connect();
 
         try {
@@ -11,12 +11,12 @@ export class UserModel {
             const hashedPassword = await bcrypt.hash(password, salt);
 
             const query = `
-        INSERT INTO users (email, password, first_name, last_name)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, email, first_name as "firstName", last_name as "lastName", created_at as "createdAt", updated_at as "updatedAt"
+        INSERT INTO users (email, password)
+        VALUES ($1, $2)
+        RETURNING id, email, created_at as "createdAt", updated_at as "updatedAt"
       `;
 
-            const values = [email, hashedPassword, firstName, lastName];
+            const values = [email, hashedPassword];
             const result = await client.query(query, values);
 
             return result.rows[0];
@@ -30,7 +30,7 @@ export class UserModel {
 
         try {
             const query = `
-        SELECT id, email, password, first_name as "firstName", last_name as "lastName",
+        SELECT id, email, password,
                created_at as "createdAt", updated_at as "updatedAt"
         FROM users
         WHERE email = $1
@@ -82,7 +82,7 @@ export class UserModel {
 
         try {
             const query = `
-        SELECT id, email, first_name as "firstName", last_name as "lastName",
+        SELECT id, email,
                created_at as "createdAt", updated_at as "updatedAt"
         FROM users
         WHERE id = $1
@@ -104,7 +104,7 @@ export class UserModel {
         const client = await pool.connect();
 
         try {
-            const { firstName, lastName, email } = updateData;
+            const { email } = updateData;
 
             const updateFields = [];
             const values = [id];
@@ -115,16 +115,6 @@ export class UserModel {
                 values.push(email);
             }
 
-            if (firstName !== undefined) {
-                updateFields.push(`first_name = $${valueCounter++}`);
-                values.push(firstName);
-            }
-
-            if (lastName !== undefined) {
-                updateFields.push(`last_name = $${valueCounter++}`);
-                values.push(lastName);
-            }
-
             if (updateFields.length === 0) {
                 return await this.findById(id);
             }
@@ -133,7 +123,7 @@ export class UserModel {
         UPDATE users
         SET ${updateFields.join(', ')}
         WHERE id = $1
-        RETURNING id, email, first_name as "firstName", last_name as "lastName",
+        RETURNING id, email,
                  created_at as "createdAt", updated_at as "updatedAt"
       `;
 
@@ -144,6 +134,59 @@ export class UserModel {
             }
 
             return result.rows[0];
+        } finally {
+            client.release();
+        }
+    }
+
+    static async setResetToken(email: string, tokenHash: string, expiresAt: Date): Promise<void> {
+        const client = await pool.connect();
+
+        try {
+            await client.query('UPDATE users SET reset_token_hash = $1, reset_token_expires_at = $2 WHERE email = $3', [
+                tokenHash,
+                expiresAt,
+                email
+            ]);
+        } finally {
+            client.release();
+        }
+    }
+
+    static async findByResetTokenHash(tokenHash: string): Promise<(User & { resetTokenExpiresAt: Date | null }) | null> {
+        const client = await pool.connect();
+
+        try {
+            const query = `
+        SELECT id, email, created_at as "createdAt", updated_at as "updatedAt",
+               reset_token_expires_at as "resetTokenExpiresAt"
+        FROM users
+        WHERE reset_token_hash = $1
+      `;
+
+            const result = await client.query(query, [tokenHash]);
+
+            if (result.rows.length === 0) {
+                return null;
+            }
+
+            return result.rows[0];
+        } finally {
+            client.release();
+        }
+    }
+
+    static async resetPassword(id: string, newPassword: string): Promise<void> {
+        const client = await pool.connect();
+
+        try {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+            await client.query(
+                'UPDATE users SET password = $1, reset_token_hash = NULL, reset_token_expires_at = NULL WHERE id = $2',
+                [hashedPassword, id]
+            );
         } finally {
             client.release();
         }

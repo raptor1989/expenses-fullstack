@@ -8,12 +8,7 @@ export interface AuthResult {
     email: string;
 }
 
-export async function registerAndLogin(userData: {
-    email: string;
-    password: string;
-    firstName?: string;
-    lastName?: string;
-}): Promise<AuthResult> {
+export async function registerAndLogin(userData: { email: string; password: string }): Promise<AuthResult> {
     const res = await request(app).post('/users/register').send(userData);
 
     if (res.status !== 201) {

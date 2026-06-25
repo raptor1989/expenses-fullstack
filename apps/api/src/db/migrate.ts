@@ -21,8 +21,6 @@ const runMigrations = async () => {
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           email VARCHAR(100) UNIQUE NOT NULL,
           password TEXT NOT NULL,
-          first_name VARCHAR(50),
-          last_name VARCHAR(50),
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         )
@@ -34,6 +32,22 @@ const runMigrations = async () => {
 
             await client.query(`
         ALTER TABLE users DROP COLUMN IF EXISTS username
+      `);
+
+            await client.query(`
+        ALTER TABLE users DROP COLUMN IF EXISTS first_name
+      `);
+
+            await client.query(`
+        ALTER TABLE users DROP COLUMN IF EXISTS last_name
+      `);
+
+            await client.query(`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_hash TEXT
+      `);
+
+            await client.query(`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires_at TIMESTAMP WITH TIME ZONE
       `);
 
             await client.query(`

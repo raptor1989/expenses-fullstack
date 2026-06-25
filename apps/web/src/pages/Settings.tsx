@@ -26,9 +26,7 @@ import { useThemeMode } from '@/theme/ThemeProvider';
 import { updateUserProfile, changePassword } from '@/services/authService';
 
 const ProfileSchema = Yup.object().shape({
-    email: Yup.string().trim().email('Valid email is required').required('Email is required'),
-    firstName: Yup.string().max(100, 'First name too long'),
-    lastName: Yup.string().max(100, 'Last name too long')
+    email: Yup.string().trim().email('Valid email is required').required('Email is required')
 });
 
 const PasswordSchema = Yup.object().shape({
@@ -77,9 +75,7 @@ export default function Settings() {
                 </Typography>
                 <Formik
                     initialValues={{
-                        email: user?.email || '',
-                        firstName: user?.firstName || '',
-                        lastName: user?.lastName || ''
+                        email: user?.email || ''
                     }}
                     validationSchema={ProfileSchema}
                     enableReinitialize
@@ -98,7 +94,7 @@ export default function Settings() {
                     {({ isSubmitting, errors, touched }) => (
                         <Form>
                             <Grid container spacing={2}>
-                                <Grid size={{ xs: 12, sm: 6 }}>
+                                <Grid size={{ xs: 12 }}>
                                     <Field name="email">
                                         {({ field }: FieldProps) => (
                                             <TextField
@@ -107,32 +103,6 @@ export default function Settings() {
                                                 fullWidth
                                                 error={touched.email && Boolean(errors.email)}
                                                 helperText={touched.email && errors.email}
-                                            />
-                                        )}
-                                    </Field>
-                                </Grid>
-                                <Grid size={{ xs: 12, sm: 6 }}>
-                                    <Field name="firstName">
-                                        {({ field }: FieldProps) => (
-                                            <TextField
-                                                {...field}
-                                                label="First Name"
-                                                fullWidth
-                                                error={touched.firstName && Boolean(errors.firstName)}
-                                                helperText={touched.firstName && errors.firstName}
-                                            />
-                                        )}
-                                    </Field>
-                                </Grid>
-                                <Grid size={{ xs: 12, sm: 6 }}>
-                                    <Field name="lastName">
-                                        {({ field }: FieldProps) => (
-                                            <TextField
-                                                {...field}
-                                                label="Last Name"
-                                                fullWidth
-                                                error={touched.lastName && Boolean(errors.lastName)}
-                                                helperText={touched.lastName && errors.lastName}
                                             />
                                         )}
                                     </Field>
