@@ -26,10 +26,7 @@ describe('POST /expenses', () => {
     it('creates an expense and returns 201', async () => {
         const { auth, categoryId } = await setupUserWithCategory();
 
-        const res = await request(app)
-            .post('/expenses')
-            .set('Cookie', auth.cookie)
-            .send(expenseFixture(categoryId));
+        const res = await request(app).post('/expenses').set('Cookie', auth.cookie).send(expenseFixture(categoryId));
 
         expect(res.status).toBe(201);
         expect(res.body.expense.amount).toBe(42.5);
@@ -191,9 +188,7 @@ describe('GET /expenses/:id', () => {
     it('returns 404 for a non-existent id', async () => {
         const { auth } = await setupUserWithCategory();
 
-        const res = await request(app)
-            .get('/expenses/00000000-0000-0000-0000-000000000000')
-            .set('Cookie', auth.cookie);
+        const res = await request(app).get('/expenses/00000000-0000-0000-0000-000000000000').set('Cookie', auth.cookie);
 
         expect(res.status).toBe(404);
     });

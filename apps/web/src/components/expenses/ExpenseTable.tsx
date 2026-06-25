@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { Expense } from '@expenses/shared';
-import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
+import { formatCurrency, formatDateTime } from '@/helpers/formatHelpers';
 import { secondaryTextSx } from '@/helpers/sxHelpers';
 import { useSettings } from '@/hooks/useSettings';
 
@@ -54,7 +54,7 @@ export default function ExpenseTable({ expenses, categories, onEdit, onDelete }:
                     {expenses.map((expense) => (
                         <TableRow key={expense.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                             <TableCell component="th" scope="row">
-                                {formatDate(expense.date)}
+                                {formatDateTime(expense.createdAt)}
                             </TableCell>
                             <TableCell>{expense.description}</TableCell>
                             <TableCell>

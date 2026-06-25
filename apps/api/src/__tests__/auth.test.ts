@@ -72,9 +72,7 @@ describe('POST /users/login', () => {
         const data = userFixture();
         await request(app).post('/users/register').send(data);
 
-        const res = await request(app)
-            .post('/users/login')
-            .send({ email: data.email, password: 'WrongPassword1!' });
+        const res = await request(app).post('/users/login').send({ email: data.email, password: 'WrongPassword1!' });
 
         expect(res.status).toBe(401);
         expect(res.body.code).toBe('invalid_credentials');

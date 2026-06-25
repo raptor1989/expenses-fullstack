@@ -67,7 +67,7 @@ export class ExpenseModel {
                created_at as "createdAt", updated_at as "updatedAt"
         FROM expenses
         ${whereClause}
-        ORDER BY date DESC
+        ORDER BY created_at DESC
         LIMIT $${paramCounter++} OFFSET $${paramCounter++}
       `;
 
