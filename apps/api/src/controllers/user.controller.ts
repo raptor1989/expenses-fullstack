@@ -4,6 +4,10 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import ms from 'ms';
 import crypto from 'crypto';
+import fs from 'fs/promises';
+import path from 'path';
+
+const passwordResetLogFile = path.join(__dirname, '../../logs/password-resets.log');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -275,7 +279,15 @@ export class UserController {
                 await UserModel.setResetToken(email, tokenHash, expiresAt);
 
                 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-                console.log(`[DEV] Password reset link for ${email}: ${frontendUrl}/reset-password?token=${rawToken}`);
+                const resetLink = `${frontendUrl}/reset-password?token=${rawToken}`;
+                console.log(`[DEV] Password reset link for ${email}: ${resetLink}`);
+
+                try {
+                    await fs.mkdir(path.dirname(passwordResetLogFile), { recursive: true });
+                    await fs.appendFile(passwordResetLogFile, `${new Date().toISOString()} ${email} ${resetLink}\n`);
+                } catch (logError) {
+                    console.error('Failed to persist password reset link:', logError);
+                }
             }
 
             res.status(200).json({
