@@ -123,3 +123,36 @@ export function getOptionsDoughnutChartForExpenses(
             color: resolveCategoryColor(name, categories, index)
         }));
 }
+
+export interface CategoryRankingRow {
+    rank: number;
+    name: string;
+    total: number;
+    percentage: number;
+    color: string;
+}
+
+export function getCategoryRankingForExpenses(
+    monthsData: ExpenseByMonth[],
+    categories: Category[]
+): CategoryRankingRow[] {
+    const totals: Record<string, number> = {};
+    monthsData.forEach((m) => {
+        Object.entries(m.totalByCategory).forEach(([name, amount]) => {
+            totals[name] = (totals[name] || 0) + amount;
+        });
+    });
+
+    const grandTotal = Object.values(totals).reduce((sum, value) => sum + value, 0);
+
+    return Object.entries(totals)
+        .filter(([, value]) => value > 0)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, value], index) => ({
+            rank: index + 1,
+            name,
+            total: value,
+            percentage: grandTotal > 0 ? (value * 100) / grandTotal : 0,
+            color: resolveCategoryColor(name, categories, index)
+        }));
+}

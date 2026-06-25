@@ -8,6 +8,7 @@ import MonthlyTotalWithAverageChart from '@/components/charts/MonthlyTotalWithAv
 import MonthlyCategoryLineChart from '@/components/charts/MonthlyCategoryLineChart';
 import CategoryShareDoughnutChart from '@/components/charts/CategoryShareDoughnutChart';
 import ReportsTable from '@/components/reports/ReportsTable';
+import CategoryRankingTable from '@/components/reports/CategoryRankingTable';
 
 const currentYear = new Date().getFullYear();
 
@@ -65,6 +66,9 @@ export default function Reports() {
                         </Box>
                         <Box sx={{ mb: 4 }}>
                             <CategoryShareDoughnutChart monthsData={data} categories={categories} />
+                        </Box>
+                        <Box sx={{ mb: 4 }}>
+                            <CategoryRankingTable monthsData={data} categories={categories} currency={settings.currency} />
                         </Box>
                         <ReportsTable monthsData={data} currency={settings.currency} />
                     </>

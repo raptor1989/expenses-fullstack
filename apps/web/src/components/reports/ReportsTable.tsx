@@ -56,7 +56,7 @@ export default function ReportsTable({ monthsData, currency }: ReportsTableProps
                     <TableRow>
                         <TableCell sx={cellSx}>Fuel Expenses</TableCell>
                         {monthsData.map((m) => {
-                            const fuelTotal = m.totalByCategory['Fuel'];
+                            const fuelTotal = m.totalByCategory['ecf19949-908b-44e6-b961-aec1317d0940']; // Replace with actual fuel category ID
                             return (
                                 <TableCell key={m.month} sx={cellSx}>
                                     {fuelTotal !== undefined ? formatCurrency(fuelTotal, currency) : '-'}
