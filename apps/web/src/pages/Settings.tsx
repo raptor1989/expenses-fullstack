@@ -11,8 +11,6 @@ import {
     MenuItem,
     FormControl,
     InputLabel,
-    ToggleButtonGroup,
-    ToggleButton,
     Snackbar,
     Alert,
     CircularProgress
@@ -24,6 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSettings } from '@/hooks/useSettings';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { updateUserProfile, changePassword } from '@/services/authService';
+import { LightMode as LightModeIcon, DarkMode as DarkModeIcon } from '@mui/icons-material';
 
 const ProfileSchema = Yup.object().shape({
     email: Yup.string().trim().email('Valid email is required').required('Email is required')
@@ -37,55 +36,50 @@ const PasswordSchema = Yup.object().shape({
         .required('Please confirm the new password')
 });
 
+const SectionTitle = ({ children }: { children: string }) => (
+    <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2.5 }}>
+        {children}
+    </Typography>
+);
+
 export default function Settings() {
     const { user, updateUser } = useAuth();
     const { settings, updateSettings } = useSettings();
-    const { setMode } = useThemeMode();
-    const [notification, setNotification] = useState({
-        open: false,
-        message: '',
-        severity: 'success' as 'success' | 'error'
-    });
+    const { mode, setMode } = useThemeMode();
+    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
-    const showNotification = (message: string, severity: 'success' | 'error') => {
+    const notify = (message: string, severity: 'success' | 'error') =>
         setNotification({ open: true, message, severity });
-    };
 
     const handleCurrencyChange = (e: SelectChangeEvent) => {
         updateSettings({ currency: e.target.value as SupportedCurrency })
-            .then(() => showNotification('Currency updated!', 'success'))
-            .catch(() => showNotification('Failed to update currency.', 'error'));
+            .then(() => notify('Currency updated!', 'success'))
+            .catch(() => notify('Failed to update currency.', 'error'));
     };
 
-    const handleThemeChange = (_: React.MouseEvent<HTMLElement>, newTheme: ThemeMode | null) => {
-        if (!newTheme) return;
+    const handleThemeChange = (newTheme: ThemeMode) => {
         setMode(newTheme);
-        updateSettings({ theme: newTheme }).catch(() => showNotification('Failed to save theme preference.', 'error'));
+        updateSettings({ theme: newTheme }).catch(() => notify('Failed to save theme preference.', 'error'));
     };
 
     return (
         <Box>
-            <Typography variant="h4" gutterBottom>
-                Settings
-            </Typography>
+            <Typography sx={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em', mb: 2.5 }}>Settings</Typography>
 
-            <Paper sx={{ p: 3, mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Profile
-                </Typography>
+            {/* Profile */}
+            <Paper variant="outlined" sx={{ p: 3, mb: 2, borderRadius: 3 }}>
+                <SectionTitle>Profile</SectionTitle>
                 <Formik
-                    initialValues={{
-                        email: user?.email || ''
-                    }}
+                    initialValues={{ email: user?.email || '' }}
                     validationSchema={ProfileSchema}
                     enableReinitialize
                     onSubmit={async (values, { setSubmitting }) => {
                         try {
-                            const updatedUser = await updateUserProfile(values);
-                            updateUser(updatedUser);
-                            showNotification('Profile updated successfully!', 'success');
+                            const updated = await updateUserProfile(values);
+                            updateUser(updated);
+                            notify('Profile updated!', 'success');
                         } catch {
-                            showNotification('Failed to update profile.', 'error');
+                            notify('Failed to update profile.', 'error');
                         } finally {
                             setSubmitting(false);
                         }
@@ -93,39 +87,36 @@ export default function Settings() {
                 >
                     {({ isSubmitting, errors, touched }) => (
                         <Form>
-                            <Grid container spacing={2}>
-                                <Grid size={{ xs: 12 }}>
-                                    <Field name="email">
-                                        {({ field }: FieldProps) => (
-                                            <TextField
-                                                {...field}
-                                                label="Email"
-                                                fullWidth
-                                                error={touched.email && Boolean(errors.email)}
-                                                helperText={touched.email && errors.email}
-                                            />
-                                        )}
-                                    </Field>
-                                </Grid>
-                            </Grid>
+                            <Field name="email">
+                                {({ field }: FieldProps) => (
+                                    <TextField
+                                        {...field}
+                                        label="Email"
+                                        fullWidth
+                                        size="small"
+                                        error={touched.email && Boolean(errors.email)}
+                                        helperText={touched.email && errors.email}
+                                        sx={{ mb: 2 }}
+                                    />
+                                )}
+                            </Field>
                             <Button
                                 type="submit"
                                 variant="contained"
-                                sx={{ mt: 2 }}
+                                size="small"
                                 disabled={isSubmitting}
-                                startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+                                startIcon={isSubmitting ? <CircularProgress size={14} /> : null}
                             >
-                                {isSubmitting ? 'Saving...' : 'Save Profile'}
+                                {isSubmitting ? 'Saving…' : 'Save Profile'}
                             </Button>
                         </Form>
                     )}
                 </Formik>
             </Paper>
 
-            <Paper sx={{ p: 3, mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Change Password
-                </Typography>
+            {/* Change password */}
+            <Paper variant="outlined" sx={{ p: 3, mb: 2, borderRadius: 3 }}>
+                <SectionTitle>Change Password</SectionTitle>
                 <Formik
                     initialValues={{ currentPassword: '', newPassword: '', confirmPassword: '' }}
                     validationSchema={PasswordSchema}
@@ -133,9 +124,9 @@ export default function Settings() {
                         try {
                             await changePassword(values.currentPassword, values.newPassword);
                             resetForm();
-                            showNotification('Password changed successfully!', 'success');
+                            notify('Password changed!', 'success');
                         } catch {
-                            showNotification('Failed to change password. Check your current password.', 'error');
+                            notify('Failed to change password — check your current password.', 'error');
                         } finally {
                             setSubmitting(false);
                         }
@@ -143,15 +134,12 @@ export default function Settings() {
                 >
                     {({ isSubmitting, errors, touched }) => (
                         <Form>
-                            <Grid container spacing={2}>
+                            <Grid container spacing={1.5} sx={{ mb: 2 }}>
                                 <Grid size={{ xs: 12, sm: 4 }}>
                                     <Field name="currentPassword">
                                         {({ field }: FieldProps) => (
                                             <TextField
-                                                {...field}
-                                                type="password"
-                                                label="Current Password"
-                                                fullWidth
+                                                {...field} type="password" label="Current Password" fullWidth size="small"
                                                 error={touched.currentPassword && Boolean(errors.currentPassword)}
                                                 helperText={touched.currentPassword && errors.currentPassword}
                                             />
@@ -162,10 +150,7 @@ export default function Settings() {
                                     <Field name="newPassword">
                                         {({ field }: FieldProps) => (
                                             <TextField
-                                                {...field}
-                                                type="password"
-                                                label="New Password"
-                                                fullWidth
+                                                {...field} type="password" label="New Password" fullWidth size="small"
                                                 error={touched.newPassword && Boolean(errors.newPassword)}
                                                 helperText={touched.newPassword && errors.newPassword}
                                             />
@@ -176,10 +161,7 @@ export default function Settings() {
                                     <Field name="confirmPassword">
                                         {({ field }: FieldProps) => (
                                             <TextField
-                                                {...field}
-                                                type="password"
-                                                label="Confirm New Password"
-                                                fullWidth
+                                                {...field} type="password" label="Confirm Password" fullWidth size="small"
                                                 error={touched.confirmPassword && Boolean(errors.confirmPassword)}
                                                 helperText={touched.confirmPassword && errors.confirmPassword}
                                             />
@@ -188,53 +170,48 @@ export default function Settings() {
                                 </Grid>
                             </Grid>
                             <Button
-                                type="submit"
-                                variant="contained"
-                                sx={{ mt: 2 }}
-                                disabled={isSubmitting}
-                                startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+                                type="submit" variant="contained" size="small" disabled={isSubmitting}
+                                startIcon={isSubmitting ? <CircularProgress size={14} /> : null}
                             >
-                                {isSubmitting ? 'Saving...' : 'Change Password'}
+                                {isSubmitting ? 'Saving…' : 'Change Password'}
                             </Button>
                         </Form>
                     )}
                 </Formik>
             </Paper>
 
-            <Paper sx={{ p: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Preferences
-                </Typography>
-                <Grid
-                    container
-                    spacing={3}
-                    sx={{
-                        alignItems: 'center'
-                    }}
-                >
+            {/* Preferences */}
+            <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
+                <SectionTitle>Preferences</SectionTitle>
+                <Grid container spacing={3}>
                     <Grid size={{ xs: 12, sm: 6 }}>
-                        <FormControl fullWidth>
-                            <InputLabel id="currency-label">Currency</InputLabel>
-                            <Select
-                                labelId="currency-label"
-                                name="currency"
-                                label="Currency"
-                                value={settings.currency}
-                                onChange={handleCurrencyChange}
-                            >
-                                {SUPPORTED_CURRENCIES.map((currency) => (
-                                    <MenuItem key={currency} value={currency}>
-                                        {currency}
-                                    </MenuItem>
+                        <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1, fontWeight: 500 }}>Currency</Typography>
+                        <FormControl size="small" fullWidth>
+                            <InputLabel>Currency</InputLabel>
+                            <Select value={settings.currency} label="Currency" onChange={handleCurrencyChange}>
+                                {(SUPPORTED_CURRENCIES as readonly string[]).map((currency: string) => (
+                                    <MenuItem key={currency} value={currency}>{currency}</MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6 }}>
-                        <ToggleButtonGroup value={settings.theme} exclusive onChange={handleThemeChange}>
-                            <ToggleButton value="light">Light</ToggleButton>
-                            <ToggleButton value="dark">Dark</ToggleButton>
-                        </ToggleButtonGroup>
+                        <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1, fontWeight: 500 }}>Theme</Typography>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            {(['light', 'dark'] as ThemeMode[]).map((t) => (
+                                <Button
+                                    key={t}
+                                    variant={mode === t ? 'contained' : 'outlined'}
+                                    size="small"
+                                    onClick={() => handleThemeChange(t)}
+                                    startIcon={t === 'light' ? <LightModeIcon sx={{ fontSize: 16 }} /> : <DarkModeIcon sx={{ fontSize: 16 }} />}
+                                    color={mode === t ? 'primary' : 'inherit'}
+                                    sx={{ textTransform: 'capitalize' }}
+                                >
+                                    {t}
+                                </Button>
+                            ))}
+                        </Box>
                     </Grid>
                 </Grid>
             </Paper>
@@ -242,12 +219,10 @@ export default function Settings() {
             <Snackbar
                 open={notification.open}
                 autoHideDuration={5000}
-                onClose={() => setNotification((prev) => ({ ...prev, open: false }))}
+                onClose={() => setNotification((p) => ({ ...p, open: false }))}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             >
-                <Alert severity={notification.severity} sx={{ width: '100%' }}>
-                    {notification.message}
-                </Alert>
+                <Alert severity={notification.severity}>{notification.message}</Alert>
             </Snackbar>
         </Box>
     );

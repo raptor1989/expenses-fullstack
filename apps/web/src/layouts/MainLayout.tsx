@@ -8,7 +8,6 @@ import {
     Toolbar,
     List,
     Typography,
-    Divider,
     IconButton,
     ListItem,
     ListItemButton,
@@ -19,7 +18,9 @@ import {
     MenuItem,
     useMediaQuery,
     useTheme,
-    Container
+    Container,
+    Tooltip,
+    alpha
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -28,19 +29,19 @@ import {
     Category as CategoryIcon,
     BarChart as BarChartIcon,
     Settings as SettingsIcon,
-    ChevronLeft as ChevronLeftIcon,
     Brightness4 as Brightness4Icon,
     Brightness7 as Brightness7Icon,
     AccountCircle,
-    Logout
+    Logout,
+    PieChart as PieChartIcon,
+    MoreHoriz as MoreHorizIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../hooks/useSettings';
 import { useThemeMode } from '../theme/ThemeProvider';
 
-// Drawer width
-const drawerWidth = 240;
+const drawerWidth = 248;
 
 export default function MainLayout() {
     const navigate = useNavigate();
@@ -61,17 +62,9 @@ export default function MainLayout() {
         });
     };
 
-    const handleDrawerToggle = () => {
-        setMobileDrawerOpen(!mobileDrawerOpen);
-    };
-
-    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleMenuClose = () => {
-        setAnchorEl(null);
-    };
+    const handleDrawerToggle = () => setMobileDrawerOpen(!mobileDrawerOpen);
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
+    const handleMenuClose = () => setAnchorEl(null);
 
     const handleLogout = async () => {
         handleMenuClose();
@@ -79,56 +72,147 @@ export default function MainLayout() {
         navigate('/login');
     };
 
-    // Navigation items
+    // Primary navigation
     const navItems = [
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
         { text: 'Expenses', icon: <ReceiptIcon />, path: '/expenses' },
         { text: 'Categories', icon: <CategoryIcon />, path: '/categories' },
-        { text: 'Reports', icon: <BarChartIcon />, path: '/reports' },
-        { text: 'Settings', icon: <SettingsIcon />, path: '/settings' }
+        { text: 'Reports', icon: <BarChartIcon />, path: '/reports' }
     ];
+    const accountItems = [{ text: 'Settings', icon: <SettingsIcon />, path: '/settings' }];
+
+    const isActive = (path: string) =>
+        path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+
+    const currentTitle =
+        [...navItems, ...accountItems].find((item) => isActive(item.path))?.text || 'Expense Manager';
+
+    const renderNavList = (items: typeof navItems) =>
+        items.map((item) => (
+            <ListItem key={item.text} disablePadding sx={{ px: 1 }}>
+                <ListItemButton
+                    onClick={() => {
+                        navigate(item.path);
+                        if (isMobile) setMobileDrawerOpen(false);
+                    }}
+                    selected={isActive(item.path)}
+                    sx={{ py: 0.85 }}
+                >
+                    <ListItemIcon
+                        sx={{
+                            minWidth: 34,
+                            color: isActive(item.path) ? 'primary.main' : 'text.secondary',
+                            '& svg': { fontSize: 20 }
+                        }}
+                    >
+                        {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                        primary={item.text}
+                        slotProps={{
+                            primary: {
+                                sx: {
+                                    fontSize: 14,
+                                    fontWeight: isActive(item.path) ? 600 : 500,
+                                    color: isActive(item.path) ? 'text.primary' : 'text.secondary'
+                                }
+                            }
+                        }}
+                    />
+                </ListItemButton>
+            </ListItem>
+        ));
+
+    const sectionLabel = (label: string) => (
+        <Typography
+            sx={{
+                px: 3,
+                pt: 2,
+                pb: 1,
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'text.secondary',
+                opacity: 0.65
+            }}
+        >
+            {label}
+        </Typography>
+    );
 
     const drawer = (
-        <>
-            <Toolbar
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {/* Brand */}
+            <Box
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
-                    px: [1]
+                    gap: 1.25,
+                    px: 2.5,
+                    height: 64,
+                    flexShrink: 0
                 }}
             >
-                <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+                <Box
+                    sx={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 2,
+                        bgcolor: 'primary.main',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                >
+                    <PieChartIcon sx={{ fontSize: 17, color: '#fff' }} />
+                </Box>
+                <Typography sx={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em' }}>
                     Expense Manager
                 </Typography>
-                {isMobile && (
-                    <IconButton onClick={handleDrawerToggle}>
-                        <ChevronLeftIcon />
-                    </IconButton>
-                )}
-            </Toolbar>
-            <Divider />
-            <List>
-                {navItems.map((item) => (
-                    <ListItem key={item.text} disablePadding>
-                        <ListItemButton
-                            onClick={() => {
-                                navigate(item.path);
-                                if (isMobile) {
-                                    setMobileDrawerOpen(false);
-                                }
-                            }}
-                            selected={
-                                item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path)
-                            }
+            </Box>
+
+            {/* Navigation */}
+            <Box sx={{ flex: 1, overflowY: 'auto' }}>
+                {sectionLabel('Menu')}
+                <List disablePadding>{renderNavList(navItems)}</List>
+                {sectionLabel('Account')}
+                <List disablePadding>{renderNavList(accountItems)}</List>
+            </Box>
+
+            {/* User footer */}
+            <Box sx={{ p: 1, borderTop: '0.5px solid', borderColor: 'divider', flexShrink: 0 }}>
+                <ListItemButton
+                    onClick={handleMenuOpen}
+                    sx={{ borderRadius: 2, py: 1, px: 1.25 }}
+                >
+                    <Avatar
+                        sx={{
+                            width: 28,
+                            height: 28,
+                            mr: 1.25,
+                            bgcolor: 'primary.main',
+                            fontSize: 13,
+                            fontWeight: 600
+                        }}
+                    >
+                        {user?.email?.[0]?.toUpperCase() || 'U'}
+                    </Avatar>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                            noWrap
+                            sx={{ fontSize: 13, fontWeight: 500, color: 'text.primary', lineHeight: 1.3 }}
                         >
-                            <ListItemIcon>{item.icon}</ListItemIcon>
-                            <ListItemText primary={item.text} />
-                        </ListItemButton>
-                    </ListItem>
-                ))}
-            </List>
-        </>
+                            {user?.email?.split('@')[0] || 'User'}
+                        </Typography>
+                        <Typography noWrap sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.3 }}>
+                            {user?.email || ''}
+                        </Typography>
+                    </Box>
+                    <MoreHorizIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                </ListItemButton>
+            </Box>
+        </Box>
     );
 
     return (
@@ -136,12 +220,15 @@ export default function MainLayout() {
             <CssBaseline />
             <AppBar
                 position="fixed"
+                color="default"
                 sx={{
                     width: { sm: `calc(100% - ${drawerWidth}px)` },
-                    ml: { sm: `${drawerWidth}px` }
+                    ml: { sm: `${drawerWidth}px` },
+                    bgcolor: (t) => alpha(t.palette.background.default, 0.8),
+                    backdropFilter: 'blur(8px)'
                 }}
             >
-                <Toolbar>
+                <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
                     <IconButton
                         color="inherit"
                         aria-label="open drawer"
@@ -152,45 +239,44 @@ export default function MainLayout() {
                         <MenuIcon />
                     </IconButton>
 
-                    <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                        {navItems.find((item) =>
-                            item.path === '/'
-                                ? window.location.pathname === '/'
-                                : window.location.pathname.startsWith(item.path)
-                        )?.text || 'Expense Manager'}
+                    <Typography sx={{ fontSize: 16, fontWeight: 600, flexGrow: 1, letterSpacing: '-0.01em' }}>
+                        {currentTitle}
                     </Typography>
 
-                    <IconButton sx={{ ml: 1 }} onClick={handleToggleTheme} color="inherit">
-                        {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-                    </IconButton>
+                    <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
+                        <IconButton
+                            onClick={handleToggleTheme}
+                            sx={{
+                                color: 'text.secondary',
+                                border: '0.5px solid',
+                                borderColor: 'divider',
+                                borderRadius: 2,
+                                width: 36,
+                                height: 36
+                            }}
+                        >
+                            {mode === 'dark' ? (
+                                <Brightness7Icon sx={{ fontSize: 18 }} />
+                            ) : (
+                                <Brightness4Icon sx={{ fontSize: 18 }} />
+                            )}
+                        </IconButton>
+                    </Tooltip>
 
-                    <IconButton
-                        size="large"
-                        edge="end"
-                        aria-label="account"
-                        aria-controls="menu-appbar"
-                        aria-haspopup="true"
-                        onClick={handleMenuOpen}
-                        color="inherit"
-                    >
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-                            {user?.email?.[0]?.toUpperCase() || 'U'}
-                        </Avatar>
-                    </IconButton>
                     <Menu
                         id="menu-appbar"
                         anchorEl={anchorEl}
-                        anchorOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'right'
-                        }}
+                        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
                         keepMounted
-                        transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'right'
-                        }}
+                        transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                         open={Boolean(anchorEl)}
                         onClose={handleMenuClose}
+                        slotProps={{
+                            paper: {
+                                variant: 'outlined',
+                                sx: { mt: -1, minWidth: 180, borderRadius: 2 }
+                            }
+                        }}
                     >
                         <MenuItem
                             onClick={() => {
@@ -245,14 +331,13 @@ export default function MainLayout() {
                 component="main"
                 sx={{
                     flexGrow: 1,
-                    p: 3,
                     width: { sm: `calc(100% - ${drawerWidth}px)` },
-                    backgroundColor: theme.palette.mode === 'light' ? 'grey.100' : 'grey.900',
+                    bgcolor: 'background.default',
                     minHeight: '100vh'
                 }}
             >
-                <Toolbar />
-                <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+                <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }} />
+                <Container maxWidth="lg" sx={{ py: 4 }}>
                     <Outlet />
                 </Container>
             </Box>

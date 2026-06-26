@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 
 export interface ChartCardProps {
-    title: string;
+    title?: string;
     height?: number;
     isEmpty?: boolean;
     emptyMessage?: string;
@@ -17,13 +17,24 @@ export default function ChartCard({
 }: ChartCardProps) {
     return (
         <Box>
-            <Typography variant="subtitle1" gutterBottom>
-                {title}
-            </Typography>
+            {title && (
+                <Typography
+                    sx={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        color: 'text.secondary',
+                        mb: 1.5
+                    }}
+                >
+                    {title}
+                </Typography>
+            )}
             <Box sx={{ height }}>
                 {isEmpty ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                        <Typography variant="body1" color="textSecondary">
+                        <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
                             {emptyMessage}
                         </Typography>
                     </Box>

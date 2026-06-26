@@ -1,16 +1,14 @@
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Avatar, Button, TextField, Link, Box, Typography, Alert, Grid } from '@mui/material';
-import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
+import { Button, TextField, Link, Box, Typography, Alert, Grid } from '@mui/material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
 
-// Validation schema
 const validationSchema = yup.object({
     email: yup.string().email('Enter a valid email').required('Email is required'),
-    password: yup.string().min(8, 'Password should be of minimum 8 characters length').required('Password is required')
+    password: yup.string().min(8, 'Password must be at least 8 characters').required('Password is required')
 });
 
 export default function Login() {
@@ -19,11 +17,8 @@ export default function Login() {
     const [error, setError] = useState<string | null>(null);
 
     const formik = useFormik({
-        initialValues: {
-            email: '',
-            password: ''
-        },
-        validationSchema: validationSchema,
+        initialValues: { email: '', password: '' },
+        validationSchema,
         onSubmit: async (values) => {
             try {
                 await login(values.email, values.password);
@@ -39,24 +34,23 @@ export default function Login() {
     });
 
     return (
-        <>
-            <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
-                <LockOutlinedIcon />
-            </Avatar>
-            <Typography component="h1" variant="h5">
+        <Box sx={{ width: '100%' }}>
+            <Typography component="h1" sx={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em', mb: 0.5, textAlign: 'center' }}>
                 Sign in
             </Typography>
-            {error && (
-                <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
-                    {error}
-                </Alert>
-            )}
-            <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 1, width: '100%' }}>
+            <Typography sx={{ fontSize: 13, color: 'text.secondary', textAlign: 'center', mb: 2.5 }}>
+                Welcome back to Expense Manager
+            </Typography>
+
+            {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
+
+            <Box component="form" onSubmit={formik.handleSubmit}>
                 <TextField
-                    margin="normal"
+                    margin="dense"
                     fullWidth
+                    size="small"
                     id="email"
-                    label="Email Address"
+                    label="Email"
                     name="email"
                     autoComplete="email"
                     autoFocus
@@ -67,8 +61,9 @@ export default function Login() {
                     helperText={formik.touched.email && formik.errors.email}
                 />
                 <TextField
-                    margin="normal"
+                    margin="dense"
                     fullWidth
+                    size="small"
                     name="password"
                     label="Password"
                     type="password"
@@ -80,33 +75,22 @@ export default function Login() {
                     error={formik.touched.password && Boolean(formik.errors.password)}
                     helperText={formik.touched.password && formik.errors.password}
                 />
-                <Button
-                    type="submit"
-                    fullWidth
-                    variant="contained"
-                    sx={{ mt: 3, mb: 2 }}
-                    disabled={formik.isSubmitting}
-                >
+                <Button type="submit" fullWidth variant="contained" sx={{ mt: 2.5, mb: 2 }} disabled={formik.isSubmitting}>
                     Sign In
                 </Button>
-                <Grid
-                    container
-                    sx={{
-                        justifyContent: 'space-between'
-                    }}
-                >
+                <Grid container sx={{ justifyContent: 'space-between' }}>
                     <Grid size="auto">
-                        <Link component={RouterLink} to="/forgot-password" variant="body2">
+                        <Link component={RouterLink} to="/forgot-password" variant="body2" sx={{ fontSize: 13 }}>
                             Forgot password?
                         </Link>
                     </Grid>
                     <Grid size="auto">
-                        <Link component={RouterLink} to="/register" variant="body2">
-                            {"Don't have an account? Sign Up"}
+                        <Link component={RouterLink} to="/register" variant="body2" sx={{ fontSize: 13 }}>
+                            Create account
                         </Link>
                     </Grid>
                 </Grid>
             </Box>
-        </>
+        </Box>
     );
 }

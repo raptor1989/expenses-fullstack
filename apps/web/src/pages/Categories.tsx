@@ -13,328 +13,232 @@ import {
     CircularProgress,
     Snackbar,
     Alert,
-    Card,
-    CardContent,
-    CardActions,
-    InputLabel,
-    FormControl,
-    Input,
     InputAdornment,
     Tooltip,
     DialogContentText,
-    Grid
+    Grid,
+    Chip
 } from '@mui/material';
-import {
-    Add as AddIcon,
-    Edit as EditIcon,
-    Delete as DeleteIcon,
-    ColorLens as ColorLensIcon
-} from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useCategoryStore } from '@/store/categoryStore';
-import { secondaryTextSx } from '@/helpers/sxHelpers';
 import { Category } from '@expenses/shared';
 
 export default function Categories() {
-    // Shared categories cache
     const { categories, loading, fetchCategories, addCategory, editCategory, removeCategory } = useCategoryStore();
 
-    // State for dialog
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-
-    // State for form
-    const [formData, setFormData] = useState({
-        name: '',
-        color: '#3f51b5', // Default color
-        icon: '' // For future use
-    });
-
-    // State for delete confirmation
+    const [formData, setFormData] = useState({ name: '', color: '#6c63ff', icon: '' });
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
-    // State for notifications
-    const [notification, setNotification] = useState({
-        open: false,
-        message: '',
-        severity: 'success' as 'success' | 'error'
-    });
-
-    // Fetch categories on component mount
     useEffect(() => {
-        fetchCategories().catch(() => {
-            setNotification({
-                open: true,
-                message: 'Failed to load categories. Please try again.',
-                severity: 'error'
-            });
-        });
+        fetchCategories().catch(() =>
+            setNotification({ open: true, message: 'Failed to load categories.', severity: 'error' })
+        );
     }, [fetchCategories]);
 
-    const handleOpenAddDialog = () => {
+    const openAdd = () => {
         setDialogMode('add');
-        setFormData({
-            name: '',
-            color: '#3f51b5',
-            icon: ''
-        });
+        setFormData({ name: '', color: '#6c63ff', icon: '' });
         setDialogOpen(true);
     };
 
-    const handleOpenEditDialog = (category: Category) => {
+    const openEdit = (cat: Category) => {
         setDialogMode('edit');
-        setSelectedCategory(category);
-        setFormData({
-            name: category.name,
-            color: category.color || '#3f51b5',
-            icon: category.icon || ''
-        });
+        setSelectedCategory(cat);
+        setFormData({ name: cat.name, color: cat.color || '#6c63ff', icon: cat.icon || '' });
         setDialogOpen(true);
     };
 
-    const handleDialogClose = () => {
-        setDialogOpen(false);
-        setSelectedCategory(null);
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const handleCategorySubmit = async () => {
+    const handleSubmit = async () => {
+        if (!formData.name.trim()) {
+            setNotification({ open: true, message: 'Category name is required', severity: 'error' });
+            return;
+        }
         try {
-            if (!formData.name.trim()) {
-                setNotification({
-                    open: true,
-                    message: 'Category name is required',
-                    severity: 'error'
-                });
-                return;
-            }
-
             if (dialogMode === 'add') {
                 await addCategory(formData.name, formData.color, formData.icon);
-                setNotification({
-                    open: true,
-                    message: 'Category created successfully!',
-                    severity: 'success'
-                });
-            } else if (dialogMode === 'edit' && selectedCategory) {
+                setNotification({ open: true, message: 'Category created!', severity: 'success' });
+            } else if (selectedCategory) {
                 await editCategory(selectedCategory.id, formData.name, formData.color, formData.icon);
-                setNotification({
-                    open: true,
-                    message: 'Category updated successfully!',
-                    severity: 'success'
-                });
+                setNotification({ open: true, message: 'Category updated!', severity: 'success' });
             }
-
-            handleDialogClose();
+            setDialogOpen(false);
         } catch {
-            setNotification({
-                open: true,
-                message: `Failed to ${dialogMode === 'add' ? 'create' : 'update'} category. Please try again.`,
-                severity: 'error'
-            });
+            setNotification({ open: true, message: `Failed to ${dialogMode} category.`, severity: 'error' });
         }
-    };
-
-    const handleDeleteClick = (category: Category) => {
-        setCategoryToDelete(category);
-        setDeleteDialogOpen(true);
     };
 
     const handleConfirmDelete = async () => {
         if (!categoryToDelete) return;
-
         try {
             await removeCategory(categoryToDelete.id);
-            setNotification({
-                open: true,
-                message: 'Category deleted successfully!',
-                severity: 'success'
-            });
+            setNotification({ open: true, message: 'Category deleted!', severity: 'success' });
         } catch {
-            setNotification({
-                open: true,
-                message: 'Failed to delete category. It may be in use by existing expenses.',
-                severity: 'error'
-            });
+            setNotification({ open: true, message: 'Failed to delete category — it may still be in use.', severity: 'error' });
         } finally {
             setDeleteDialogOpen(false);
             setCategoryToDelete(null);
         }
     };
 
-    const handleCloseNotification = () => {
-        setNotification((prev) => ({ ...prev, open: false }));
-    };
-
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4">Categories</Typography>
-                <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenAddDialog}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
+                <Typography sx={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em' }}>Categories</Typography>
+                <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd} size="small">
                     Add Category
                 </Button>
             </Box>
 
             {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', my: 6 }}>
                     <CircularProgress />
                 </Box>
             ) : categories.length === 0 ? (
-                <Paper sx={{ p: 3, textAlign: 'center' }}>
-                    <Typography variant="body1" sx={secondaryTextSx}>
-                        No categories found. Add your first category to get started!
+                <Paper variant="outlined" sx={{ p: 5, textAlign: 'center', borderRadius: 3 }}>
+                    <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>
+                        No categories yet. Add your first one to get started!
                     </Typography>
                 </Paper>
             ) : (
-                <Grid container spacing={3}>
-                    {categories.map((category) => (
-                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={category.id}>
-                            <Card
+                <Grid container spacing={1.5}>
+                    {categories.map((cat) => (
+                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={cat.id}>
+                            <Paper
+                                variant="outlined"
                                 sx={{
-                                    borderLeft: `5px solid ${category.color || '#3f51b5'}`,
-                                    height: '100%',
+                                    p: 2,
+                                    borderRadius: 3,
+                                    borderLeft: `3px solid ${cat.color || '#6c63ff'}`,
                                     display: 'flex',
-                                    flexDirection: 'column'
+                                    alignItems: 'center',
+                                    gap: 1.5,
+                                    transition: 'background 0.15s',
+                                    '&:hover': { bgcolor: 'action.hover' }
                                 }}
                             >
-                                <CardContent sx={{ flexGrow: 1 }}>
-                                    <Typography variant="h6" component="h2">
-                                        {category.name}
-                                    </Typography>
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            mt: 1
-                                        }}
-                                    >
-                                        <ColorLensIcon
-                                            sx={{
-                                                color: category.color || '#3f51b5',
-                                                mr: 1
-                                            }}
-                                        />
-                                        <Typography variant="body2" sx={secondaryTextSx}>
-                                            {category.color || 'No color set'}
-                                        </Typography>
-                                    </Box>
-                                </CardContent>
-                                <CardActions>
-                                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
-                                        <Tooltip title="Edit">
-                                            <IconButton size="small" onClick={() => handleOpenEditDialog(category)}>
-                                                <EditIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Delete">
-                                            <IconButton
-                                                size="small"
-                                                color="error"
-                                                onClick={() => handleDeleteClick(category)}
-                                            >
-                                                <DeleteIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </Box>
-                                </CardActions>
-                            </Card>
+                                <Box
+                                    sx={{
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: '50%',
+                                        bgcolor: cat.color || '#6c63ff',
+                                        flexShrink: 0
+                                    }}
+                                />
+                                <Typography sx={{ fontSize: 14, fontWeight: 500, flex: 1 }}>{cat.name}</Typography>
+                                <Chip
+                                    label={cat.color || '#6c63ff'}
+                                    size="small"
+                                    sx={{ fontSize: 10, height: 18, bgcolor: 'action.hover', color: 'text.secondary' }}
+                                />
+                                <Box sx={{ display: 'flex', gap: 0.25, ml: 0.5 }}>
+                                    <Tooltip title="Edit">
+                                        <IconButton size="small" onClick={() => openEdit(cat)} sx={{ p: 0.5 }}>
+                                            <EditIcon sx={{ fontSize: 15 }} />
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Delete">
+                                        <IconButton
+                                            size="small"
+                                            color="error"
+                                            onClick={() => { setCategoryToDelete(cat); setDeleteDialogOpen(true); }}
+                                            sx={{ p: 0.5 }}
+                                        >
+                                            <DeleteIcon sx={{ fontSize: 15 }} />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
+                            </Paper>
                         </Grid>
                     ))}
                 </Grid>
             )}
 
-            {/* Add/Edit Category Dialog */}
-            <Dialog open={dialogOpen} onClose={handleDialogClose}>
-                <DialogTitle>{dialogMode === 'add' ? 'Add Category' : 'Edit Category'}</DialogTitle>
-                <DialogContent>
+            {/* Add / Edit dialog */}
+            <Dialog
+                open={dialogOpen}
+                onClose={() => setDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+                slotProps={{ paper: { variant: 'outlined', sx: { borderRadius: 3 } } }}
+            >
+                <DialogTitle sx={{ fontSize: 16, fontWeight: 600 }}>
+                    {dialogMode === 'add' ? 'Add Category' : 'Edit Category'}
+                </DialogTitle>
+                <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
                     <TextField
                         autoFocus
-                        margin="dense"
-                        name="name"
-                        label="Category Name"
-                        type="text"
+                        label="Name"
                         fullWidth
-                        variant="outlined"
+                        size="small"
                         value={formData.name}
-                        onChange={handleInputChange}
+                        onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
                     />
-                    <FormControl fullWidth margin="dense">
-                        <InputLabel htmlFor="color">Color</InputLabel>
-                        <Input
-                            id="color"
-                            name="color"
-                            value={formData.color}
-                            onChange={handleInputChange}
-                            startAdornment={
-                                <InputAdornment position="start">
-                                    <Box
-                                        sx={{
-                                            width: 24,
-                                            height: 24,
-                                            backgroundColor: formData.color,
-                                            borderRadius: '50%',
-                                            marginRight: 1
-                                        }}
-                                    />
-                                </InputAdornment>
+                    <TextField
+                        label="Color"
+                        fullWidth
+                        size="small"
+                        value={formData.color}
+                        onChange={(e) => setFormData((p) => ({ ...p, color: e.target.value }))}
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: formData.color, border: '1px solid', borderColor: 'divider' }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <input
+                                            type="color"
+                                            value={formData.color}
+                                            onChange={(e) => setFormData((p) => ({ ...p, color: e.target.value }))}
+                                            style={{ width: 24, height: 24, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                                        />
+                                    </InputAdornment>
+                                )
                             }
-                            endAdornment={
-                                <InputAdornment position="end">
-                                    <input
-                                        type="color"
-                                        value={formData.color}
-                                        onChange={(e) => setFormData((prev) => ({ ...prev, color: e.target.value }))}
-                                        style={{ width: 28, height: 28 }}
-                                    />
-                                </InputAdornment>
-                            }
-                        />
-                    </FormControl>
+                        }}
+                    />
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleDialogClose}>Cancel</Button>
-                    <Button onClick={handleCategorySubmit} variant="contained" color="primary">
+                <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                    <Button onClick={() => setDialogOpen(false)} size="small">Cancel</Button>
+                    <Button onClick={handleSubmit} variant="contained" size="small">
                         {dialogMode === 'add' ? 'Add' : 'Update'}
                     </Button>
                 </DialogActions>
             </Dialog>
 
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-                <DialogTitle>Confirm Delete</DialogTitle>
+            {/* Delete dialog */}
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+                slotProps={{ paper: { variant: 'outlined', sx: { borderRadius: 3 } } }}
+            >
+                <DialogTitle sx={{ fontSize: 16, fontWeight: 600 }}>Delete Category</DialogTitle>
                 <DialogContent>
-                    <DialogContentText>
-                        Are you sure you want to delete the category "{categoryToDelete?.name}"?
-                        {categoryToDelete && (
-                            <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold', color: 'error.main' }}>
-                                Warning: This will remove the category from all associated expenses.
-                            </Typography>
-                        )}
+                    <DialogContentText sx={{ fontSize: 14 }}>
+                        Delete "{categoryToDelete?.name}"? This will remove it from associated expenses.
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleConfirmDelete} color="error">
-                        Delete
-                    </Button>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button onClick={() => setDeleteDialogOpen(false)} size="small">Cancel</Button>
+                    <Button onClick={handleConfirmDelete} color="error" variant="contained" size="small">Delete</Button>
                 </DialogActions>
             </Dialog>
 
-            {/* Notification Snackbar */}
             <Snackbar
                 open={notification.open}
                 autoHideDuration={5000}
-                onClose={handleCloseNotification}
+                onClose={() => setNotification((p) => ({ ...p, open: false }))}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             >
-                <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
-                    {notification.message}
-                </Alert>
+                <Alert severity={notification.severity}>{notification.message}</Alert>
             </Snackbar>
         </Box>
     );

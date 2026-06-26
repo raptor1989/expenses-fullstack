@@ -1,7 +1,10 @@
 import { ReactNode } from 'react';
-import { Container, Box, Paper, Typography, IconButton } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon } from '@mui/icons-material';
+import { Container, Box, Paper, Typography, IconButton, Tooltip } from '@mui/material';
+import {
+    Brightness4 as Brightness4Icon,
+    Brightness7 as Brightness7Icon,
+    PieChart as PieChartIcon
+} from '@mui/icons-material';
 import { useThemeMode } from '../theme/ThemeProvider';
 
 interface AuthLayoutProps {
@@ -9,7 +12,6 @@ interface AuthLayoutProps {
 }
 
 export default function AuthLayout({ children }: AuthLayoutProps) {
-    const theme = useTheme();
     const { mode, toggleColorMode } = useThemeMode();
 
     return (
@@ -18,35 +20,70 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                 display: 'flex',
                 flexDirection: 'column',
                 minHeight: '100vh',
-                bgcolor: theme.palette.mode === 'light' ? 'grey.100' : 'grey.900'
+                bgcolor: 'background.default'
             }}
         >
-            <Box
-                sx={{
-                    position: 'absolute',
-                    top: 16,
-                    right: 16
-                }}
-            >
-                <IconButton sx={{ ml: 1 }} onClick={toggleColorMode} color="inherit">
-                    {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-                </IconButton>
+            <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+                <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
+                    <IconButton
+                        onClick={toggleColorMode}
+                        sx={{
+                            color: 'text.secondary',
+                            border: '0.5px solid',
+                            borderColor: 'divider',
+                            borderRadius: 2,
+                            width: 36,
+                            height: 36
+                        }}
+                    >
+                        {mode === 'dark' ? (
+                            <Brightness7Icon sx={{ fontSize: 18 }} />
+                        ) : (
+                            <Brightness4Icon sx={{ fontSize: 18 }} />
+                        )}
+                    </IconButton>
+                </Tooltip>
             </Box>
 
-            <Container maxWidth="sm" sx={{ mt: 8, mb: 4 }}>
-                <Paper
-                    elevation={3}
+            <Container maxWidth="xs" sx={{ mt: { xs: 8, sm: 12 }, mb: 4 }}>
+                {/* Brand */}
+                <Box
                     sx={{
-                        p: 4,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        borderRadius: 2
+                        gap: 1.5,
+                        mb: 3
                     }}
                 >
-                    <Typography component="h1" variant="h4" color="primary" sx={{ mb: 2 }}>
+                    <Box
+                        sx={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 2.5,
+                            bgcolor: 'primary.main',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <PieChartIcon sx={{ fontSize: 24, color: '#fff' }} />
+                    </Box>
+                    <Typography sx={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em' }}>
                         Expense Manager
                     </Typography>
+                </Box>
+
+                <Paper
+                    variant="outlined"
+                    sx={{
+                        p: { xs: 3, sm: 4 },
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        borderRadius: 3
+                    }}
+                >
                     {children}
                 </Paper>
             </Container>
