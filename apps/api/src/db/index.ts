@@ -11,6 +11,11 @@ const pool = new Pool({
     database: process.env.DB_NAME || 'expenses_db'
 });
 
+// Without a listener a dropped idle connection emits an unhandled 'error' and kills the process.
+pool.on('error', (error) => {
+    console.error('Unexpected error on idle PostgreSQL client:', error);
+});
+
 export const testConnection = async (): Promise<boolean> => {
     try {
         const client = await pool.connect();

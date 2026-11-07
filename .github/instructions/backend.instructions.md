@@ -5,152 +5,94 @@ description: "Use when working on the Express.js backend API: controllers, model
 
 # Backend API Standards
 
+Express 5, TypeScript (CommonJS, `strict: false`), PostgreSQL through `pg`. Full detail: `CLAUDE.md` → "Backend".
+
 ## Architecture
 
-Lightweight Express.js MVC with clear separation:
-
 ```
-routes/       → Define endpoints, attach middleware
-controllers/  → Parse request, validate, call model, format response
-models/       → Execute SQL queries, return typed objects
-middlewares/  → Cross-cutting concerns (auth, errors, 404)
-db/           → Pool singleton, migrations
+routes/       → endpoints + express-validator chains, attach middleware
+controllers/  → parse request, call model, format response (static methods)
+models/       → SQL queries, return typed objects (static methods)
+middlewares/  → auth, optionalAuth, validate, rateLimit, notFound, errorHandler
+db/           → Pool singleton (index.ts), schema (migrate.ts)
+__tests__/    → Jest + Supertest integration suites against a real database
 ```
 
-Request flow: `route → middleware → controller (static method) → model (static method) → response`
+Request flow: `router → apiLimiter → auth → validator chain → validate → Controller.static → Model.static → JSON`.
+Routers are mounted in `src/app.ts` **without an `/api` prefix**: `/users`, `/expenses`, `/categories`, `/settings`, plus `GET /health`.
 
 ## Controllers
 
-- Class-based with **static async methods only** (no instance state — class acts as namespace)
-- Each method receives `(req: Request, res: Response)`
-- Always check `req.user` in protected endpoints before proceeding
-- Always pass `userId` to model methods (user-scoped data access)
+- Class with **static async methods only**; `(req: Request, res: Response)`.
+- Protected methods start with the `req.user` guard (401 `auth_required`) and pass `req.user.id` to the model.
+- `req.params` is cast `as { id: string }` (Express 5 typings).
+- Catch errors inside the method: `console.error` → 500 with a feature-specific code (`expense_fetch_failed`).
 
 ```typescript
-static async getAll(req: Request, res: Response) {
+static async getThing(req: Request, res: Response) {
     try {
         if (!req.user) {
             return res.status(401).json({ message: 'Authentication required', code: 'auth_required' });
         }
-        const result = await SomeModel.findAll(req.user.id);
-        res.json({ message: 'Items retrieved successfully', items: result });
+        const { id } = req.params as { id: string };
+        const thing = await ThingModel.findById(id, req.user.id);
+        if (!thing) {
+            return res.status(404).json({ message: 'Thing not found', code: 'thing_not_found' });
+        }
+        res.status(200).json({ thing });
     } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ message: 'Server error', code: 'server_error' });
+        console.error('Get thing error:', error);
+        res.status(500).json({ message: 'Failed to get thing', code: 'thing_fetch_failed' });
     }
 }
 ```
 
 ## Models
 
-- Class-based with **static methods only**
-- Each method acquires a pg client and releases it in `finally`
-- All queries use **parameterized placeholders** (`$1, $2, ...`) — never interpolate user input
-- Map `snake_case` DB columns to `camelCase` via SELECT aliases: `first_name as "firstName"`
-- Convert decimal fields with `parseFloat()` (pg returns strings for DECIMAL)
-
-```typescript
-static async findById(id: number, userId: number): Promise<Item | null> {
-    const client = await pool.connect();
-    try {
-        const result = await client.query(
-            'SELECT id, name, amount::text as amount, user_id as "userId" FROM items WHERE id = $1 AND user_id = $2',
-            [id, userId]
-        );
-        if (result.rows.length === 0) return null;
-        const row = result.rows[0];
-        return { ...row, amount: parseFloat(row.amount) };
-    } finally {
-        client.release();
-    }
-}
-```
+- Static methods; `const client = await pool.connect(); try { ... } finally { client.release(); }`.
+- **Parameterised queries only** (`$1, $2, ...`) — never interpolate user input.
+- Alias `snake_case` columns to camelCase in `SELECT`/`RETURNING`: `user_id as "userId"`.
+- `DECIMAL` comes back as a string → `parseFloat`.
+- Every user-scoped query filters by `user_id`; `findById(id, userId)` returns `null` → controller 404.
+- Partial updates: build `SET` with a running `$n` counter; no fields → return `findById`.
+- Domain errors as classes with a `code` (`CategoryHasExpensesError`), mapped in the controller.
 
 ## Database
 
-- **Singleton Pool** in `db/index.ts` — import and use `pool.connect()` everywhere
-- SSL enabled in production (`NODE_ENV === 'production'`)
-- Migrations in `db/migrate.ts` use transactions: `BEGIN → DDL statements → COMMIT/ROLLBACK`
-- Database triggers handle: auto-generated default categories on user registration, auto-updated `updated_at` timestamps
+- One `pg.Pool` in `db/index.ts` with an `error` listener; no SSL option. `dotenv` is loaded there and in `index.ts`.
+- Schema is `db/migrate.ts`: idempotent DDL in one transaction (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE OR REPLACE FUNCTION`, `DROP TRIGGER IF EXISTS` + `CREATE TRIGGER`). Triggers create default categories and a `user_settings` row per user and bump `updated_at`.
+- **The same DDL is duplicated in `__tests__/helpers/setup.ts`** — change both, plus `truncateAllTables()` in `__tests__/helpers/db.ts` for a new table.
 
 ## Routes
 
-- Exported as named constants: `export const itemRoutes = router`
-- Use lambdas to delegate to controller static methods: `router.get('/', (req, res) => Controller.getAll(req, res))`
-- Auth middleware applied per-route or per-router depending on the resource
-- Mounted in `index.ts` under `/api/` prefix
+- `export const thingRoutes = router`; `router.use(apiLimiter)`, then `auth` for protected routers; lambdas delegate to the controller.
+- Validation chains are module-level arrays (`body('field')...`), one for create and one (`.optional()`) for update, followed by `validate` → 400 `validation_error` with `details: { field: message }`.
+- Static paths (`/summary`) before `/:id`. Mount the router in `src/app.ts` before `notFound`.
 
 ## Authentication
 
-- JWT Bearer token extracted from `Authorization` header
-- Middleware decodes token and attaches to `req.user` via global `Express.Request` augmentation:
-  ```typescript
-  declare global { namespace Express { interface Request { user?: { id: number; email: string } } } }
-  ```
-- Token payload: `{ id, email }`
-- Secret from `JWT_SECRET` env var, expiration from `JWT_EXPIRES_IN` (default `'7D'`)
-- Returns 401 with code `auth_required` or `invalid_token` on failure
-
-## Error Handling
-
-- Custom `ApiError` interface extends `Error` with: `statusCode`, `code`, `details`
-- Error middleware registered **last** in `index.ts`
-- Response shape for errors:
-  ```json
-  { "message": "...", "code": "error_code", "details": {}, "stack": "..." }
-  ```
-- `stack` included only when `NODE_ENV === 'development'`
-- Standard error codes: `auth_required`, `invalid_token`, `email_in_use`, `missing_required_field`, `user_not_found`, `category_has_expenses`, `server_error`
+- JWT `{ id, email }` from the `token` cookie (httpOnly, `sameSite: 'strict'`, `secure` in production) or `Authorization: Bearer` fallback.
+- `auth` → 401 `auth_required` / `invalid_token`; `optionalAuth` never rejects (`GET /users/session` answers `{ user: null }` for anonymous callers).
+- `JWT_SECRET` is required at startup; `JWT_EXPIRES_IN` (`ms` format, default `7D`).
+- Rate limits: `authLimiter` 20/15 min on register, login, forgot/reset password (off when `NODE_ENV=test`); `apiLimiter` 300/15 min elsewhere; `TRUST_PROXY=true` behind a reverse proxy.
+- Password reset only logs the link (console + `logs/password-resets.log`); no e-mail.
 
 ## Response Format
 
-Mutation responses (POST/PUT/DELETE) include `message`:
+- Reads: entity under its own key, no `message` — `{ expense }`, `{ categories }`, `{ expenses, pagination: { total, page, limit, totalPages } }`.
+- Mutations: `{ message, expense }` (201 on create), deletes `{ message }`.
+- Errors: `{ message, code, details? }`; codes in use are listed in `CLAUDE.md` → "API contract" (`validation_error`, `invalid_credentials`, `category_has_expenses`, `not_found`, `rate_limit_exceeded`, `<feature>_<action>_failed`, …).
 
-```json
-{
-    "message": "Item created successfully",
-    "item": { ... }
-}
-```
+## Tests
 
-GET responses return data directly (no `message`):
-
-```json
-{
-    "items": [...],
-    "pagination": { "total": 100, "page": 1, "limit": 10, "totalPages": 10 }
-}
-```
-
-- Include `code` for error responses
-- Include `pagination` for list endpoints
-
-## Validation
-
-- **Manual** in controllers — check required fields with `if (!field)` → 400 response
-- No express-validator currently used
-- Database constraints (UNIQUE, NOT NULL, FK) serve as fallback safety net
-- Parse query params explicitly: `parseInt(req.query.limit as string)`
-
-## Pagination
-
-- Count query first (`SELECT COUNT(*)`) for total
-- LIMIT/OFFSET applied with dynamic parameter counters
-- Dynamic WHERE builder: increment param counter per condition
-  ```typescript
-  let paramCounter = 2;
-  if (startDate) { conditions.push(`date >= $${paramCounter++}`); params.push(startDate); }
-  ```
+- Preamble in every file: `loadTestEnv()` **before** `import app`; `truncateAllTables()` in `beforeEach`/`afterEach`; `registerAndLogin()` gives the `cookie`; fixtures in `helpers/fixtures.ts`.
+- Cover: happy path, each validation rule, 401 without cookie, 404 for another user's row.
+- Run: `npm test --workspace=@expenses/api` (PostgreSQL from the committed `.env.test`; the DB is created automatically). A type error anywhere in `src/` fails the whole run (ts-jest type-checks).
 
 ## New Endpoint Checklist
 
-1. **Model** — add static method(s) with SQL queries in `models/`
-2. **Controller** — add static method(s) parsing request and calling model in `controllers/`
-3. **Route** — define route and attach middleware in `routes/`
-4. **Register** — mount router in `index.ts` under `/api/` prefix
-
-## Future Recommendations
-
-- Migrate to `express-validator` for declarative input validation in route definitions
-- Consider repository pattern for models with complex query logic
-- Add request/response logging middleware
+1. Shared type (`packages/shared`) if the shape is new.
+2. Schema in `db/migrate.ts` **and** `__tests__/helpers/setup.ts`.
+3. Model → 4. Controller → 5. Route with validators → 6. Mount in `src/app.ts`.
+7. Supertest suite in `__tests__/`.
+8. Web service + Vitest test, page, and a smoke test in `e2e/` if the flow is user-visible.

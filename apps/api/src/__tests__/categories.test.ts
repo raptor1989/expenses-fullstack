@@ -67,13 +67,13 @@ describe('POST /categories', () => {
         expect(res.status).toBe(400);
     });
 
-    it('returns 400 when name exceeds 100 characters', async () => {
+    it('returns 400 when name exceeds 50 characters', async () => {
         const { cookie } = await registerAndLogin(userFixture());
 
         const res = await request(app)
             .post('/categories')
             .set('Cookie', cookie)
-            .send(categoryFixture({ name: 'A'.repeat(101) }));
+            .send(categoryFixture({ name: 'A'.repeat(51) }));
 
         expect(res.status).toBe(400);
         expect(res.body.code).toBe('validation_error');

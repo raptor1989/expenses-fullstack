@@ -18,7 +18,7 @@ const categoryBodyValidation = [
         .trim()
         .notEmpty()
         .withMessage('Category name is required')
-        .isLength({ max: 100 })
+        .isLength({ max: 50 })
         .withMessage('Name too long'),
     body('color')
         .optional()
@@ -34,7 +34,7 @@ const categoryUpdateValidation = [
         .trim()
         .notEmpty()
         .withMessage('Name cannot be empty')
-        .isLength({ max: 100 })
+        .isLength({ max: 50 })
         .withMessage('Name too long'),
     body('color')
         .optional()

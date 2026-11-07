@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box,
     Typography,
@@ -19,11 +19,7 @@ import {
     Chip,
     LinearProgress
 } from '@mui/material';
-import {
-    AttachMoney as MoneyIcon,
-    Receipt as ReceiptIcon,
-    Category as CategoryIcon
-} from '@mui/icons-material';
+import { AttachMoney as MoneyIcon, Receipt as ReceiptIcon, Category as CategoryIcon } from '@mui/icons-material';
 import { ResponsivePie } from '@nivo/pie';
 import { getExpenses, getExpenseSummary } from '../services/expenseService';
 import { useNavigate } from 'react-router-dom';
@@ -48,40 +44,54 @@ export default function Dashboard() {
     const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
     const { categories, fetchCategories } = useCategoryStore();
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
+    const fetchDashboardData = useCallback(async ({ silent = false } = {}) => {
+        // A refetch triggered by the inline form keeps the page visible (no full-page spinner).
+        if (!silent) {
             setLoading(true);
-            try {
-                const today = dayjs();
-                const startDate = today.subtract(30, 'day').format('YYYY-MM-DD');
-                const endDate = today.format('YYYY-MM-DD');
+        }
+        try {
+            const today = dayjs();
+            const startDate = today.subtract(30, 'day').format('YYYY-MM-DD');
+            const endDate = today.format('YYYY-MM-DD');
 
-                const summaryData = await getExpenseSummary(startDate, endDate);
-                setSummary(summaryData);
+            const summaryData = await getExpenseSummary(startDate, endDate);
+            setSummary(summaryData);
 
-                const categoryData = summaryData.categoryBreakdown.map((item: { categoryId: string; categoryName: string; totalAmount: number; percentage: number; color: string }, index: number) => ({
+            const categoryData = summaryData.categoryBreakdown.map(
+                (
+                    item: {
+                        categoryId: string;
+                        categoryName: string;
+                        totalAmount: number;
+                        percentage: number;
+                        color: string;
+                    },
+                    index: number
+                ) => ({
                     id: item.categoryName,
                     label: item.categoryName,
                     value: item.totalAmount,
                     color: item.color || CHART_COLORS[index % CHART_COLORS.length]
-                }));
-                setExpensesByCategory(categoryData);
+                })
+            );
+            setExpensesByCategory(categoryData);
 
-                try {
-                    const recentData = await getExpenses();
-                    setRecentExpenses(recentData.expenses);
-                } catch {
-                    setRecentExpenses([]);
-                }
+            try {
+                const recentData = await getExpenses();
+                setRecentExpenses(recentData.expenses);
             } catch {
-                // summary unavailable — UI shows zeroed state
-            } finally {
-                setLoading(false);
+                setRecentExpenses([]);
             }
-        };
-
-        fetchDashboardData();
+        } catch {
+            // summary unavailable — UI shows zeroed state
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, [fetchDashboardData]);
 
     useEffect(() => {
         fetchCategories();
@@ -169,11 +179,21 @@ export default function Dashboard() {
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
                         <Typography
-                            sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2 }}
+                            sx={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.06em',
+                                color: 'text.secondary',
+                                mb: 2
+                            }}
                         >
                             Add Expense
                         </Typography>
-                        <SimpleExpenseForm categories={categories} />
+                        <SimpleExpenseForm
+                            categories={categories}
+                            onCreated={() => fetchDashboardData({ silent: true })}
+                        />
                     </Paper>
                 </Grid>
 
@@ -181,7 +201,14 @@ export default function Dashboard() {
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Paper variant="outlined" sx={{ p: 2.5, height: 380, borderRadius: 3 }}>
                         <Typography
-                            sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 1 }}
+                            sx={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.06em',
+                                color: 'text.secondary',
+                                mb: 1
+                            }}
                         >
                             Expenses by Category
                         </Typography>
@@ -215,7 +242,14 @@ export default function Dashboard() {
                                     }}
                                 />
                             ) : (
-                                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        height: '100%'
+                                    }}
+                                >
                                     <Typography variant="body2" color="text.secondary">
                                         No expense data available
                                     </Typography>
@@ -229,7 +263,14 @@ export default function Dashboard() {
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Paper variant="outlined" sx={{ p: 2.5, height: 380, overflow: 'auto', borderRadius: 3 }}>
                         <Typography
-                            sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 1.5 }}
+                            sx={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.06em',
+                                color: 'text.secondary',
+                                mb: 1.5
+                            }}
                         >
                             Last 10 Expenses
                         </Typography>
@@ -257,14 +298,18 @@ export default function Dashboard() {
                                                             label={categoriesMap[expense.categoryId].name}
                                                             size="small"
                                                             sx={{
-                                                                bgcolor: categoriesMap[expense.categoryId].color || '#e0e0e0',
+                                                                bgcolor:
+                                                                    categoriesMap[expense.categoryId].color ||
+                                                                    '#e0e0e0',
                                                                 color: '#fff',
                                                                 fontSize: 11,
                                                                 height: 20
                                                             }}
                                                         />
                                                     ) : (
-                                                        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>—</Typography>
+                                                        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                                                            —
+                                                        </Typography>
                                                     )}
                                                 </TableCell>
                                                 <TableCell align="right" sx={{ fontSize: 12, fontWeight: 600 }}>
@@ -274,7 +319,11 @@ export default function Dashboard() {
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={4} align="center" sx={{ color: 'text.secondary', py: 4 }}>
+                                            <TableCell
+                                                colSpan={4}
+                                                align="center"
+                                                sx={{ color: 'text.secondary', py: 4 }}
+                                            >
                                                 No recent expenses
                                             </TableCell>
                                         </TableRow>
@@ -290,7 +339,13 @@ export default function Dashboard() {
                     <Paper variant="outlined" sx={{ p: 2.5, height: 380, overflow: 'auto', borderRadius: 3 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography
-                                sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary' }}
+                                sx={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    color: 'text.secondary'
+                                }}
                             >
                                 Top Categories
                             </Typography>

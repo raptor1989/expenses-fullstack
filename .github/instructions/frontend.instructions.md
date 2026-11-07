@@ -5,121 +5,63 @@ description: "Use when working on the React frontend: components, pages, service
 
 # Frontend Standards
 
+React 19, Vite 8, TypeScript (`strict`), Material UI 9, React Router 7, Formik + Yup, Zustand, Axios, Vitest. Full detail: `CLAUDE.md` → "Frontend".
+
 ## Architecture
 
 ```
-pages/        → Full page components with business logic, local state
-components/   → Reusable presentational components
-services/     → Pure async functions wrapping Axios calls
-contexts/     → React Context providers (auth)
-hooks/        → Custom hooks (useAuth)
-layouts/      → MainLayout (sidebar + AppBar) and AuthLayout (centered card)
-helpers/      → Utility functions (formatting)
-theme/        → MUI ThemeProvider with dark/light mode
-store/        → Zustand (installed, not yet used)
+pages/        → full page components with business logic and local state
+components/   → charts/ (nivo), expenses/ (ExpenseForm dialog, SimpleExpenseForm inline, ExpenseTable, expenseSchema.ts), reports/
+services/     → pure async functions over the Axios instance, one file per domain, Vitest test next to each
+contexts/     → AuthContext, SettingsContext      hooks/ → useAuth, useSettings
+store/        → categoryStore.ts (Zustand)         theme/ → ThemeProvider (+ useThemeMode)
+layouts/      → MainLayout (drawer + AppBar, <Outlet />), AuthLayout
+helpers/      → formatHelpers (Intl), chartHelpers, sxHelpers
 ```
+
+Provider order in `main.tsx`: `BrowserRouter` → `ThemeProvider` → `LocalizationProvider` → `AuthProvider` → `SettingsProvider` → `App`.
 
 ## Components
 
-- **Functional components only** — React 19 with hooks, no class components
-- Props interfaces named `ComponentNameProps`
-- Pages are heavier components with embedded business logic and local state
-- Lighter reusable components in `components/`
+- Functional components only, hooks; props interfaces named `ComponentNameProps`.
+- Pages carry data fetching and state; `components/` stays presentational and receives callbacks (e.g. `SimpleExpenseForm` gets `onCreated`).
+- PascalCase `.tsx` for components/pages/contexts, camelCase `.ts` for services/hooks/helpers.
+- Imports: libraries, then `@/` (alias for `src/`), then relative.
 
-## File Naming
+## MUI 9
 
-| Entity | Convention | Examples |
-|--------|-----------|---------|
-| Components, Pages, Contexts | PascalCase `.tsx` | `ExpenseForm.tsx`, `Dashboard.tsx`, `AuthContext.tsx` |
-| Services, Hooks, Helpers | camelCase `.ts` | `expenseService.ts`, `useAuth.ts`, `formatHelpers.ts` |
-| Folders | camelCase | `services/`, `pages/`, `contexts/` |
-
-## Imports
-
-- Path alias `@/` maps to `src/` (configured in `tsconfig.json` and `vite.config.mts`)
-- Library imports first, then `@/` imports, then relative imports
-  ```typescript
-  import { useState } from 'react';
-  import { Box, Typography } from '@mui/material';
-  import { useAuth } from '@/hooks/useAuth';
-  import type { Expense } from '@expenses/shared';
-  ```
-
-## MUI (Material-UI v6)
-
-- `Grid2` for responsive layouts: `size={{ xs: 12, md: 6 }}`
-- `Dialog` for modal forms (create/edit)
-- `TextField`, `Select` for form inputs
-- `Card`, `Paper`, `Chip` for data display
-- `IconButton` with icons from `@mui/icons-material`
-- `DatePicker` from `@mui/x-date-pickers` with dayjs adapter
-- Theme supports light/dark toggle, persisted in localStorage
+- `Grid` from `@mui/material` with `size={{ xs: 12, md: 6 }}` (there is no `Grid2`).
+- `Dialog` for modal forms, `Snackbar` + `Alert` for feedback, `DatePicker` from `@mui/x-date-pickers` with the dayjs adapter.
+- Theme: light/dark, default dark, persisted in `localStorage.themeMode` and in the user's server-side settings.
+- Shared `sx` fragments live in `helpers/sxHelpers.ts`.
 
 ## Forms (Formik + Yup)
 
-- Yup validation schema defined as a **module-level constant**:
-  ```typescript
-  const ExpenseSchema = Yup.object().shape({
-      amount: Yup.number().required('Amount is required').positive('Must be positive'),
-      description: Yup.string().required('Description is required'),
-  });
-  ```
-- Formik with `enableReinitialize` for edit mode (pre-fill from existing data)
-- Show field errors only when `touched`: `error={touched.field && Boolean(errors.field)}`
-- Modal forms use `Dialog` wrapper; inline forms on Dashboard use `SimpleExpenseForm`
+- Yup schema as a module-level constant in a plain `.ts` file (`components/expenses/expenseSchema.ts`) so Vitest can import it without MUI.
+- Show errors only when touched: `error={touched.field && Boolean(errors.field)}`.
+- Limits mirror the API (expense `description ≤ 500`, `amount > 0`, date not in the future).
 
-## Service Layer
+## Services
 
-- Pure async functions in `services/` — one file per domain (`expenseService.ts`, `categoryService.ts`)
-- Typed Axios calls with generic: `api.get<{ expenses: Expense[] }>(url)`
-- Always destructure `.data` from response: `const { data } = await api.get<T>(url)`
-- Query params built with `URLSearchParams`
-- Base Axios instance in `api.ts` with:
-  - `baseURL` from `VITE_API_URL` env variable
-  - Request interceptor: attaches Bearer token from localStorage
-  - Response interceptor: redirects to `/login` on 401
+- `services/api.ts`: Axios instance, `baseURL` from `VITE_API_URL` (default `http://localhost:4000`, no `/api`), `withCredentials: true` — the httpOnly cookie is the session, nothing is stored in `localStorage`.
+- Response interceptor: 401 → `window.location.href = '/login'`, except failed `/users/login` / `/users/register` attempts and when already on `/login` (forms show the API message).
+- Functions return the unwrapped entity: `const response = await api.get<{ expense: Expense }>(url); return response.data.expense;`. Query strings via `URLSearchParams`.
+- Each service has a Vitest test that mocks `./api` (`vi.hoisted` + `vi.mock`) and asserts the exact path and payload — update it with the service.
 
-## Authentication Flow
+## State
 
-1. `AuthContext` provides: `user`, `isAuthenticated`, `isLoading`, `login()`, `logout()`, `register()`
-2. On mount: checks localStorage for token → calls `fetchCurrentUser` to restore session
-3. Token stored in `localStorage.setItem('token', ...)`
-4. `useAuth()` hook wraps `useContext(AuthContext)` with error boundary check
-5. `ProtectedRoute` component blocks unauthenticated users, shows loading spinner during check
+- Auth: `AuthContext` (`user`, `isAuthenticated`, `isLoading`, `login`, `register`, `logout`, `updateUser`); `GET /users/session` on mount.
+- Settings: `SettingsContext` (`settings`, `updateSettings`) — currency and theme.
+- Categories: global Zustand store `useCategoryStore` (`fetchCategories` is idempotent; reset on logout).
+- Everything else (expenses list, pagination, filters, dialogs): local `useState` in the page. Notifications: local `Snackbar`.
 
-## State Management
+## Routing
 
-- **Auth state**: global via `AuthContext`
-- **Feature data** (expenses list, categories, pagination): local `useState` per page
-- **Zustand**: installed (`zustand@5`) but **store/ is empty** — not yet used
+- `App.tsx`: auth pages (`/login`, `/register`, `/forgot-password`, `/reset-password`) in `AuthLayout`; protected tree `/` → `ProtectedRoute` → `MainLayout` with `index`, `expenses`, `categories`, `reports`, `settings`; `*` → `NotFound`.
+- New page: component in `pages/`, `<Route>` inside the `MainLayout` tree, entry in `navItems` in `layouts/MainLayout.tsx`.
 
-## Routing (React Router v6)
+## Verification
 
-- `BrowserRouter` wraps entire app in `main.tsx`
-- Nested routes in `App.tsx` with `<Outlet />` in layouts
-- Protected routes wrapped in `<ProtectedRoute>` component
-- Auth routes (`/login`, `/register`) use `AuthLayout`
-- Main routes nested under `/` use `MainLayout` (sidebar + AppBar)
-- 404 fallback: `path="*"` → `NotFound` page
-
-## Notifications
-
-- Local Snackbar state per page:
-  ```typescript
-  const [notification, setNotification] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>(...);
-  ```
-- No centralized notification system
-
-## New Page Checklist
-
-1. **Page component** — create in `pages/` with local state and data fetching
-2. **Route** — add route definition in `App.tsx` (inside `ProtectedRoute` if authenticated)
-3. **Navigation** — add menu item in `MainLayout` sidebar
-4. **Service** — create service file in `services/` if the page calls API endpoints
-
-## Future Recommendations
-
-- Consolidate feature list state into **Zustand stores** (expenses, categories) to reduce local state duplication across pages
-- Centralize notification handling (global Snackbar context or Zustand slice)
-- Sync pagination/filter state with URL query params for shareable URLs
-- Extract common data-fetching patterns into custom hooks per domain
+- `npm run build --workspace=@expenses/web` (tsc + vite), `npm run lint --workspace=@expenses/web` (0 warnings), `npm test --workspace=@expenses/web`.
+- User-visible changes: `npm run test:e2e` (Playwright smoke suite in `e2e/`); add a test for a new flow. The drawer is rendered twice (permanent + mobile), so test selectors on it need `.filter({ visible: true })`.
+- Config files use `import.meta.dirname` (Vite 8), not `__dirname`.

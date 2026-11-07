@@ -4,87 +4,53 @@ description: "Use when adding new features end-to-end, modifying API contracts, 
 
 # Fullstack Integration Standards
 
+The step-by-step procedure with file patterns and test templates is the Claude Code skill `.claude/skills/add-feature/SKILL.md`; the contract tables are in `CLAUDE.md` → "API contract".
+
 ## End-to-End Feature Workflow
 
-When adding a new entity or feature that spans both apps, follow this order:
-
 ```
-1. Shared type    → Define interface in packages/shared/src/types.ts, export from index.ts
-2. DB migration   → Add table/columns in apps/api/src/db/migrate.ts (inside transaction)
-3. Model          → Add static methods in apps/api/src/models/ (SQL queries)
-4. Controller     → Add static methods in apps/api/src/controllers/ (request handling)
-5. Route          → Define routes in apps/api/src/routes/, mount in index.ts
-6. Service        → Add async functions in apps/web/src/services/ (Axios calls)
-7. Page/Component → Create or update page in apps/web/src/pages/, add route in App.tsx
+1. Shared type    → packages/shared/src/types.ts (exported through the barrel automatically)
+2. DB schema      → apps/api/src/db/migrate.ts AND apps/api/src/__tests__/helpers/setup.ts (same idempotent DDL)
+3. Model          → apps/api/src/models/ (parameterised SQL, camelCase aliases)
+4. Controller     → apps/api/src/controllers/ (static methods, req.user guard)
+5. Route          → apps/api/src/routes/ (express-validator chains + validate), mount in src/app.ts (no /api prefix)
+6. API test       → apps/api/src/__tests__/<entity>.test.ts (Supertest; happy path, 400s, 401, isolation)
+7. Service        → apps/web/src/services/<entity>Service.ts + <entity>Service.test.ts (Vitest, mocked api)
+8. State / page   → Zustand store for shared reference data, otherwise page-local useState; route in App.tsx; nav item in MainLayout
+9. Smoke test     → e2e/tests/smoke.spec.ts: one happy-path test for the visible flow
 ```
 
-Verify at each layer before moving to the next.
+Verify at each layer before moving on; root `npm run build && npm run lint && npm test && npm run test:e2e` at the end.
 
 ## API Contract Alignment
 
-### Response shape
+- Base URL has **no `/api` prefix**; web services call `/expenses`, `/categories`, `/users/...`, `/settings` relative to `VITE_API_URL`.
+- Reads return the entity under its own key, no `message`:
 
-Backend controllers return:
 ```json
-{
-    "message": "Items retrieved successfully",
-    "items": [...],
-    "pagination": { "total": 100, "page": 1, "limit": 10, "totalPages": 10 }
-}
+{ "expenses": [...], "pagination": { "total": 100, "page": 1, "limit": 10, "totalPages": 10 } }
 ```
 
-Frontend services destructure `.data`:
-```typescript
-const { data } = await api.get<{ items: Item[]; pagination: Pagination }>('/api/items');
-return data;
-```
+- Mutations include `message` (`{ "message": "Expense created successfully", "expense": { ... } }`, 201 on create); deletes return `{ "message": "..." }`.
+- Errors: `{ "message": "...", "code": "error_code", "details": {} }`. `validation_error` carries `details: { field: message }`.
+- The web interceptor handles 401 globally (redirect to `/login`, except failed login/register attempts); other errors are handled per call (form `Alert` or `Snackbar`).
 
-### Error shape
+## Shared Types
 
-Backend error middleware returns:
-```json
-{ "message": "Not found", "code": "not_found", "details": {} }
-```
-
-Frontend Axios response interceptor handles 401 globally (redirect to `/login`). Other errors should be caught per-call in the service or component.
-
-### Error codes
-
-Error codes defined in backend should be handled in frontend where user-facing feedback is needed:
-- `auth_required` / `invalid_token` → handled globally by Axios interceptor (401 → redirect)
-- `email_in_use` → show in registration form
-- `missing_required_field` → show in form validation
-- `category_has_expenses` → show in category delete confirmation
-
-## Shared Types Usage
-
-- Import types in both apps: `import type { Expense } from '@expenses/shared'`
-- Entity types (e.g., `Expense`) for API responses and display
-- Input types (e.g., `ExpenseCreateInput`) for form data and POST/PUT payloads
-- Keep types in sync — a breaking change in shared types must be reflected in both apps
+- Entity interfaces for reads, `*CreateInput` / `*UpdateInput` for writes.
+- Dates are typed `Date` but arrive as ISO strings — format through `helpers/formatHelpers.ts`.
+- `packages/shared` is ESM-only; `apps/api` (CommonJS) can import **types** but not runtime values — duplicate constants such as `SUPPORTED_CURRENCIES` in the API and keep both in sync.
+- After changing shared: `npm run build` from the root (both apps must compile).
 
 ## Monorepo Commands
 
-| Command | Scope | Purpose |
-|---------|-------|---------|
-| `npm run dev` | Root | Starts both API and Web dev servers via Turbo |
-| `npm run build` | Root | Builds shared → API + Web in parallel |
-| `npm run dev --workspace=@expenses/api` | API only | Start API dev server |
-| `npm run dev --workspace=@expenses/web` | Web only | Start Vite dev server |
-| `npm run build --workspace=@expenses/shared` | Shared only | Rebuild type definitions |
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | shared watcher + API (ts-node) + web (vite) via Turbo; frees ports 5173/4000 first |
+| `npm run build` | shared → api + web |
+| `npm run lint` | ESLint in every workspace (e2e also type-checks) |
+| `npm test` | API integration (PostgreSQL) + web unit tests |
+| `npm run test:e2e` | Playwright smoke tests against the built app |
+| `npm run <script> --workspace=@expenses/<api\|web\|shared\|e2e>` | single workspace |
 
-## Build Order
-
-Turbo manages the dependency graph:
-1. `packages/shared` builds first (exports `.d.ts` type definitions)
-2. `apps/api` and `apps/web` build in parallel (both depend on shared)
-
-After modifying shared types, always verify both apps still compile: `npm run build` from root.
-
-## Cross-Layer Verification
-
-When modifying API contracts or shared types:
-1. Update the type in `packages/shared`
-2. Update backend model/controller to match the new shape
-3. Update frontend service and components to use updated types
-4. Run `npm run build` from root — TypeScript will catch mismatches between layers
+Turbo runs tasks in strict env mode — only variables listed in `turbo.json` `passThroughEnv` reach a task.

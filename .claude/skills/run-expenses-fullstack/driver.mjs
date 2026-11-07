@@ -10,7 +10,8 @@
 //   screenshot <url> <out.png>                                          - nav + screenshot, no auth
 //   login-screenshot <email> <password> <out.png>                       - fill+submit login form, screenshot result
 //   add-expense-screenshot <email> <password> <description> <amount> <out.png>
-//       - login, then fill+submit the dashboard's inline expense form, screenshot result
+//       - login, fill+submit the dashboard's inline expense form, wait for the success
+//         snackbar and for the new row (the dashboard refetches by itself), screenshot
 //
 // Env:
 //   WEB_URL  (default http://localhost:5173)
@@ -23,14 +24,6 @@ async function withPage(fn) {
     const browser = await chromium.launch({ channel: 'msedge', headless: true });
     try {
         const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-        // Workaround: the axios response interceptor hard-redirects to /login on ANY 401,
-        // including the initial "am I logged in" check fired from /login itself. Without
-        // a session cookie that 401s immediately, causing window.location.href = '/login'
-        // to fire on /login -> reload -> re-check -> 401 -> reload forever. Fulfilling this
-        // one request with a non-401 status keeps the page from ever hard-navigating.
-        await page.route('**/api/users/profile', (route) =>
-            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ user: null }) })
-        );
         await fn(page);
     } finally {
         await browser.close();
@@ -100,7 +93,9 @@ if (cmd === 'screenshot') {
             await page.fill('input[name="amount"]', amount);
             await page.fill('input[name="description"]', description);
             await page.click('button:has-text("Save")');
-            await page.waitForSelector(`text=${description}`, { timeout: 10000 });
+            await page.waitForSelector('text=Expense added successfully!', { timeout: 10000 });
+            // The dashboard refetches its lists after the inline form saves.
+            await page.waitForSelector(`text=${description}`, { timeout: 15000 });
         } finally {
             await page.screenshot({ path: out });
             console.log(`saved ${out}`);

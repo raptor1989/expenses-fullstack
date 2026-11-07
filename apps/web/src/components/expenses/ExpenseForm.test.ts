@@ -29,8 +29,8 @@ describe('ExpenseSchema', () => {
         );
     });
 
-    it('rejects a description longer than 100 characters', async () => {
-        await expect(ExpenseSchema.validate({ ...validExpense, description: 'a'.repeat(101) })).rejects.toThrow(
+    it('rejects a description longer than 500 characters', async () => {
+        await expect(ExpenseSchema.validate({ ...validExpense, description: 'a'.repeat(501) })).rejects.toThrow(
             'Description is too long'
         );
     });
