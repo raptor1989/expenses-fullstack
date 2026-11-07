@@ -21,9 +21,10 @@ import { createExpense } from '@/services/expenseService';
 
 interface SimpleExpenseFormProps {
     categories: Category[];
+    onCreated?: () => void;
 }
 
-const SimpleExpenseForm = ({ categories }: SimpleExpenseFormProps) => {
+const SimpleExpenseForm = ({ categories, onCreated }: SimpleExpenseFormProps) => {
     const today = dayjs();
 
     const defaultValues: ExpenseCreateInput = {
@@ -51,6 +52,7 @@ const SimpleExpenseForm = ({ categories }: SimpleExpenseFormProps) => {
                 severity: 'success'
             });
             resetForm();
+            onCreated?.();
         } catch {
             setNotification({
                 open: true,

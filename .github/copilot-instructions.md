@@ -1,6 +1,6 @@
 # General Copilot Instructions
 
-Domain-specific standards (backend, frontend, shared types, fullstack integration) are in `.github/instructions/`. They load automatically based on the files being edited or via description-based discovery.
+Domain-specific standards (backend, frontend, shared types, fullstack integration) are in `.github/instructions/`. They load automatically based on the files being edited or via description-based discovery. The full, verified project map (commands, environment, API contract, test layout, CI) is `CLAUDE.md` in the repo root — when these files and `CLAUDE.md` disagree, trust the code, then `CLAUDE.md`.
 
 ## Core Principles
 
@@ -65,3 +65,9 @@ For multi-step tasks, provide a short plan:
 ```
 
 Strong success criteria enable independent work. Weak criteria ("make it work") require constant clarification.
+
+## 5. Verification
+
+- `npm run build`, `npm run lint`, `npm test` from the repo root (API tests need PostgreSQL; the committed `apps/api/.env.test` describes the expected instance).
+- `npm run test:e2e` (Playwright smoke suite in `e2e/`) for anything user-visible; extend `e2e/tests/smoke.spec.ts` when a flow is new.
+- Prettier (`.prettierrc`: 4 spaces, single quotes, width 120, CRLF) on the files you changed. Every file in the repo is CRLF — never convert line endings.

@@ -1,234 +1,205 @@
 ---
 name: run-expenses-fullstack
-description: Build, run, and drive the Household Expenses Manager (Express API + React/Vite web app, PostgreSQL, Turborepo monorepo). Use when asked to start the API or web dev servers, run DB migrations, build the monorepo, run tests, or log into / screenshot / interact with the web UI.
+description: Build, run, and drive the Household Expenses Manager (Express API + React/Vite web app, PostgreSQL, Turborepo monorepo). Use when asked to start the API or web dev servers, run DB migrations, build the monorepo, run tests, smoke-test the API with curl, or log into / screenshot / interact with the web UI in a real browser.
 ---
 
-Fullstack app: `apps/api` (Express + PostgreSQL, port 4000) and `apps/web`
-(React + Vite, port 5173), sharing types from `packages/shared`. Drive the
-running web UI with `.claude/skills/run-expenses-fullstack/driver.mjs` — a
-small Playwright script that launches the system-installed Microsoft Edge
-(no Chromium download needed) and logs in / fills forms / screenshots.
-All paths below are relative to the repo root.
+Fullstack app: `apps/api` (Express 5 + PostgreSQL, port 4000) and
+`apps/web` (React 19 + Vite 8, port 5173), sharing types from
+`packages/shared`. Drive the running web UI with
+`.claude/skills/run-expenses-fullstack/driver.mjs` — a small
+`playwright-core` script that launches the system-installed Microsoft
+Edge (no Chromium download) and logs in / fills forms / screenshots.
+For automated end-to-end checks use the Playwright smoke suite instead
+(skill `e2e-smoke`). Paths below are relative to the repo root.
+Verified 2026-11-07.
 
 ## Prerequisites
 
-- Node >= 20, npm. PostgreSQL running and reachable (any version — this
-  was verified against PostgreSQL 17 on Windows).
-- `playwright-core` for the driver — not a project dependency, install it
-  on demand (see Run section). It reuses your installed Edge/Chrome via
-  the `channel` option, so no browser binary download is required.
+- Node ≥ 22.12, npm 11. PostgreSQL running and reachable (17 on this
+  machine, port 5432, service `postgresql-x64-17`).
+- `playwright-core` for the driver — not a project dependency; install
+  per session with `npm install --no-save playwright-core` (never touches
+  `package.json`). It reuses Edge through `channel: 'msedge'`.
 
 ## Setup
 
 ```bash
-npm install   # from repo root — installs all workspaces
+npm install   # from the repo root — all workspaces
 ```
 
-Create `apps/api/.env` from `apps/api/.env.example` and point it at
-**your actual local Postgres**, not the example defaults:
+If `node_modules` is older than the last dependency bump (symptom:
+`TS5103 Invalid value for '--ignoreDeprecations'` or peer conflicts on
+`@typescript-eslint`), delete `node_modules`, `apps/*/node_modules`,
+`packages/*/node_modules`, `e2e/node_modules` and the gitignored
+`package-lock.json`, then reinstall.
+
+`apps/api/.env` must exist (copy `apps/api/.env.example`, fill in the
+real DB credentials, a non-empty `JWT_SECRET`, and `ALLOWED_ORIGINS`
+containing `http://localhost:5173`). Set `DB_PORT` explicitly — the code
+fallback is 5433. `apps/web` needs no `.env`: `VITE_API_URL` defaults to
+`http://localhost:4000` (no `/api` suffix). `npm run setup` does the
+`.env` copy, database creation and migration interactively.
+
+Schema (idempotent, safe to re-run):
 
 ```bash
-cp apps/api/.env.example apps/api/.env
-# then edit DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME to match your install
+npm run db:migrate --workspace=@expenses/api
 ```
-
-Find your real port/credentials first — don't assume 5432/postgres/postgres
-(see Gotchas). `ALLOWED_ORIGINS` must include the web dev origin
-(`http://localhost:5173`) or the browser login flow will be blocked by CORS.
-`JWT_SECRET` must be a non-empty string or the API refuses to start.
-
-`apps/web` needs no `.env` — `VITE_API_URL` falls back to
-`http://localhost:4000/api` in `apps/web/src/services/api.ts`.
-
-Run migrations (creates `users`, `categories`, `expenses` tables/triggers;
-safe to run against a DB that already has unrelated tables — uses
-`CREATE TABLE IF NOT EXISTS`):
-
-```bash
-cd apps/api && npx ts-node -r dotenv/config src/db/migrate.ts
-```
-
-The `-r dotenv/config` is required — see Gotchas.
 
 ## Build
 
 ```bash
-npm run build --workspace=@expenses/shared   # must run first, see Gotchas
-npm run build --workspace=@expenses/web      # verified clean
+npm run build          # shared → api + web (Turbo); 3/3 tasks on a clean checkout
 ```
-
-`npm run build --workspace=@expenses/api` (and therefore the root
-`npm run build`) **currently fails** on this branch — six pre-existing
-`TS2345` errors in `category.controller.ts`/`expense.controller.ts`
-(`req.params.id` typed `string | string[]` passed where `string` is
-expected). That's existing/WIP code, not something this skill patches.
-Run the API in dev with `--transpile-only` (below) to work around it.
 
 ## Run (agent path)
 
-Start both servers, then drive the web UI through the real browser:
+Start each server in the background, wait for it, then drive it.
 
 ```bash
-# 1. API (bypass the type errors above; -r dotenv/config loads apps/api/.env
-#    before any module reads process.env — required, see Gotchas)
-cd apps/api && npx ts-node --transpile-only -r dotenv/config src/index.ts &
-# wait for it:
-curl -sf http://localhost:4000/health
+# 1. API — dotenv is loaded inside src/index.ts, no -r dotenv/config needed.
+#    DB_NAME=expenses_test_db runs it against the disposable test DB (schema kept
+#    current by the test suite) instead of the developer's expenses_db.
+cd apps/api && DB_NAME=expenses_test_db npx ts-node src/index.ts    # run_in_background
+curl --retry 30 --retry-delay 1 --retry-connrefused -sf http://localhost:4000/health   # {"status":"ok",...}
 
-# 2. Web
-cd apps/web && npx vite &
-curl -sf http://localhost:5173/
+# 2. Web — an explicit VITE_API_URL beats a stale apps/web/.env.local
+cd apps/web && VITE_API_URL=http://localhost:4000 npx vite          # run_in_background
+curl --retry 30 --retry-delay 1 --retry-connrefused -sfo /dev/null http://localhost:5173/ && echo web up
 ```
 
-Then drive it:
+Create a user for the smoke test (idempotent: a second call returns 400
+`email_in_use`, which is fine):
 
 ```bash
-npm install --no-save playwright-core   # one-time per session, not a project dep
-
-node .claude/skills/run-expenses-fullstack/driver.mjs \
-  login-screenshot smoketest@example.com 'Password123!' /tmp/dashboard.png
-
-node .claude/skills/run-expenses-fullstack/driver.mjs \
-  add-expense-screenshot smoketest@example.com 'Password123!' "Grocery run" 42.50 /tmp/expense.png
-```
-
-The user must already exist — register first if needed:
-
-```bash
-curl -s -X POST http://localhost:4000/api/users/register \
+curl -s -X POST http://localhost:4000/users/register \
   -H "Content-Type: application/json" \
   -d '{"email":"smoketest@example.com","password":"Password123!"}'
 ```
 
-| driver command | what it does |
-|---|---|
-| `screenshot <url> <out.png>` | nav + screenshot, no auth (e.g. `/login` page) |
-| `login-screenshot <email> <password> <out.png>` | fills `#email`/`#password`, clicks Sign In, waits for the dashboard, screenshots |
-| `add-expense-screenshot <email> <password> <description> <amount> <out.png>` | logs in, opens the dashboard's inline expense form, picks "General" from the category `Select`, fills amount/description, clicks Save, waits for the new row, screenshots |
-
-API-only smoke test without a browser (auth is httpOnly-cookie based, so
-use a cookie jar — see Gotchas):
+Drive the UI:
 
 ```bash
-curl -s -c /tmp/cookies.txt -X POST http://localhost:4000/api/users/login \
-  -H "Content-Type: application/json" -d '{"email":"smoketest@example.com","password":"Password123!"}'
-curl -s -b /tmp/cookies.txt http://localhost:4000/api/categories
+npm install --no-save playwright-core
+
+node .claude/skills/run-expenses-fullstack/driver.mjs \
+  login-screenshot smoketest@example.com 'Password123!' "$TMPDIR/dashboard.png"
+
+node .claude/skills/run-expenses-fullstack/driver.mjs \
+  add-expense-screenshot smoketest@example.com 'Password123!' "Grocery run" 42.50 "$TMPDIR/expense.png"
 ```
 
-Stop both servers when done: find PIDs listening on 4000/5173 and kill them
-(`Get-NetTCPConnection -LocalPort 4000,5173 -State Listen` on Windows, or
-`lsof -i:4000,5173` elsewhere).
+| driver command | what it does |
+|---|---|
+| `screenshot <url> <out.png>` | navigate + screenshot, no auth (e.g. `http://localhost:5173/login`) |
+| `login-screenshot <email> <password> <out.png>` | fills `#email`/`#password`, submits, waits for the dashboard ("Add Expense" card), screenshots |
+| `add-expense-screenshot <email> <password> <description> <amount> <out.png>` | logs in, picks the first category in the dashboard's inline form (MUI `Select`), fills amount/description, clicks Save, waits for the "Expense added successfully!" snackbar and for the new row in "Last 10 expenses" (the dashboard refetches by itself), screenshots |
+
+`WEB_URL` env var overrides `http://localhost:5173`. The driver prints
+browser console errors after each command — read them.
+
+API-only smoke test (auth is an httpOnly cookie, so keep a cookie jar):
+
+```bash
+curl -s -c "$TMPDIR/cookies.txt" -X POST http://localhost:4000/users/login \
+  -H "Content-Type: application/json" -d '{"email":"smoketest@example.com","password":"Password123!"}'
+curl -s -b "$TMPDIR/cookies.txt" http://localhost:4000/categories
+curl -s -b "$TMPDIR/cookies.txt" "http://localhost:4000/expenses?page=1&limit=5"
+curl -s -b "$TMPDIR/cookies.txt" http://localhost:4000/settings
+```
+
+Stop both servers when done — kill the background tasks you started, or
+free the ports: `node scripts/free-ports.js 4000 5173` (kills listeners
+only; works on Windows, macOS and Linux).
 
 ## Run (human path)
 
 ```bash
-npm run dev   # turbo: starts shared (tsc --watch), api, and web together
+npm run dev   # predev frees 5173/4000, then Turbo starts shared (tsc --watch), api (ts-node), web (vite)
 ```
 
-Currently **fails for `@expenses/api`** in this branch — its `dev` script
-is plain `ts-node` (no `--transpile-only`), so it hits the same TS2345
-errors as the build. `@expenses/shared` and `@expenses/web` start fine
-under this command; only the API needs the manual `--transpile-only`
-launch from the agent path above.
+Production-like run of the build output: `npm run build`, then
+`npm start` (PM2 from `pm2.config.js`: compiled API + `sirv dist --single`).
 
 ## Test
 
 ```bash
-cd apps/api
-DB_PORT=<your-port> DB_USER=<your-user> DB_PASSWORD=<your-password> \
-  npx jest --config jest.config.js --runInBand --forceExit
+npm test                               # API integration + web unit (builds first)
+npm test --workspace=@expenses/api     # Jest + Supertest, 6 suites / 78 tests, needs PostgreSQL
+npm test --workspace=@expenses/web     # Vitest, 5 files / 29 tests, no DB
+npm test --workspace=@expenses/api -- auth   # one suite
+E2E_BROWSER_CHANNEL=msedge npm run test:e2e  # Playwright smoke suite, 9 tests — skill e2e-smoke
 ```
 
-The committed `apps/api/.env.test` assumes `5432`/`postgres`/`postgres`;
-override via env vars (as above) if your local Postgres differs — `dotenv`
-never overwrites variables already present in `process.env`, so exported
-vars win. **Currently this also fails to run any tests** — `ts-jest`
-type-checks too, and hits the same pre-existing TS2345 errors, so all 4
-suites fail at compile time before a single test executes.
-
----
+API tests use the committed `apps/api/.env.test` (`expenses_test_db`,
+`postgres`/`postgres`, port 5432); the DB is created on first run. Test
+files load `.env.test` with `override: true`, so exporting `DB_PORT=...`
+in the shell is **not** enough — edit `.env.test` locally (don't commit)
+if the local Postgres differs.
 
 ## Gotchas
 
-- **`.env.example` defaults are not your machine's defaults.** This dev
-  box's PostgreSQL listens on port `5433`, not `5432`, with a non-default
-  password. Confirm the real port before writing `apps/api/.env`:
-  `Get-NetTCPConnection -State Listen | Where-Object LocalPort -in 5432,5433`
-  (or check `Get-Service -Name "*postgres*"` then the data dir's
-  `postgresql.conf`).
-- **`dotenv.config()` runs too late in `apps/api/src/index.ts`.** The file
-  is `import dotenv from 'dotenv'; import app from './app'; dotenv.config();`
-  — ES imports execute before the rest of the module body, so `./app`
-  (and transitively `./db`, which builds the `pg.Pool` from
-  `process.env.DB_*` at import time) loads **before** `dotenv.config()`
-  runs. Symptom: API connects to `localhost:5432` with `postgres`/`postgres`
-  even though your `.env` says otherwise, or CORS silently blocks the web
-  origin because `ALLOWED_ORIGINS` read as `undefined`. Fix: always launch
-  with `-r dotenv/config` (`npx ts-node -r dotenv/config src/index.ts`).
-  `src/db/migrate.ts` doesn't call `dotenv.config()` at all, so it needs
-  the same `-r dotenv/config` preload unconditionally.
-- **Auth is httpOnly-cookie based, not Bearer-in-body.** `POST
-  /api/users/login` sets a `token` cookie via `res.cookie(...)` and returns
-  no token in the JSON body. Use a cookie jar with curl (`-c`/`-b`), and
-  in a browser driver make sure axios/fetch sends credentials (the app's
-  `api.ts` already sets `withCredentials: true`).
-- **Visiting `/login` cold causes an infinite reload loop.** On mount,
-  `AuthContext` calls `GET /api/users/profile` to check for an existing
-  session. Without a cookie this 401s, and the global axios response
-  interceptor does `window.location.href = '/login'` on **any** 401 —
-  including this one, even though you're already on `/login`. That's a
-  hard navigation, which reloads the page, re-runs the same check, gets
-  401 again, and reloads forever. The driver works around it by routing
-  `**/api/users/profile` to a fake `200 {user: null}` response before
-  navigating (see `driver.mjs`) — this is a real frontend bug, not
-  something to silently "fix" as part of running the app.
-- **The `pg.Pool` has no `.on('error', ...)` handler.** If the Postgres
-  connection drops for any reason (service restart, admin kill), the
-  unhandled `error` event crashes the entire Node process, not just the
-  in-flight query. If the API stops responding mid-session, check
-  Postgres is still up and just restart the API — there's no graceful
-  recovery built in.
-- **Stale `packages/shared/tsconfig.tsbuildinfo` silently breaks
-  consumers.** TypeScript's incremental build can skip emitting
-  `dist/index.d.ts` if the buildinfo cache thinks nothing changed, even
-  when `dist/` is empty/stale. Symptom: `apps/web`/`apps/api` builds fail
-  with `TS7016: Could not find a declaration file for module
-  '@expenses/shared'` even right after building shared. Fix:
-  `rm -rf packages/shared/dist packages/shared/tsconfig.tsbuildinfo`
-  before `npm run build --workspace=@expenses/shared`.
-- **The category field on the dashboard is a MUI `<Select>`, not a
-  native `<select>`.** `page.selectOption()` won't work. Click the
-  combobox div by its predictable id (`#mui-component-select-<fieldName>`,
-  e.g. `#mui-component-select-categoryId`) to open the popup. Clicking a
-  specific `li[role="option"]` by text is flaky (the popup's position
-  isn't always settled the instant Playwright clicks) — use keyboard nav
-  instead: `ArrowDown` then `Enter` reliably picks an option once the
-  popup is open.
-- **No Chrome/`chromium-cli` on this machine, but Edge is installed.**
-  `playwright-core` with `chromium.launch({ channel: 'msedge' })` reuses
-  it — no ~300MB Chromium download. Install with
-  `npm install --no-save playwright-core` so it never touches
-  `package.json`/the lockfile.
-- **Login is rate-limited** (`RateLimit-Policy: 20;w=900` on the response
-  headers) — don't loop login attempts in a tight retry script.
+- **No `/api` prefix.** Routers mount at `/users`, `/expenses`,
+  `/categories`, `/settings`; `GET /health` is the liveness check;
+  anything else is 404 `not_found`.
+- **Stale `apps/web/.env.local`.** The gitignored local override may
+  still say `VITE_API_URL=http://localhost:4000/api`; symptom:
+  `Error: Not Found - /api/users/session` in the API log and a login
+  that never navigates. Fix the file or start Vite with
+  `VITE_API_URL=http://localhost:4000` (process env wins).
+- **Stale dev database.** `POST /users/register` → 500
+  `registration_failed` with an `ExecConstraints` error (`username`
+  NOT NULL) in the API log means `expenses_db` predates the current
+  `migrate.ts`. Run `npm run db:migrate --workspace=@expenses/api`
+  (idempotent; drops the unused `username`/`first_name`/`last_name`
+  columns), or point the API at `expenses_test_db` as above.
+- **`GET /users/session` is the SPA's startup check** and answers
+  `200 { user: null }` without a cookie. A 401 anywhere else
+  hard-redirects to `/login` (axios interceptor in
+  `apps/web/src/services/api.ts`), except failed login/register
+  attempts, which stay on the form and show the API message.
+- **Rate limits:** 20 register/login/reset attempts per 15 min per IP,
+  300 other requests. Don't loop logins in a retry script; after a 429
+  wait or restart the API (limits are in memory). `NODE_ENV=test`
+  disables the auth limiter.
+- **Category field on the dashboard is a MUI `<Select>`**, not a native
+  `<select>`: open it by clicking `#mui-component-select-categoryId`,
+  then `ArrowDown` + `Enter` (clicking an option by text is flaky in the
+  bare driver; Playwright Test's `getByRole('option')` is fine).
+- **Default theme is dark**; `localStorage.themeMode` and the server
+  setting both influence it. Screenshots of a fresh profile are dark on
+  the auth pages and light after login (server default).
+- **Password reset** writes the link to the API console and to
+  `apps/api/logs/password-resets.log` — read it from there in a test.
+- **Stale `packages/shared/tsconfig.tsbuildinfo`** can leave `dist/`
+  without `.d.ts` → consumers fail with `TS7016`. Delete
+  `packages/shared/dist` and the buildinfo, rebuild shared.
+- **`ts-node` in `apps/api` uses `apps/api/tsconfig.json`** (CommonJS).
+  Run it from `apps/api`, not from the repo root (the root tsconfig is
+  ESNext and breaks it).
+- **Turbo strict env:** `npm run <task>` through Turbo drops exported
+  variables unless the task lists them in `passThroughEnv`
+  (`turbo.json`). Start servers directly (as above) when you need
+  custom env.
 
 ## Troubleshooting
 
-- **`ECONNREFUSED ::1:5432` / `127.0.0.1:5432` when running the API or
-  migrations**, even though `.env` specifies a different port: dotenv
-  loaded too late (see Gotchas) — add `-r dotenv/config` to the launch
-  command, or your `.env` simply has the wrong port for this machine.
-- **`Cannot find module 'cookie-parser'` (or any dependency that's in
-  `package.json` but errors as missing)**: `node_modules` is out of sync
-  with `package.json` — run `npm install` from the repo root (workspaces
-  share one `node_modules`).
-- **`TS7016: Could not find a declaration file for module
-  '@expenses/shared'`**: see the `tsconfig.tsbuildinfo` Gotcha above —
-  clean-rebuild the shared package.
-- **`page.fill`/`page.click` timeouts on a blank white page when scripting
-  the web app**: you're hitting the `/login` reload loop (see Gotchas) —
-  route `**/api/users/profile` to a non-401 response before navigating.
-- **`psql: ... authorization failed for user "postgres"`**: the
-  `.env.example` password (`postgres`) is just a placeholder; get the
-  real credentials for the Postgres instance actually running on this
-  machine.
+- `FATAL: JWT_SECRET environment variable is not set` → `apps/api/.env`
+  missing or empty secret.
+- `{"code":"registration_failed"}` from `/users/register` → stale dev DB
+  schema (see Gotchas); `{"code":"invalid_credentials"}` on login right
+  after → the registration never happened.
+- `Not Found - /api/...` in the API log while the UI does nothing → stale
+  `apps/web/.env.local` (see Gotchas).
+- `ECONNREFUSED ...:5433` → `DB_PORT` not set in `.env` (code fallback is
+  5433) or Postgres is down (`Get-Service postgresql-x64-17`).
+- Browser login fails with a CORS error → `ALLOWED_ORIGINS` lacks
+  `http://localhost:5173`.
+- `TS5103` / peer-dependency errors on build or install → stale
+  `node_modules` (see Setup).
+- `Cannot find module '<dep>'` → `npm install` from the repo root
+  (workspaces share one `node_modules`).
+- `page.fill` timeout on `#email` → web server not up yet or wrong
+  `WEB_URL`; try `screenshot http://localhost:5173/login` first.
+- Driver fails to launch → Edge missing or `playwright-core` not
+  installed in this session.

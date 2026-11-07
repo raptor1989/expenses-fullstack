@@ -10,6 +10,12 @@ import { notFound } from './middlewares/notFound.middleware';
 
 const app = express();
 
+// Behind a reverse proxy (nginx/Caddy) the client address comes from X-Forwarded-For;
+// without this the rate limiter would count every request against the proxy's IP.
+if (process.env.TRUST_PROXY === 'true') {
+    app.set('trust proxy', 1);
+}
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()) ?? [];
 app.use(cors({ origin: allowedOrigins.length > 0 ? allowedOrigins : false, credentials: true }));
 app.use(cookieParser());

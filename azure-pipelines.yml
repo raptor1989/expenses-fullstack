@@ -10,10 +10,15 @@
 #      które NIE są w repo (są w .gitignore): `apps/api/.env` oraz
 #      `apps/web/.env.production`. Ten pipeline ich nie tworzy i nie
 #      nadpisuje — patrz DEPLOYMENT.md, sekcje 2-3.
-#   4. Pierwsza migracja bazy (`npm run db:migrate`) powinna być
-#      wykonana ręcznie przed pierwszym deployem; pipeline odpala ją przy
-#      każdym deployu, więc migracje w `apps/api/src/db/migrate.ts` muszą
-#      być idempotentne.
+#   4. Procesy PM2 są rejestrowane z `pm2.config.js` (`pm2 startOrRestart`),
+#      więc pierwszy deploy nie wymaga ręcznego `pm2 start`; `pm2 save` +
+#      `pm2 startup` na VM nadal trzeba zrobić raz ręcznie (DEPLOYMENT.md).
+#   5. Pipeline uruchamia `npm run db:migrate` przy każdym deployu po
+#      buildzie, więc migracje w `apps/api/src/db/migrate.ts` muszą być
+#      idempotentne.
+#   6. Etap BuildAndTest uruchamia też testy smoke Playwright (`e2e/`)
+#      na zbudowanej aplikacji; raport trafia do artefaktu `playwright-report`
+#      tylko przy niepowodzeniu.
 
 resources:
     containers:
@@ -73,6 +78,21 @@ stages:
                       DB_PASSWORD: postgres
                       DB_NAME: expenses_test_db
 
+                - script: npx playwright install --with-deps chromium
+                  displayName: 'Install Playwright browser'
+
+                - script: npm run test:e2e
+                  displayName: 'npm run test:e2e (smoke)'
+                  env:
+                      CI: true
+
+                - task: PublishPipelineArtifact@1
+                  displayName: 'Publish Playwright report'
+                  condition: failed()
+                  inputs:
+                      targetPath: 'e2e/playwright-report'
+                      artifact: 'playwright-report'
+
     - stage: Deploy
       displayName: 'Deploy to production VM'
       dependsOn: BuildAndTest
@@ -110,5 +130,5 @@ stages:
                                       cd $(deployPath)
                                       npm install
                                       npm run build 2>&1
-                                      pm2 reload expenses-api expenses-web
-                                      pm2 restart expenses-api expenses-web
+                                      npm run db:migrate --workspace=@expenses/api
+                                      pm2 startOrRestart pm2.config.js --update-env

@@ -159,7 +159,7 @@ JWT_EXPIRES_IN=7D`;
 async function runMigrations() {
   log('Running database migrations...', colors.cyan);
   try {
-    execSync('ts-node .\\apps\\api\\src\\db\\migrate.ts', { stdio: 'ignore' });
+    execSync('npm run db:migrate --workspace=@expenses/api', { stdio: 'inherit', cwd: path.resolve(__dirname, '..') });
     log('Database migrations completed successfully ✓', colors.green);
     return true;
   } catch (error) {
@@ -207,7 +207,7 @@ async function main() {
   log('Starting development server...', colors.cyan);
 
   // Start the development server
-  execSync('npm run dev', { stdio: 'ignore' });
+  execSync('npm run dev', { stdio: 'inherit', cwd: path.resolve(__dirname, '..') });
 }
 
 // Run the script

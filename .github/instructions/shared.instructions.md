@@ -7,103 +7,28 @@ description: "Use when editing shared TypeScript types, API contracts, or interf
 
 ## Purpose
 
-Single source of truth for API contracts between `apps/api` and `apps/web`. Both apps import types as `@expenses/shared` via npm workspace resolution.
+Single source of truth for the API contract between `apps/api` and `apps/web`, imported as `@expenses/shared` through npm workspace resolution. Builds to an **ESM-only** `dist/` with `.d.ts` files.
 
 ## Type Patterns
 
-### Entity interfaces — for reads
-
-Full entity representations returned by the API:
-
-```typescript
-export interface Expense {
-    id: number;
-    userId: number;
-    categoryId: number;
-    amount: number;
-    description: string;
-    date: string;
-    createdAt: string;
-    updatedAt: string;
-}
-```
-
-### Input types — for mutations
-
-Separate types for create/update operations (fewer required fields):
-
-```typescript
-export interface ExpenseCreateInput {
-    categoryId: number;
-    amount: number;
-    description: string;
-    date: string;
-}
-
-export interface ExpenseUpdateInput {
-    categoryId?: number;
-    amount?: number;
-    description?: string;
-    date?: string;
-}
-```
-
-**Convention**: Entity type for reads, `*CreateInput`/`*UpdateInput` for mutations. Keep them separate — don't reuse entity type for input.
-
-### Response/analytics types
-
-Aggregated data for dashboards and reports:
-
-```typescript
-export interface ExpenseSummary { /* totals, averages */ }
-export interface ExpenseByMonth { /* monthly breakdown */ }
-export interface ExpenseByCategory { /* per-category totals */ }
-```
-
-### Error type
-
-```typescript
-export interface ApiError {
-    message: string;
-    code: string;
-    details?: Record<string, unknown>;
-}
-```
-
-## Current Entities
-
-| Entity | Interfaces |
-|--------|-----------|
-| User | `User`, `UserCredentials`, `AuthResponse` |
-| Expense | `Expense`, `ExpenseCreateInput`, `ExpenseUpdateInput` |
-| Category | `Category` |
-| Settings | `UserSettings`, `UserSettingsUpdateInput` |
-| Analytics | `ExpenseSummary`, `ExpenseByMonth`, `ExpenseByCategory` |
-| API | `ApiError` |
+- **Entity interfaces** for reads (`Expense`, `Category`, `User`, `UserSettings`): `id: string` (UUID), `userId: string`, `createdAt`/`updatedAt` typed `Date` (they arrive as ISO strings over JSON).
+- **Input types** for writes: `ExpenseCreateInput` (required fields) and `ExpenseUpdateInput` (all optional), `UserSettingsUpdateInput`, `ForgotPasswordInput`, `ResetPasswordInput`. Keep them separate from the entity type.
+- **Analytics types**: `ExpenseSummary`, `ExpenseByMonth`, `ExpenseByCategory`.
+- **Runtime constants**: `SUPPORTED_CURRENCIES` (`['PLN', 'USD', 'EUR', 'GBP'] as const`) with `SupportedCurrency` and `ThemeMode`. The web app imports the value; **the CommonJS API cannot** — it keeps a hand-maintained copy in `apps/api/src/routes/settings.routes.ts`. Keep both lists in sync.
+- `ApiError { message, code, details? }`.
 
 ## Exports
 
-All types exported via `index.ts` barrel file:
-
-```typescript
-export type { User, Expense, Category, ... } from './types';
-```
+`src/index.ts` is `export * from './types'` — adding a type to `src/types.ts` is enough.
 
 ## TypeScript Config
 
-- Extends root `tsconfig.json`
-- `composite: true` — enables project references for incremental builds
-- `declaration: true` — emits `.d.ts` files to `dist/`
-- Both apps resolve `@expenses/shared` to the local workspace package
+- Extends the root `tsconfig.json`; `composite: true`, `declaration: true`, `module: ESNext`.
+- Consumers reference the built `dist/`; after a change run `npm run build` from the root so both apps recompile. If a consumer reports `TS7016` right after a build, delete `packages/shared/dist` and `packages/shared/tsconfig.tsbuildinfo` and rebuild.
 
-## Adding a New Type
+## Adding a Type
 
-1. Define the interface in `src/types.ts`
-2. Export it from `src/index.ts`
-3. Run `npm run build` in the shared package (or from root via Turbo)
-4. Import in `apps/api` and/or `apps/web` as `import type { NewType } from '@expenses/shared'`
-
-## Future Recommendations
-
-- Add **Zod schemas** alongside interfaces for runtime validation in both apps (single source of truth for both compile-time types and runtime checks)
-- Consider splitting `types.ts` into per-entity files if it grows beyond ~200 lines
+1. Define it in `src/types.ts`.
+2. `npm run build` from the root.
+3. Import in the apps with `import type { NewType } from '@expenses/shared'` (or a value import in the web app only).
+4. Update the API model/controller, its Supertest suite, the web service and its Vitest test; extend the smoke suite if the change is user-visible.
