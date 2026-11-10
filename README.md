@@ -8,8 +8,9 @@ Managed with Turborepo and npm workspaces.
 
 - **Accounts** — email/password registration and login, JWT kept in an
   `httpOnly` cookie, profile e-mail update, password change, and a
-  "forgot password" flow (the reset link is written to the server log —
-  there is no e-mail transport).
+  "forgot password" flow (the reset link is e-mailed over SMTP; without
+  SMTP configured it is written to the server log). A reset signs the
+  user out on every device; a password change signs out the other ones.
 - **Expenses** — create, edit, delete; paginated list with date-range and
   category filters; inline quick-add on the dashboard.
 - **Categories** — five defaults created for every new user, custom name,
@@ -101,6 +102,8 @@ in the `package.json` files are pinned exactly instead.
    | `JWT_EXPIRES_IN` | token and cookie lifetime, `ms` format (default `7D`) |
    | `ALLOWED_ORIGINS` | comma-separated origins allowed by CORS, e.g. `http://localhost:5173` |
    | `FRONTEND_URL` | base URL used in password-reset links (default `http://localhost:5173`) |
+   | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | SMTP server for the password-reset e-mail; port `587` (default) uses STARTTLS, `465` TLS. Empty `SMTP_HOST` = the link is only logged |
+   | `MAIL_FROM` | sender of the reset e-mail, e.g. `Expense Manager <no-reply@example.com>` (default `SMTP_USER`) |
    | `TRUST_PROXY` | `true` when the API sits behind a reverse proxy (rate limiting then sees the client IP) |
 
 3. Create the database named in `DB_NAME` (for example with `createdb
@@ -183,7 +186,7 @@ credentials, edit `.env.test` locally without committing it.
 | Suite | Covers |
 |---|---|
 | `app.test.ts` | `/health`, 404 shape for unknown routes |
-| `auth.test.ts` | register, login, session, profile, password change, forgot/reset password, logout |
+| `auth.test.ts` | register, login, session, profile, password change, forgot/reset password (incl. the e-mail with a mocked SMTP transport and revoking old sessions on reset and change), logout |
 | `categories.test.ts` | CRUD, defaults, user isolation, delete protection |
 | `expenses.test.ts` | CRUD, validation, pagination, date filtering, user isolation |
 | `analytics.test.ts` | `/expenses/summary`, `/expenses/by-month` |
@@ -233,9 +236,9 @@ non-browser clients.
 | POST | `/users/logout` | cookie | clear cookie |
 | GET | `/users/session` | optional | `{ user }` or `{ user: null }`, always 200 |
 | GET / PUT | `/users/profile` | cookie | read / update e-mail |
-| PUT | `/users/password` | cookie | change password |
-| POST | `/users/forgot-password` | – | log a reset link (always 200) |
-| POST | `/users/reset-password` | – | set a new password with the token |
+| PUT | `/users/password` | cookie | change password; signs out the other sessions and re-issues the caller's cookie |
+| POST | `/users/forgot-password` | – | e-mail a reset link, or log it without SMTP (always 200) |
+| POST | `/users/reset-password` | – | set a new password with the token; revokes every existing session |
 | GET | `/expenses` | cookie | paginated list: `page`, `limit` (≤ 100), `startDate`, `endDate`, `categoryId` |
 | GET | `/expenses/summary` | cookie | totals per category for `startDate`–`endDate` |
 | GET | `/expenses/by-month` | cookie | monthly breakdown for `year` |

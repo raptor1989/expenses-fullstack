@@ -2,10 +2,15 @@ import { loadTestEnv } from './helpers/env';
 loadTestEnv();
 
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
+import { createTransport } from 'nodemailer';
 import app from '../app';
 import { truncateAllTables, getTestPool } from './helpers/db';
 import { userFixture } from './helpers/fixtures';
 import { registerAndLogin } from './helpers/auth';
+
+const mockSendMail = jest.fn();
+jest.mock('nodemailer', () => ({ createTransport: jest.fn(() => ({ sendMail: mockSendMail })) }));
 
 beforeEach(async () => {
     await truncateAllTables();
@@ -179,6 +184,32 @@ describe('PUT /users/password', () => {
         expect(loginRes.status).toBe(200);
     });
 
+    it('signs out other sessions and keeps the current one through a fresh cookie', async () => {
+        const data = userFixture();
+        const { cookie } = await registerAndLogin(data);
+        const otherLogin = await request(app).post('/users/login').send(data);
+        const otherCookie = (otherLogin.headers['set-cookie'] as unknown as string[])[0];
+
+        const res = await request(app)
+            .put('/users/password')
+            .set('Cookie', cookie)
+            .send({ currentPassword: data.password, newPassword: 'NewPassword123!' });
+        expect(res.status).toBe(200);
+        const freshCookie = (res.headers['set-cookie'] as unknown as string[] | undefined)?.[0];
+        expect(freshCookie).toMatch(/^token=/);
+
+        const otherRes = await request(app).get('/users/profile').set('Cookie', otherCookie);
+        expect(otherRes.status).toBe(401);
+        expect(otherRes.body.code).toBe('invalid_token');
+
+        const oldCookieRes = await request(app).get('/users/profile').set('Cookie', cookie);
+        expect(oldCookieRes.status).toBe(401);
+
+        const freshRes = await request(app).get('/users/profile').set('Cookie', freshCookie!);
+        expect(freshRes.status).toBe(200);
+        expect(freshRes.body.user.email).toBe(data.email);
+    });
+
     it('returns 400 when current password is incorrect', async () => {
         const data = userFixture();
         const { cookie } = await registerAndLogin(data);
@@ -251,6 +282,84 @@ describe('POST /users/forgot-password', () => {
         expect(logSpy.mock.calls.some((args) => String(args[0]).includes('Password reset link'))).toBe(true);
 
         logSpy.mockRestore();
+    });
+
+    it('does not try to send mail while SMTP is not configured', async () => {
+        jest.mocked(createTransport).mockClear();
+        const data = userFixture();
+        await request(app).post('/users/register').send(data);
+
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        await request(app).post('/users/forgot-password').send({ email: data.email });
+        logSpy.mockRestore();
+
+        expect(createTransport).not.toHaveBeenCalled();
+    });
+});
+
+describe('POST /users/forgot-password with SMTP configured', () => {
+    beforeEach(() => {
+        process.env.SMTP_HOST = 'smtp.example.com';
+        process.env.MAIL_FROM = 'Expense Manager <no-reply@example.com>';
+        jest.mocked(createTransport).mockClear();
+        mockSendMail.mockReset().mockResolvedValue({ messageId: 'test' });
+    });
+
+    afterEach(() => {
+        process.env.SMTP_HOST = '';
+        delete process.env.MAIL_FROM;
+    });
+
+    it('emails a working reset link instead of logging it', async () => {
+        const data = userFixture();
+        await request(app).post('/users/register').send(data);
+
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        const res = await request(app).post('/users/forgot-password').send({ email: data.email });
+        const loggedLink = logSpy.mock.calls.some((args) => String(args[0]).includes('Password reset link'));
+        logSpy.mockRestore();
+
+        expect(res.status).toBe(200);
+        expect(loggedLink).toBe(false);
+        expect(createTransport).toHaveBeenCalledWith(
+            expect.objectContaining({ host: 'smtp.example.com', port: 587, secure: false })
+        );
+        expect(mockSendMail).toHaveBeenCalledTimes(1);
+
+        const mail = mockSendMail.mock.calls[0][0];
+        expect(mail).toMatchObject({ to: data.email, from: 'Expense Manager <no-reply@example.com>' });
+        const token = String(mail.text).match(/\/reset-password\?token=([a-f0-9]+)/)?.[1];
+        expect(mail.html).toContain(`/reset-password?token=${token}`);
+
+        const resetRes = await request(app)
+            .post('/users/reset-password')
+            .send({ token, newPassword: 'NewPassword123!' });
+        expect(resetRes.status).toBe(200);
+    });
+
+    it('does not send mail for an unknown email', async () => {
+        const res = await request(app).post('/users/forgot-password').send({ email: 'nobody@example.com' });
+
+        expect(res.status).toBe(200);
+        expect(mockSendMail).not.toHaveBeenCalled();
+    });
+
+    it('still answers 200 with the generic message when sending fails', async () => {
+        const data = userFixture();
+        await request(app).post('/users/register').send(data);
+        mockSendMail.mockRejectedValue(new Error('SMTP unavailable'));
+
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const res = await request(app).post('/users/forgot-password').send({ email: data.email });
+        await new Promise((resolve) => setImmediate(resolve));
+        const loggedFailure = errorSpy.mock.calls.some((args) =>
+            String(args[0]).includes('Failed to send password reset email')
+        );
+        errorSpy.mockRestore();
+
+        expect(res.status).toBe(200);
+        expect(res.body.message).toMatch(/if that email is registered/i);
+        expect(loggedFailure).toBe(true);
     });
 });
 
@@ -326,6 +435,52 @@ describe('POST /users/reset-password', () => {
 
         expect(res.status).toBe(400);
         expect(res.body.code).toBe('reset_token_invalid');
+    });
+
+    it('signs out every session opened before the reset', async () => {
+        const data = userFixture();
+        const { cookie } = await registerAndLogin(data);
+
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        await request(app).post('/users/forgot-password').send({ email: data.email });
+        const token = extractToken(logSpy);
+        logSpy.mockRestore();
+
+        await request(app).post('/users/reset-password').send({ token, newPassword: 'NewPassword123!' });
+
+        const profileRes = await request(app).get('/users/profile').set('Cookie', cookie);
+        expect(profileRes.status).toBe(401);
+        expect(profileRes.body.code).toBe('invalid_token');
+
+        const sessionRes = await request(app).get('/users/session').set('Cookie', cookie);
+        expect(sessionRes.status).toBe(200);
+        expect(sessionRes.body).toEqual({ user: null });
+
+        const loginRes = await request(app)
+            .post('/users/login')
+            .send({ email: data.email, password: 'NewPassword123!' });
+        const newCookie = (loginRes.headers['set-cookie'] as unknown as string[])[0];
+        const newProfileRes = await request(app).get('/users/profile').set('Cookie', newCookie);
+        expect(newProfileRes.status).toBe(200);
+    });
+
+    it('accepts tokens issued before token versions existed until the next reset', async () => {
+        const data = userFixture();
+        const { userId, email } = await registerAndLogin(data);
+        const legacyToken = jwt.sign({ id: userId, email }, process.env.JWT_SECRET!, { expiresIn: '1h' });
+
+        const beforeRes = await request(app).get('/users/profile').set('Authorization', `Bearer ${legacyToken}`);
+        expect(beforeRes.status).toBe(200);
+
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        await request(app).post('/users/forgot-password').send({ email: data.email });
+        const token = extractToken(logSpy);
+        logSpy.mockRestore();
+        await request(app).post('/users/reset-password').send({ token, newPassword: 'NewPassword123!' });
+
+        const afterRes = await request(app).get('/users/profile').set('Authorization', `Bearer ${legacyToken}`);
+        expect(afterRes.status).toBe(401);
+        expect(afterRes.body.code).toBe('invalid_token');
     });
 });
 

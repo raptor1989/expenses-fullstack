@@ -42,5 +42,7 @@ export const apiEnv: Record<string, string> = {
     JWT_SECRET: process.env.E2E_JWT_SECRET ?? 'e2e-only-secret',
     JWT_EXPIRES_IN: '1h',
     ALLOWED_ORIGINS: WEB_URL,
-    FRONTEND_URL: WEB_URL
+    FRONTEND_URL: WEB_URL,
+    // Empty on purpose: an SMTP_HOST in apps/api/.env must not send real mail from the suite.
+    SMTP_HOST: ''
 };

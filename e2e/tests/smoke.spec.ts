@@ -1,8 +1,11 @@
+import { createHash, randomBytes } from 'crypto';
 import { test, expect, Page } from '@playwright/test';
-import { API_URL } from '../env';
+import { Client } from 'pg';
+import { API_URL, DB } from '../env';
 
 // One fresh account per run, so repeated local runs never collide.
 const runId = Date.now().toString(36);
+// `password` changes when the reset test sets a new one; the tests after it sign in with that.
 const account = { email: `smoke-${runId}@example.com`, password: 'Password123!' };
 const expenseDescription = `Smoke expense ${runId}`;
 const categoryName = `Smoke category ${runId}`;
@@ -17,6 +20,24 @@ async function login(page: Page) {
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByText('Add Expense')).toBeVisible();
+}
+
+// The API runs without SMTP here and only logs the reset link, so the test stores a token it knows,
+// exactly like POST /users/forgot-password does (SHA-256 of the raw token, 1 h expiry).
+async function plantResetToken(email: string): Promise<string> {
+    const rawToken = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+    const db = new Client(DB);
+    await db.connect();
+    try {
+        await db.query(
+            "UPDATE users SET reset_token_hash = $1, reset_token_expires_at = NOW() + INTERVAL '1 hour' WHERE email = $2",
+            [tokenHash, email]
+        );
+    } finally {
+        await db.end();
+    }
+    return rawToken;
 }
 
 test('API answers /health and reports no session for anonymous callers', async ({ request }) => {
@@ -109,6 +130,72 @@ test('changes the currency in settings and keeps it after a reload', async ({ pa
 
     await page.reload();
     await expect(currency()).toHaveText('USD');
+});
+
+test('resets the password from a reset link and signs out existing sessions', async ({ page, browser }) => {
+    // A session opened before the reset, which the reset must revoke.
+    await login(page);
+
+    const visitor = await browser.newPage();
+    try {
+        await visitor.goto('/login');
+        await visitor.getByRole('link', { name: 'Forgot password?' }).click();
+        await visitor.locator('#email').fill(account.email);
+        await visitor.getByRole('button', { name: 'Send reset link' }).click();
+        await expect(visitor.getByRole('alert')).toContainText('you will receive a password reset link');
+
+        const newPassword = 'NewPassword456!';
+        const token = await plantResetToken(account.email);
+        await visitor.goto(`/reset-password?token=${token}`);
+        await visitor.locator('#newPassword').fill(newPassword);
+        await visitor.locator('#confirmPassword').fill(newPassword);
+        await visitor.getByRole('button', { name: 'Reset password' }).click();
+
+        await expect(visitor).toHaveURL(/\/login$/);
+        await expect(visitor.getByRole('alert')).toContainText('Your password has been reset');
+        account.password = newPassword;
+
+        // The token works only once.
+        await visitor.goto(`/reset-password?token=${token}`);
+        await visitor.locator('#newPassword').fill('AnotherPassword789!');
+        await visitor.locator('#confirmPassword').fill('AnotherPassword789!');
+        await visitor.getByRole('button', { name: 'Reset password' }).click();
+        await expect(visitor.getByRole('alert')).toContainText('Invalid or expired reset token');
+        await expect(visitor.getByRole('link', { name: 'Request a new link' })).toBeVisible();
+    } finally {
+        await visitor.close();
+    }
+
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/login$/);
+
+    await login(page);
+});
+
+test('changes the password in settings, stays signed in and signs out other sessions', async ({ page, browser }) => {
+    const otherDevice = await browser.newPage();
+    try {
+        await login(otherDevice);
+        await login(page);
+        await page.goto('/settings');
+
+        const newPassword = 'ChangedPassword789!';
+        await page.getByLabel('Current Password', { exact: true }).fill(account.password);
+        await page.getByLabel('New Password', { exact: true }).fill(newPassword);
+        await page.getByLabel('Confirm Password', { exact: true }).fill(newPassword);
+        await page.getByRole('button', { name: 'Change Password' }).click();
+        await expect(page.getByText('Password changed! Other devices have been signed out.')).toBeVisible();
+        account.password = newPassword;
+
+        // This browser got a fresh cookie with the change, so a reload keeps the session.
+        await page.reload();
+        await expect(page).toHaveURL(/\/settings$/);
+
+        await otherDevice.goto('/');
+        await expect(otherDevice).toHaveURL(/\/login$/);
+    } finally {
+        await otherDevice.close();
+    }
 });
 
 test('logs out and protects the dashboard again', async ({ page }) => {

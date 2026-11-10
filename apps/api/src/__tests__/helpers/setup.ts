@@ -64,6 +64,10 @@ export default async function globalSetup() {
         `);
 
         await client.query(`
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0
+        `);
+
+        await client.query(`
             CREATE TABLE IF NOT EXISTS categories (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(50) NOT NULL,

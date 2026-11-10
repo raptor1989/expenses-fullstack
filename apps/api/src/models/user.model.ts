@@ -3,7 +3,7 @@ import pool from '../db/index';
 import bcrypt from 'bcryptjs';
 
 export class UserModel {
-    static async create(email: string, password: string): Promise<User> {
+    static async create(email: string, password: string): Promise<User & { tokenVersion: number }> {
         const client = await pool.connect();
 
         try {
@@ -13,7 +13,8 @@ export class UserModel {
             const query = `
         INSERT INTO users (email, password)
         VALUES ($1, $2)
-        RETURNING id, email, created_at as "createdAt", updated_at as "updatedAt"
+        RETURNING id, email, created_at as "createdAt", updated_at as "updatedAt",
+                  token_version as "tokenVersion"
       `;
 
             const values = [email, hashedPassword];
@@ -25,12 +26,12 @@ export class UserModel {
         }
     }
 
-    static async findByEmail(email: string): Promise<(User & { password: string }) | null> {
+    static async findByEmail(email: string): Promise<(User & { password: string; tokenVersion: number }) | null> {
         const client = await pool.connect();
 
         try {
             const query = `
-        SELECT id, email, password,
+        SELECT id, email, password, token_version as "tokenVersion",
                created_at as "createdAt", updated_at as "updatedAt"
         FROM users
         WHERE email = $1
@@ -64,14 +65,37 @@ export class UserModel {
         }
     }
 
-    static async updatePassword(id: string, newPassword: string): Promise<void> {
+    static async findTokenVersion(id: string): Promise<number | null> {
+        const client = await pool.connect();
+
+        try {
+            const result = await client.query('SELECT token_version FROM users WHERE id = $1', [id]);
+
+            if (result.rows.length === 0) {
+                return null;
+            }
+
+            return result.rows[0].token_version;
+        } finally {
+            client.release();
+        }
+    }
+
+    static async updatePassword(id: string, newPassword: string): Promise<{ email: string; tokenVersion: number }> {
         const client = await pool.connect();
 
         try {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-            await client.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, id]);
+            // Bumping token_version revokes every JWT issued before the change (see auth.middleware.ts).
+            const result = await client.query(
+                `UPDATE users SET password = $1, token_version = token_version + 1 WHERE id = $2
+                 RETURNING email, token_version as "tokenVersion"`,
+                [hashedPassword, id]
+            );
+
+            return result.rows[0];
         } finally {
             client.release();
         }
@@ -183,8 +207,12 @@ export class UserModel {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(newPassword, salt);
 
+            // Bumping token_version revokes every JWT issued before the reset (see auth.middleware.ts).
             await client.query(
-                'UPDATE users SET password = $1, reset_token_hash = NULL, reset_token_expires_at = NULL WHERE id = $2',
+                `UPDATE users
+                 SET password = $1, reset_token_hash = NULL, reset_token_expires_at = NULL,
+                     token_version = token_version + 1
+                 WHERE id = $2`,
                 [hashedPassword, id]
             );
         } finally {

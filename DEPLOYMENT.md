@@ -70,12 +70,26 @@ JWT_EXPIRES_IN=7D
 ALLOWED_ORIGINS=https://twoja-domena.pl
 FRONTEND_URL=https://twoja-domena.pl
 TRUST_PROXY=true
+
+SMTP_HOST=<serwer SMTP dostawcy>
+SMTP_PORT=587
+SMTP_USER=<login SMTP>
+SMTP_PASSWORD=<hasło SMTP / hasło aplikacji>
+MAIL_FROM=Expense Manager <adres-nadawcy@twoja-domena.pl>
 ```
 
 - `ALLOWED_ORIGINS` musi zawierać dokładny origin frontendu (protokół +
   host + ewentualny port); puste = CORS wyłączony i przeglądarka nie
   przejdzie logowania. Przy proxy pod jedną domeną wpisz ją tutaj.
 - `FRONTEND_URL` to baza linku resetu hasła.
+- `SMTP_*` i `MAIL_FROM` — wysyłka maila z linkiem resetu hasła (dowolny
+  dostawca SMTP). Port `587` = STARTTLS, `465` = TLS. Bez `SMTP_USER`
+  połączenie idzie bez logowania. `MAIL_FROM` domyślnie = `SMTP_USER`,
+  a większość dostawców przyjmuje tylko zweryfikowany adres nadawcy. Puste
+  `SMTP_HOST` = mail nie wychodzi, link trafia tylko do logu (sekcja 3),
+  a API przy starcie wypisuje ostrzeżenie `SMTP_HOST is not set`.
+  Przed konfiguracją sprawdź z VM, czy port nie jest blokowany:
+  `nc -vz <SMTP_HOST> 587`. Część tanich VPS blokuje ruch wychodzący SMTP.
 - `TRUST_PROXY=true` włącza `app.set('trust proxy', 1)`, dzięki czemu
   limity żądań liczą się per adres klienta z `X-Forwarded-For`, a nie
   per adres proxy.
@@ -218,10 +232,17 @@ te same kroki build/lint/test/smoke dla pushy i PR-ów do `master` i
 ## 3. Eksploatacja
 
 - **Logi:** `pm2 logs expenses-api`, `pm2 logs expenses-web`.
-- **Reset hasła:** aplikacja nie wysyła maili. Link resetu trafia do
-  logu procesu i do pliku `apps/api/logs/password-resets.log` na VM
-  (katalog `logs/` jest w `.gitignore`); link jest ważny 1 godzinę.
-  Przekaż go użytkownikowi ręcznie.
+- **Reset hasła:** przy skonfigurowanym SMTP (sekcja 1.2) link idzie
+  mailem. W `pm2 logs expenses-api` widać wtedy `Password reset email sent
+  to …` albo `Failed to send password reset email: …` z błędem dostawcy.
+  Użytkownik zawsze widzi ten sam komunikat, także gdy wysyłka się nie
+  uda. Bez `SMTP_HOST` link trafia tylko do logu procesu i do pliku
+  `apps/api/logs/password-resets.log` na VM (katalog `logs/` jest
+  w `.gitignore`). Wtedy przekaż go użytkownikowi ręcznie. Plik zawiera
+  działające tokeny, więc po włączeniu SMTP możesz go usunąć. Link jest
+  ważny 1 godzinę i działa raz. Ustawienie nowego hasła wylogowuje
+  użytkownika na wszystkich urządzeniach. Zmiana hasła w ustawieniach
+  wylogowuje pozostałe urządzenia, a bieżące zostaje zalogowane.
 - **Limity żądań:** 20 prób / 15 min na rejestrację, logowanie i reset
   hasła, 300 / 15 min na pozostałe trasy (odpowiedź 429
   `rate_limit_exceeded`). Liczniki są w pamięci procesu — restart je
@@ -243,6 +264,8 @@ te same kroki build/lint/test/smoke dla pushy i PR-ów do `master` i
 | `404 {"code":"not_found"}` dla `/api/users/login` z API | proxy nie obcina prefiksu `/api` (brak trailing slash w `proxy_pass`) |
 | `ECONNREFUSED` do bazy mimo poprawnego `.env` | sprawdź `DB_PORT` (domyślna w kodzie to 5433) i czy PostgreSQL słucha na podanym hoście |
 | 429 dla wszystkich użytkowników naraz | brak `TRUST_PROXY=true` — limit liczy się dla adresu proxy |
+| mail resetu hasła nie dochodzi | `pm2 logs expenses-api`: brak wpisu = puste `SMTP_HOST` albo API nie zrestartowane po zmianie `.env`. `Failed to send password reset email` z `ETIMEDOUT`/`ECONNREFUSED` = port SMTP zablokowany na VM. `EAUTH` = zły login/hasło (np. Gmail wymaga hasła aplikacji). `Password reset email sent` = mail przyjęty przez dostawcę, więc sprawdź spam i weryfikację nadawcy (`MAIL_FROM`) |
+| link resetu prowadzi na `localhost` | brak `FRONTEND_URL` w `apps/api/.env` |
 | pipeline: `pm2: command not found` | `pm2` nie jest na `PATH` użytkownika SSH (`npm install -g pm2`) |
 | pipeline: krok SSH kończy się błędem | szukaj w logu ostatniego polecenia przed błędem: skrypt przerywa na pierwszym niezerowym kodzie wyjścia, więc migracja i restart PM2 się wtedy nie wykonują; same linie `npm warn` nie są przyczyną |
 | po wdrożeniu błędy SQL o brakującej kolumnie/tabeli | krok migracji w pipeline nie przeszedł — uruchom `npm run db:migrate --workspace=@expenses/api` ręcznie i sprawdź log |

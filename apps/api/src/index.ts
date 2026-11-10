@@ -9,6 +9,10 @@ if (!process.env.JWT_SECRET) {
     process.exit(1);
 }
 
+if (process.env.NODE_ENV === 'production' && !process.env.SMTP_HOST) {
+    console.warn('SMTP_HOST is not set: password reset links are written to the log instead of being emailed.');
+}
+
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { UserModel } from '../models/user.model';
+import { isMailConfigured, sendPasswordResetEmail } from '../services/mail.service';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import ms from 'ms';
@@ -11,13 +12,16 @@ const passwordResetLogFile = path.join(__dirname, '../../logs/password-resets.lo
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-function setAuthCookie(res: Response, token: string, expiresIn: string) {
-    const maxAge = ms(expiresIn as ms.StringValue);
+// The JWT carries users.token_version, so bumping the column (password reset or change) revokes it.
+function issueAuthCookie(res: Response, user: { id: string; email: string; tokenVersion: number }) {
+    const expiresIn = (process.env.JWT_EXPIRES_IN as ms.StringValue) || '7D';
+    const payload = { id: user.id, email: user.email, tokenVersion: user.tokenVersion };
+    const token = jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn });
     res.cookie('token', token, {
         httpOnly: true,
         secure: isProduction,
         sameSite: 'strict',
-        maxAge
+        maxAge: ms(expiresIn)
     });
 }
 
@@ -37,16 +41,7 @@ export class UserController {
 
             const user = await UserModel.create(email, password);
 
-            const secretKey = process.env.JWT_SECRET!;
-            const expiresIn = (process.env.JWT_EXPIRES_IN as ms.StringValue) || '7D';
-
-            const signOption: jwt.SignOptions = {
-                expiresIn
-            };
-
-            const token = jwt.sign({ id: user.id, email: user.email }, secretKey, signOption);
-
-            setAuthCookie(res, token, expiresIn);
+            issueAuthCookie(res, user);
 
             res.status(201).json({
                 message: 'User registered successfully',
@@ -88,16 +83,7 @@ export class UserController {
                 });
             }
 
-            const secretKey = process.env.JWT_SECRET!;
-            const expiresIn = (process.env.JWT_EXPIRES_IN as ms.StringValue) || '7D';
-
-            const signOption: jwt.SignOptions = {
-                expiresIn
-            };
-
-            const token = jwt.sign({ id: user.id, email: user.email }, secretKey, signOption);
-
-            setAuthCookie(res, token, expiresIn);
+            issueAuthCookie(res, user);
 
             res.status(200).json({
                 message: 'Login successful',
@@ -215,7 +201,9 @@ export class UserController {
                 });
             }
 
-            await UserModel.updatePassword(req.user.id, newPassword);
+            // Signs out every other session; this one gets a fresh cookie with the new token version.
+            const { email, tokenVersion } = await UserModel.updatePassword(req.user.id, newPassword);
+            issueAuthCookie(res, { id: req.user.id, email, tokenVersion });
 
             res.status(200).json({ message: 'Password changed successfully' });
         } catch (error) {
@@ -280,18 +268,33 @@ export class UserController {
 
                 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
                 const resetLink = `${frontendUrl}/reset-password?token=${rawToken}`;
-                console.log(`[DEV] Password reset link for ${email}: ${resetLink}`);
 
-                try {
-                    await fs.mkdir(path.dirname(passwordResetLogFile), { recursive: true });
-                    await fs.appendFile(passwordResetLogFile, `${new Date().toISOString()} ${email} ${resetLink}\n`);
-                } catch (logError) {
-                    console.error('Failed to persist password reset link:', logError);
+                if (isMailConfigured()) {
+                    // Not awaited: waiting for SMTP would make the answer for a registered email
+                    // noticeably slower than for an unknown one.
+                    sendPasswordResetEmail(email, resetLink)
+                        .then(() => console.log(`Password reset email sent to ${email}`))
+                        .catch((mailError) => console.error('Failed to send password reset email:', mailError));
+                } else {
+                    console.log(`[DEV] Password reset link for ${email}: ${resetLink}`);
+
+                    // Tests read the link from the console; the file is for a server running without SMTP.
+                    if (process.env.NODE_ENV !== 'test') {
+                        try {
+                            await fs.mkdir(path.dirname(passwordResetLogFile), { recursive: true });
+                            await fs.appendFile(
+                                passwordResetLogFile,
+                                `${new Date().toISOString()} ${email} ${resetLink}\n`
+                            );
+                        } catch (logError) {
+                            console.error('Failed to persist password reset link:', logError);
+                        }
+                    }
                 }
             }
 
             res.status(200).json({
-                message: 'If that email is registered, a reset link has been logged to the server console.'
+                message: 'If that email is registered, you will receive a password reset link shortly.'
             });
         } catch (error) {
             console.error('Forgot password error:', error);

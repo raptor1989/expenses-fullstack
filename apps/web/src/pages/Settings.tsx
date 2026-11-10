@@ -124,7 +124,7 @@ export default function Settings() {
                         try {
                             await changePassword(values.currentPassword, values.newPassword);
                             resetForm();
-                            notify('Password changed!', 'success');
+                            notify('Password changed! Other devices have been signed out.', 'success');
                         } catch {
                             notify('Failed to change password — check your current password.', 'error');
                         } finally {
