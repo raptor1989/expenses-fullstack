@@ -186,9 +186,13 @@ strony (sesja z cookie powinna przetrwać), wylogowanie.
    - `CopyFilesOverSSH@0` — kopiuje repo (bez `node_modules` i `.git`) do
      `$(deployPath)` = `/var/app/expenses-fullstack` przez service
      connection SSH `mikrus-vps-expenses`, z nadpisywaniem;
-   - `SSH@0` — na VM: `npm install`, `npm run build`,
+   - `SSH@0` — na VM: `npm install --no-audit --no-fund`, `npm run build`,
      `npm run db:migrate --workspace=@expenses/api`,
-     `pm2 startOrRestart pm2.config.js --update-env`.
+     `pm2 startOrRestart pm2.config.js --update-env`. Skrypt staje na
+     pierwszym nieudanym poleceniu (`set -e`), a o wyniku kroku decyduje
+     kod wyjścia: ostrzeżenia npm (np. `npm warn deprecated`) to zwykłe
+     linie logu, nie błąd (`failOnStdErr: false`, stderr przekierowany
+     na stdout).
 
 Wymagania po stronie Azure DevOps i VM, których nie da się ustawić w
 samym pliku:
@@ -240,4 +244,5 @@ te same kroki build/lint/test/smoke dla pushy i PR-ów do `master` i
 | `ECONNREFUSED` do bazy mimo poprawnego `.env` | sprawdź `DB_PORT` (domyślna w kodzie to 5433) i czy PostgreSQL słucha na podanym hoście |
 | 429 dla wszystkich użytkowników naraz | brak `TRUST_PROXY=true` — limit liczy się dla adresu proxy |
 | pipeline: `pm2: command not found` | `pm2` nie jest na `PATH` użytkownika SSH (`npm install -g pm2`) |
+| pipeline: krok SSH kończy się błędem | szukaj w logu ostatniego polecenia przed błędem: skrypt przerywa na pierwszym niezerowym kodzie wyjścia, więc migracja i restart PM2 się wtedy nie wykonują; same linie `npm warn` nie są przyczyną |
 | po wdrożeniu błędy SQL o brakującej kolumnie/tabeli | krok migracji w pipeline nie przeszedł — uruchom `npm run db:migrate --workspace=@expenses/api` ręcznie i sprawdź log |

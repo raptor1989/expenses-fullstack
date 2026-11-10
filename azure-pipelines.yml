@@ -4,12 +4,12 @@
 # z tego pliku):
 #   1. Service connection typu "SSH" do VM produkcyjnego, nazwany tak jak
 #      w zmiennej `sshServiceConnection` poniżej.
-#   2. Na docelowym VM zainstalowane: Node.js >= 20, npm, PostgreSQL
-#      osiągalny z VM, oraz `pm2` dostępne globalnie lub przez `npx pm2`.
+#   2. Na docelowym VM zainstalowane: Node.js >= 22.12, npm, PostgreSQL
+#      osiągalny z VM, oraz `pm2` globalnie (skrypt woła `pm2` po nazwie).
 #   3. Na VM, w katalogu `deployPath`, muszą już istnieć pliki sekretów,
 #      które NIE są w repo (są w .gitignore): `apps/api/.env` oraz
 #      `apps/web/.env.production`. Ten pipeline ich nie tworzy i nie
-#      nadpisuje — patrz DEPLOYMENT.md, sekcje 2-3.
+#      nadpisuje — patrz DEPLOYMENT.md, sekcje 1.2-1.3.
 #   4. Procesy PM2 są rejestrowane z `pm2.config.js` (`pm2 startOrRestart`),
 #      więc pierwszy deploy nie wymaga ręcznego `pm2 start`; `pm2 save` +
 #      `pm2 startup` na VM nadal trzeba zrobić raz ręcznie (DEPLOYMENT.md).
@@ -125,10 +125,16 @@ stages:
                               inputs:
                                   sshEndpoint: 'mikrus-vps-expenses'
                                   runOptions: 'inline'
+                                  # Wynik ocenia kod wyjścia, nie stderr: npm pisze ostrzeżenia na stderr,
+                                  # a domyślne failOnStdErr: true oznaczało je jako nieudany deploy.
+                                  # `set -e` przerywa na pierwszym błędzie; `exec 2>&1`, bo zadanie SSH
+                                  # loguje każdą linię stderr jako ##[error] także przy failOnStdErr: false.
+                                  failOnStdErr: false
                                   inline: |
                                       set -e
+                                      exec 2>&1
                                       cd $(deployPath)
-                                      npm install
-                                      npm run build 2>&1
+                                      npm install --no-audit --no-fund
+                                      npm run build
                                       npm run db:migrate --workspace=@expenses/api
                                       pm2 startOrRestart pm2.config.js --update-env

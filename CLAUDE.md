@@ -459,9 +459,12 @@ free.
   Playwright report uploaded on failure.
 - `azure-pipelines.yml`: Azure DevOps, trigger `master` — the same
   checks with a `postgres:17` container (Node 24), then SSH deploy to a
-  VM: copy files, `npm install`, `npm run build`,
+  VM: copy files, `npm install --no-audit --no-fund`, `npm run build`,
   `npm run db:migrate --workspace=@expenses/api`,
-  `pm2 startOrRestart pm2.config.js --update-env`.
+  `pm2 startOrRestart pm2.config.js --update-env`. The SSH step judges
+  the exit code (`set -e`, `failOnStdErr: false`, `exec 2>&1`): npm
+  writes warnings to stderr, and the task default `failOnStdErr: true`
+  failed every deploy that installed a deprecated package.
 - Production process model: `pm2.config.js` (`expenses-api` on 4000,
   `expenses-web` = `npm run serve:dist` → sirv on 5173) behind a reverse
   proxy that strips the `/api` prefix. Manual steps and pitfalls:
