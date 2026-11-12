@@ -15,10 +15,11 @@ import {
     CircularProgress
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { Formik, Form, Field, FieldProps } from 'formik';
+import { Formik, Form, Field, FieldProps, FormikHelpers } from 'formik';
 import { Expense, ExpenseCreateInput, Category } from '@expenses/shared';
 import dayjs from 'dayjs';
 import { ExpenseSchema } from './expenseSchema';
+import { getApiFieldErrors } from '@/services/api';
 
 interface ExpenseFormProps {
     open: boolean;
@@ -56,12 +57,15 @@ export default function ExpenseForm({ open, onClose, onSubmit, categories, initi
 
     const handleFormSubmit = async (
         values: ExpenseCreateInput,
-        { setSubmitting, resetForm }: { setSubmitting: (v: boolean) => void; resetForm: () => void }
+        { setSubmitting, resetForm, setErrors }: FormikHelpers<ExpenseCreateInput>
     ) => {
         try {
             await onSubmit(values);
             resetForm();
             onClose();
+        } catch (err) {
+            // The page has already shown the message; keep the dialog open with the entered values.
+            setErrors(getApiFieldErrors(err));
         } finally {
             setSubmitting(false);
         }

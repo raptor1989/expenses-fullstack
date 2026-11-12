@@ -464,7 +464,12 @@ Error codes in use: `auth_required`, `invalid_token`, `validation_error`,
 `settings_not_found`, `not_found`, `rate_limit_exceeded`, `server_error`,
 and `<feature>_<action>_failed` for 500s. The web layer handles 401
 globally (redirect, with the login/register exception above) and
-everything else per call (`Snackbar` or form error).
+everything else per call (`Snackbar` or form error) through
+`getApiErrorMessage(error, fallback)` and `getApiFieldErrors(error)` in
+`services/api.ts`: a 4xx shows the `details` messages (else `message`),
+a 400's `details` go to Formik `setErrors`, and a 5xx, a network error or
+a non-axios error shows the caller's generic fallback. The expense
+dialog stays open on a failed save (the page rethrows to the form).
 
 Contract changes are additive where possible. When you rename or remove
 a field: shared type → API model/controller → API tests → web service +

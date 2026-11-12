@@ -22,6 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSettings } from '@/hooks/useSettings';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { updateUserProfile, changePassword } from '@/services/authService';
+import { getApiErrorMessage, getApiFieldErrors } from '@/services/api';
 import { LightMode as LightModeIcon, DarkMode as DarkModeIcon } from '@mui/icons-material';
 
 const ProfileSchema = Yup.object().shape({
@@ -54,12 +55,14 @@ export default function Settings() {
     const handleCurrencyChange = (e: SelectChangeEvent) => {
         updateSettings({ currency: e.target.value as SupportedCurrency })
             .then(() => notify('Currency updated!', 'success'))
-            .catch(() => notify('Failed to update currency.', 'error'));
+            .catch((err) => notify(getApiErrorMessage(err, 'Failed to update currency.'), 'error'));
     };
 
     const handleThemeChange = (newTheme: ThemeMode) => {
         setMode(newTheme);
-        updateSettings({ theme: newTheme }).catch(() => notify('Failed to save theme preference.', 'error'));
+        updateSettings({ theme: newTheme }).catch((err) =>
+            notify(getApiErrorMessage(err, 'Failed to save theme preference.'), 'error')
+        );
     };
 
     return (
@@ -73,13 +76,14 @@ export default function Settings() {
                     initialValues={{ email: user?.email || '' }}
                     validationSchema={ProfileSchema}
                     enableReinitialize
-                    onSubmit={async (values, { setSubmitting }) => {
+                    onSubmit={async (values, { setSubmitting, setErrors }) => {
                         try {
                             const updated = await updateUserProfile(values);
                             updateUser(updated);
                             notify('Profile updated!', 'success');
-                        } catch {
-                            notify('Failed to update profile.', 'error');
+                        } catch (err) {
+                            notify(getApiErrorMessage(err, 'Failed to update profile.'), 'error');
+                            setErrors(getApiFieldErrors(err));
                         } finally {
                             setSubmitting(false);
                         }
@@ -120,13 +124,14 @@ export default function Settings() {
                 <Formik
                     initialValues={{ currentPassword: '', newPassword: '', confirmPassword: '' }}
                     validationSchema={PasswordSchema}
-                    onSubmit={async (values, { setSubmitting, resetForm }) => {
+                    onSubmit={async (values, { setSubmitting, resetForm, setErrors }) => {
                         try {
                             await changePassword(values.currentPassword, values.newPassword);
                             resetForm();
                             notify('Password changed! Other devices have been signed out.', 'success');
-                        } catch {
-                            notify('Failed to change password — check your current password.', 'error');
+                        } catch (err) {
+                            notify(getApiErrorMessage(err, 'Failed to change password.'), 'error');
+                            setErrors(getApiFieldErrors(err));
                         } finally {
                             setSubmitting(false);
                         }

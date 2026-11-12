@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useCategoryStore } from '@/store/categoryStore';
+import { getApiErrorMessage } from '@/services/api';
 import { Category } from '@expenses/shared';
 
 export default function Categories() {
@@ -35,8 +36,12 @@ export default function Categories() {
     const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
     useEffect(() => {
-        fetchCategories().catch(() =>
-            setNotification({ open: true, message: 'Failed to load categories.', severity: 'error' })
+        fetchCategories().catch((err) =>
+            setNotification({
+                open: true,
+                message: getApiErrorMessage(err, 'Failed to load categories.'),
+                severity: 'error'
+            })
         );
     }, [fetchCategories]);
 
@@ -67,8 +72,12 @@ export default function Categories() {
                 setNotification({ open: true, message: 'Category updated!', severity: 'success' });
             }
             setDialogOpen(false);
-        } catch {
-            setNotification({ open: true, message: `Failed to ${dialogMode} category.`, severity: 'error' });
+        } catch (err) {
+            setNotification({
+                open: true,
+                message: getApiErrorMessage(err, `Failed to ${dialogMode} category.`),
+                severity: 'error'
+            });
         }
     };
 
@@ -77,8 +86,12 @@ export default function Categories() {
         try {
             await removeCategory(categoryToDelete.id);
             setNotification({ open: true, message: 'Category deleted!', severity: 'success' });
-        } catch {
-            setNotification({ open: true, message: 'Failed to delete category — it may still be in use.', severity: 'error' });
+        } catch (err) {
+            setNotification({
+                open: true,
+                message: getApiErrorMessage(err, 'Failed to delete category.'),
+                severity: 'error'
+            });
         } finally {
             setDeleteDialogOpen(false);
             setCategoryToDelete(null);

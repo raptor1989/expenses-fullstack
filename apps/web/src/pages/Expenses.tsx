@@ -29,6 +29,7 @@ import dayjs from 'dayjs';
 import ExpenseTable from '../components/expenses/ExpenseTable';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import { getExpenses, deleteExpense, createExpense, updateExpense } from '../services/expenseService';
+import { getApiErrorMessage } from '../services/api';
 import { useCategoryStore } from '@/store/categoryStore';
 import { Expense, ExpenseCreateInput, ExpenseSortField, SortOrder } from '@expenses/shared';
 
@@ -72,8 +73,12 @@ export default function Expenses() {
             });
             setExpenses(response.expenses);
             setPagination((prev) => ({ ...prev, total: response.pagination.total, totalPages: response.pagination.totalPages }));
-        } catch {
-            setNotification({ open: true, message: 'Failed to load expenses. Please try again later.', severity: 'error' });
+        } catch (err) {
+            setNotification({
+                open: true,
+                message: getApiErrorMessage(err, 'Failed to load expenses. Please try again later.'),
+                severity: 'error'
+            });
         } finally {
             setLoading(false);
         }
@@ -127,8 +132,14 @@ export default function Expenses() {
                 setNotification({ open: true, message: 'Expense added successfully!', severity: 'success' });
             }
             setFormOpen(false);
-        } catch {
-            setNotification({ open: true, message: `Failed to ${editExpense ? 'update' : 'create'} expense.`, severity: 'error' });
+        } catch (err) {
+            setNotification({
+                open: true,
+                message: getApiErrorMessage(err, `Failed to ${editExpense ? 'update' : 'create'} expense.`),
+                severity: 'error'
+            });
+            // Rethrown so the dialog stays open and maps field errors.
+            throw err;
         }
     };
 
@@ -138,8 +149,8 @@ export default function Expenses() {
             await deleteExpense(expenseToDelete.id);
             setExpenses(expenses.filter((e) => e.id !== expenseToDelete.id));
             setNotification({ open: true, message: 'Expense deleted successfully!', severity: 'success' });
-        } catch {
-            setNotification({ open: true, message: 'Failed to delete expense.', severity: 'error' });
+        } catch (err) {
+            setNotification({ open: true, message: getApiErrorMessage(err, 'Failed to delete expense.'), severity: 'error' });
         } finally {
             setDeleteDialogOpen(false);
             setExpenseToDelete(null);

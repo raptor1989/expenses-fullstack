@@ -135,6 +135,21 @@ test('creates and deletes a category', async ({ page }) => {
     await expect(page.getByText(categoryName, { exact: true })).toHaveCount(0);
 });
 
+test('shows the API validation message when a category name is too long', async ({ page }) => {
+    await login(page);
+    await page.goto('/categories');
+
+    await page.getByRole('button', { name: 'Add Category' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Name').fill('x'.repeat(51));
+    await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+
+    // The server's details message, not the generic "Failed to add category.". getByText, not getByRole:
+    // the open dialog marks the rest of the page (the Snackbar too) aria-hidden.
+    await expect(page.getByText('Name too long', { exact: true })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+});
+
 test('changes the currency in settings and keeps it after a reload', async ({ page }) => {
     await login(page);
     await page.goto('/settings');

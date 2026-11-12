@@ -3,8 +3,8 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Button, TextField, Link, Grid, Box, Typography, Alert } from '@mui/material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
-import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
+import { getApiErrorMessage, getApiFieldErrors } from '../services/api';
 
 const validationSchema = yup.object({
     email: yup.string().email('Enter a valid email').required('Email is required'),
@@ -20,16 +20,13 @@ export default function Register() {
     const formik = useFormik({
         initialValues: { email: '', password: '', confirmPassword: '' },
         validationSchema,
-        onSubmit: async (values) => {
+        onSubmit: async (values, { setErrors }) => {
             try {
                 await register(values.email, values.password);
                 navigate('/');
             } catch (err) {
-                if (axios.isAxiosError(err)) {
-                    setError(err.response?.data?.message || 'An error occurred during registration.');
-                } else {
-                    setError('An error occurred during registration.');
-                }
+                setError(getApiErrorMessage(err, 'An error occurred during registration.'));
+                setErrors(getApiFieldErrors(err));
             }
         }
     });
