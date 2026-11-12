@@ -79,6 +79,11 @@ router.get('/by-month', (req: Request, res: Response) => {
     ExpenseController.getExpensesByMonth(req, res);
 });
 
+// Registered before '/:id', whose UUID check would otherwise reject 'years'.
+router.get('/years', (req: Request, res: Response) => {
+    ExpenseController.getExpenseYears(req, res);
+});
+
 router.get('/:id', idParamValidation, validate, (req: Request, res: Response) => {
     ExpenseController.getExpenseById(req, res);
 });

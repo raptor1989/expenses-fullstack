@@ -17,7 +17,8 @@ import {
     updateExpense,
     deleteExpense,
     getExpenseSummary,
-    getExpensesByMonth
+    getExpensesByMonth,
+    getExpenseYears
 } from './expenseService';
 
 beforeEach(() => {
@@ -133,5 +134,14 @@ describe('expenseService', () => {
 
         expect(apiMock.get).toHaveBeenCalledWith('/expenses/by-month?year=2025');
         expect(result).toEqual(monthlyData);
+    });
+
+    it('getExpenseYears unwraps the years list', async () => {
+        apiMock.get.mockResolvedValue({ data: { years: [2025, 2023] } });
+
+        const result = await getExpenseYears();
+
+        expect(apiMock.get).toHaveBeenCalledWith('/expenses/years');
+        expect(result).toEqual([2025, 2023]);
     });
 });

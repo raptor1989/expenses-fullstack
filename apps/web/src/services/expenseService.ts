@@ -83,6 +83,11 @@ export const getExpenseSummary = async (startDate: string, endDate: string): Pro
     return response.data.summary;
 };
 
+export const getExpenseYears = async (): Promise<number[]> => {
+    const response = await api.get<{ years: number[] }>('/expenses/years');
+    return response.data.years;
+};
+
 export const getExpensesByMonth = async (year: number): Promise<ExpenseByMonth[]> => {
     const params = new URLSearchParams();
     params.append('year', year.toString());

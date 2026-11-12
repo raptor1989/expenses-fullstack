@@ -106,7 +106,7 @@ Express 5 API, PostgreSQL 17, JWT in an httpOnly cookie.
 | `npm run build` | Turbo: `shared` (`tsc`, emits `dist/*.d.ts`) → `api` (`tsc` → `dist/`) + `web` (`tsc && vite build` → `dist/`) |
 | `npm run lint` | ESLint 10 flat config per workspace; web runs with `--max-warnings 0`; `e2e` also runs `tsc --noEmit` |
 | `npm test` | Turbo `test` (depends on `build`): API Jest suites against PostgreSQL, web Vitest, shared `--passWithNoTests`. `e2e` is not part of it |
-| `npm run test:e2e` | Turbo `test:e2e` (depends on `build`, never cached): Playwright smoke suite — see "Smoke tests" |
+| `npm run test:e2e` | Turbo `test:e2e` (never cached): Playwright smoke suite — see "Smoke tests". `dependsOn: ["build"]` only covers the `e2e` package, so the web/api builds run **in parallel** with Playwright; with a cold Turbo cache Vite empties `apps/web/dist` mid-run. Run `npm run build` first (or `npm run build` + `npx playwright test` in `e2e/`) |
 | `npm run dev` | `predev` kills whatever **listens** on 5173/4000 (`netstat`/`taskkill` on Windows, `lsof`/`kill` elsewhere), then Turbo starts `shared` (`tsc --watch`), `api` (`ts-node src/index.ts`), `web` (`vite`) |
 | `npm start` | `pm2 start pm2.config.js` — production process model, see `DEPLOYMENT.md` |
 | `npm run format` | Prettier over every `*.ts`/`*.tsx` in the repo — prefer `npx prettier --write <files>` on the files you touched |
@@ -118,15 +118,15 @@ Turbo runs in strict env mode: a task only sees the variables listed in
 its `passThroughEnv` (`test:e2e`: `CI`, `E2E_*`, `DB_*`). Anything else
 you export is invisible to the task.
 
-### Verification baseline (2026-11-10, Node 22, PostgreSQL 17 on 5432)
+### Verification baseline (2026-11-12, Node 22, PostgreSQL 17 on 5432)
 
 | Check | Result |
 |---|---|
 | `npm run build` | 3/3 tasks |
 | `npm run lint` | 4/4 tasks, 0 warnings |
-| `npm test` → `@expenses/api` | 6 suites, 87 tests (`app`, `auth`, `categories`, `expenses`, `analytics`, `settings`) |
-| `npm test` → `@expenses/web` | 5 files, 29 tests (4 service tests + `ExpenseForm.test.ts` Yup schema) |
-| `npm run test:e2e` | 11 smoke tests, `e2e/tests/smoke.spec.ts` |
+| `npm test` → `@expenses/api` | 6 suites, 115 tests (`app`, `auth`, `categories`, `expenses`, `analytics`, `settings`) |
+| `npm test` → `@expenses/web` | 8 files, 56 tests (4 service tests, `api.test.ts` error helpers, `chartHelpers.test.ts`, `periodHelpers.test.ts`, `ExpenseForm.test.ts` Yup schema) |
+| `npm run test:e2e` | 13 smoke tests, `e2e/tests/smoke.spec.ts` (run locally on system Edge, `E2E_BROWSER_CHANNEL=msedge`) |
 | `npm audit --omit=dev` | 0 vulnerabilities (remaining dev-only advisories: `glob`/`minimatch` pulled by jest and eslint, no upstream fix yet) |
 
 What a change needs before it is "done":
@@ -350,9 +350,17 @@ helpers/      formatHelpers (Intl; VITE_LOCALE / VITE_CURRENCY), chartHelpers (C
   mount and after a delete, for current `expenseCount`s); `addCategory`,
   `editCategory` (merges into the stored item), `removeCategory(id,
   moveTo?)`, `reset`). Expenses, pagination,
-  filters and dialogs are local `useState` in each page. The Dashboard
-  loads through `fetchDashboardData({ silent })` and refetches silently
-  after the inline form saves. Notifications are a local MUI `Snackbar`
+  filters and dialogs are local `useState` in each page; the Expenses
+  page refetches the current page after add/edit/delete (`refreshKey`)
+  instead of patching the list, and steps back when a page empties. The
+  Dashboard has a period toggle (this month / last 30 days / last 3
+  months, `helpers/periodHelpers.ts`); the daily average divides by the
+  period's inclusive day count. It loads through
+  `fetchDashboardData({ silent })`: the first load shows the spinner,
+  period changes and inline-form saves refetch silently. The Reports
+  year selector spans `GET /expenses/years` up to the current year.
+  `ProtectedRoute` shows a centered `CircularProgress` while the session
+  check is pending. Notifications are a local MUI `Snackbar`
   per page or component.
 - **MUI 9** (`@mui/material` 9.5, `@mui/x-date-pickers` 9.17): `Grid`
   from `@mui/material` with the `size={{ xs: 12, md: 6 }}` prop (there
@@ -451,6 +459,7 @@ Success shapes (JSON, cookie auth unless noted):
 | `GET /expenses?page&limit&startDate&endDate&categoryId&search&sort&order` | `{ expenses: Expense[], pagination: { total, page, limit, totalPages } }` |
 | `GET /expenses/:id` · `POST /expenses` (201) · `PUT /expenses/:id` | `{ expense }` · `{ message, expense }` |
 | `GET /expenses/summary?startDate&endDate` | `{ summary: ExpenseSummary }` |
+| `GET /expenses/years` | `{ years: number[] }` — distinct years of the caller's expense dates, newest first (`[]` without expenses) |
 | `GET /expenses/by-month?year` | `{ monthlyData: ExpenseByMonth[] }`; `totalByCategory` is keyed by **category id** (the web resolves names and colors through `buildCategoryLabels`, which suffixes repeated names " (2)") |
 | `GET /categories` (each with `expenseCount`) · `GET /categories/:id` · `POST` (201) · `PUT /:id` | `{ categories }` · `{ category }` · `{ message, category }` |
 | `DELETE /expenses/:id` · `DELETE /categories/:id[?moveTo=<id>]` (in one transaction: move the caller's expenses to `moveTo`, then delete; `moveTo` must be another own category, else 400 `validation_error`; without it a category in use is 400 `category_has_expenses`) | `{ message }` |
@@ -534,7 +543,7 @@ free.
   proxy that strips the `/api` prefix. Manual steps and pitfalls:
   `DEPLOYMENT.md`.
 
-## Known gaps / direction (true as of 2026-11-07)
+## Known gaps / direction (true as of 2026-11-12)
 
 - No request/response logging middleware; no repository layer (raw SQL
   per model method); the DB connection has no SSL option.
@@ -545,5 +554,11 @@ free.
   web app, express-validator in the API); the category dialog has no
   client-side length check, the API's `≤ 50` is the only guard.
 - `apps/api` still compiles with `strict: false`.
+- `npm run test:e2e` races the web/api builds (see Commands); CI is
+  unaffected only because it runs `npm run build` first.
+- Malformed `startDate`/`endDate` on `GET /expenses`, `/summary` and
+  `/by-month` still end in a 500 (`new Date('x').toISOString()`).
+- The Dashboard pie still keys slices by category name, so two
+  categories with the same name merge there (Reports keys by id).
 - Dev-only `npm audit` advisories remain for `glob`/`minimatch` pulled in
   by jest 30 and eslint 10 (the suggested "fix" is a downgrade).

@@ -95,6 +95,16 @@ test('adds an expense from the dashboard and sees it in the recent list', async 
     await expect(page.getByRole('cell', { name: expenseDescription })).toBeVisible();
 });
 
+test('switches the dashboard summary period', async ({ page }) => {
+    await login(page);
+
+    await expect(page.getByText('Total Expenses (Last 30 days)')).toBeVisible();
+    await page.getByRole('button', { name: 'This month' }).click();
+    await expect(page.getByText('Total Expenses (This month)')).toBeVisible();
+    // The expense added today still counts, so the page stays populated after the silent refetch.
+    await expect(page.getByRole('cell', { name: expenseDescription })).toBeVisible();
+});
+
 test('lists the expense on the Expenses page', async ({ page }) => {
     await login(page);
     await page.goto('/expenses');

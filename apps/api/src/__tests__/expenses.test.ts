@@ -465,3 +465,45 @@ describe('GET /expenses sorting', () => {
         expect(res.body.details.order).toBeDefined();
     });
 });
+
+describe('GET /expenses/years', () => {
+    it('returns the distinct expense years, newest first', async () => {
+        const { auth, categoryId } = await setupUserWithCategory();
+        for (const date of ['2023-06-01', '2025-01-15', '2025-08-20']) {
+            await request(app).post('/expenses').set('Cookie', auth.cookie).send(expenseFixture(categoryId, { date }));
+        }
+
+        const res = await request(app).get('/expenses/years').set('Cookie', auth.cookie);
+
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ years: [2025, 2023] });
+    });
+
+    it('returns an empty list for a user without expenses', async () => {
+        const { auth } = await setupUserWithCategory();
+
+        const res = await request(app).get('/expenses/years').set('Cookie', auth.cookie);
+
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ years: [] });
+    });
+
+    it("ignores other users' expenses", async () => {
+        const { auth: authA } = await setupUserWithCategory();
+        const { auth: authB, categoryId: catB } = await setupUserWithCategory();
+        await request(app)
+            .post('/expenses')
+            .set('Cookie', authB.cookie)
+            .send(expenseFixture(catB, { date: '2020-03-03' }));
+
+        const res = await request(app).get('/expenses/years').set('Cookie', authA.cookie);
+
+        expect(res.body).toEqual({ years: [] });
+    });
+
+    it('returns 401 when unauthenticated', async () => {
+        const res = await request(app).get('/expenses/years');
+
+        expect(res.status).toBe(401);
+    });
+});

@@ -210,6 +210,27 @@ export class ExpenseController {
         }
     }
 
+    static async getExpenseYears(req: Request, res: Response) {
+        try {
+            if (!req.user) {
+                return res.status(401).json({
+                    message: 'Authentication required',
+                    code: 'auth_required'
+                });
+            }
+
+            const years = await ExpenseModel.getExpenseYears(req.user.id);
+
+            res.status(200).json({ years });
+        } catch (error) {
+            console.error('Get expense years error:', error);
+            res.status(500).json({
+                message: 'Failed to get expense years',
+                code: 'expense_years_fetch_failed'
+            });
+        }
+    }
+
     static async getExpenseSummary(req: Request, res: Response) {
         try {
             if (!req.user) {

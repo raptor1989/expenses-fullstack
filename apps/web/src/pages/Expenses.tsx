@@ -71,6 +71,11 @@ export default function Expenses() {
                 sort: sorting.sort,
                 order: sorting.order
             });
+            if (response.expenses.length === 0 && pagination.page > 1) {
+                // The page no longer exists (e.g. its last expense was deleted): show the new last page.
+                setPagination((prev) => ({ ...prev, page: Math.max(1, response.pagination.totalPages) }));
+                return;
+            }
             setExpenses(response.expenses);
             setPagination((prev) => ({ ...prev, total: response.pagination.total, totalPages: response.pagination.totalPages }));
         } catch (err) {
@@ -123,15 +128,15 @@ export default function Expenses() {
     const handleSubmitExpense = async (expenseData: ExpenseCreateInput) => {
         try {
             if (editExpense) {
-                const updated = await updateExpense(editExpense.id, expenseData);
-                setExpenses(expenses.map((e) => (e.id === editExpense.id ? updated : e)));
+                await updateExpense(editExpense.id, expenseData);
                 setNotification({ open: true, message: 'Expense updated successfully!', severity: 'success' });
             } else {
-                const newExp = await createExpense(expenseData);
-                setExpenses([newExp, ...expenses]);
+                await createExpense(expenseData);
                 setNotification({ open: true, message: 'Expense added successfully!', severity: 'success' });
             }
             setFormOpen(false);
+            // Reload the page from the server: the saved expense may fall outside the filters or move the page count.
+            setRefreshKey((key) => key + 1);
         } catch (err) {
             setNotification({
                 open: true,
@@ -147,8 +152,8 @@ export default function Expenses() {
         if (!expenseToDelete) return;
         try {
             await deleteExpense(expenseToDelete.id);
-            setExpenses(expenses.filter((e) => e.id !== expenseToDelete.id));
             setNotification({ open: true, message: 'Expense deleted successfully!', severity: 'success' });
+            setRefreshKey((key) => key + 1);
         } catch (err) {
             setNotification({ open: true, message: getApiErrorMessage(err, 'Failed to delete expense.'), severity: 'error' });
         } finally {

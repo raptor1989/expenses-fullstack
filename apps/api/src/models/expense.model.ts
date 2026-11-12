@@ -215,6 +215,24 @@ export class ExpenseModel {
         }
     }
 
+    static async getExpenseYears(userId: string): Promise<number[]> {
+        const client = await pool.connect();
+
+        try {
+            const query = `
+        SELECT DISTINCT EXTRACT(YEAR FROM date)::int as year
+        FROM expenses
+        WHERE user_id = $1
+        ORDER BY year DESC
+      `;
+
+            const result = await client.query(query, [userId]);
+            return result.rows.map((row) => row.year);
+        } finally {
+            client.release();
+        }
+    }
+
     static async getSummaryByCategory(userId: string, startDate: Date, endDate: Date): Promise<ExpenseSummary> {
         const client = await pool.connect();
 

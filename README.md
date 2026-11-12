@@ -241,7 +241,8 @@ non-browser clients.
 | POST | `/users/reset-password` | – | set a new password with the token; revokes every existing session |
 | GET | `/expenses` | cookie | paginated list: `page`, `limit` (≤ 100), `startDate`, `endDate`, `categoryId`, `search` (case-insensitive description fragment), `sort` (`date` \| `amount` \| `createdAt`, default `date`), `order` (`asc` \| `desc`, default `desc`) |
 | GET | `/expenses/summary` | cookie | totals per category for `startDate`–`endDate` |
-| GET | `/expenses/by-month` | cookie | monthly breakdown for `year` |
+| GET | `/expenses/by-month` | cookie | monthly breakdown for `year` (`totalByCategory` keyed by category id) |
+| GET | `/expenses/years` | cookie | distinct years that have expenses, newest first |
 | GET / PUT / DELETE | `/expenses/:id` | cookie | single expense |
 | POST | `/expenses` | cookie | create expense (201) |
 | GET | `/categories` | cookie | list, each with `expenseCount` |
