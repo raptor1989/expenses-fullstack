@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { body, param } from 'express-validator';
+import { body, param, query } from 'express-validator';
 import { CategoryController } from '../controllers/category.controller';
 import { auth } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
@@ -62,7 +62,17 @@ router.put('/:id', idParamValidation, categoryUpdateValidation, validate, (req: 
     CategoryController.updateCategory(req, res);
 });
 
-router.delete('/:id', idParamValidation, validate, (req: Request, res: Response) => {
+const deleteQueryValidation = [
+    query('moveTo')
+        .optional()
+        .custom((value) => typeof value === 'string')
+        .withMessage('Target category must be a single value')
+        .bail()
+        .isUUID()
+        .withMessage('Target category must be a valid id')
+];
+
+router.delete('/:id', idParamValidation, deleteQueryValidation, validate, (req: Request, res: Response) => {
     CategoryController.deleteCategory(req, res);
 });
 

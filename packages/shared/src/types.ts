@@ -32,6 +32,8 @@ export interface Category {
     userId: string;
     createdAt: Date;
     updatedAt: Date;
+    /** Number of the user's expenses in this category; only `GET /categories` includes it. */
+    expenseCount?: number;
 }
 
 export interface Expense {

@@ -21,6 +21,9 @@ export const updateCategory = async (id: string, name?: string, color?: string, 
     return response.data.category;
 };
 
-export const deleteCategory = async (id: string): Promise<void> => {
-    await api.delete(`/categories/${id}`);
+export const deleteCategory = async (id: string, moveTo?: string): Promise<void> => {
+    const params = new URLSearchParams();
+    if (moveTo) params.append('moveTo', moveTo);
+    const query = params.toString();
+    await api.delete(`/categories/${id}${query ? `?${query}` : ''}`);
 };

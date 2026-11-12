@@ -17,7 +17,11 @@ import {
     Tooltip,
     DialogContentText,
     Grid,
-    Chip
+    Chip,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useCategoryStore } from '@/store/categoryStore';
@@ -25,7 +29,7 @@ import { getApiErrorMessage } from '@/services/api';
 import { Category } from '@expenses/shared';
 
 export default function Categories() {
-    const { categories, loading, fetchCategories, addCategory, editCategory, removeCategory } = useCategoryStore();
+    const { categories, loading, refreshCategories, addCategory, editCategory, removeCategory } = useCategoryStore();
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
@@ -33,17 +37,22 @@ export default function Categories() {
     const [formData, setFormData] = useState({ name: '', color: '#6c63ff', icon: '' });
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+    const [moveTo, setMoveTo] = useState('');
     const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
     useEffect(() => {
-        fetchCategories().catch((err) =>
+        // Always reload here: the delete dialog relies on current expense counts.
+        refreshCategories().catch((err) =>
             setNotification({
                 open: true,
                 message: getApiErrorMessage(err, 'Failed to load categories.'),
                 severity: 'error'
             })
         );
-    }, [fetchCategories]);
+    }, [refreshCategories]);
+
+    const deleteExpenseCount = categoryToDelete?.expenseCount ?? 0;
+    const moveTargets = categories.filter((c) => c.id !== categoryToDelete?.id);
 
     const openAdd = () => {
         setDialogMode('add');
@@ -84,7 +93,7 @@ export default function Categories() {
     const handleConfirmDelete = async () => {
         if (!categoryToDelete) return;
         try {
-            await removeCategory(categoryToDelete.id);
+            await removeCategory(categoryToDelete.id, deleteExpenseCount > 0 ? moveTo : undefined);
             setNotification({ open: true, message: 'Category deleted!', severity: 'success' });
         } catch (err) {
             setNotification({
@@ -159,7 +168,7 @@ export default function Categories() {
                                         <IconButton
                                             size="small"
                                             color="error"
-                                            onClick={() => { setCategoryToDelete(cat); setDeleteDialogOpen(true); }}
+                                            onClick={() => { setCategoryToDelete(cat); setMoveTo(''); setDeleteDialogOpen(true); }}
                                             sx={{ p: 0.5 }}
                                         >
                                             <DeleteIcon sx={{ fontSize: 15 }} />
@@ -236,12 +245,42 @@ export default function Categories() {
                 <DialogTitle sx={{ fontSize: 16, fontWeight: 600 }}>Delete Category</DialogTitle>
                 <DialogContent>
                     <DialogContentText sx={{ fontSize: 14 }}>
-                        Delete "{categoryToDelete?.name}"? This will remove it from associated expenses.
+                        {deleteExpenseCount > 0
+                            ? `"${categoryToDelete?.name}" has ${deleteExpenseCount} ${deleteExpenseCount === 1 ? 'expense' : 'expenses'}. ` +
+                              (moveTargets.length > 0
+                                  ? 'Choose a category to move them to; then the category is deleted.'
+                                  : 'Create another category to move them to first.')
+                            : `Delete "${categoryToDelete?.name}"? It has no expenses.`}
                     </DialogContentText>
+                    {deleteExpenseCount > 0 && moveTargets.length > 0 && (
+                        <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+                            <InputLabel id="move-to-label">Move expenses to</InputLabel>
+                            <Select
+                                labelId="move-to-label"
+                                label="Move expenses to"
+                                value={moveTo}
+                                onChange={(e) => setMoveTo(e.target.value)}
+                            >
+                                {moveTargets.map((c) => (
+                                    <MenuItem key={c.id} value={c.id}>
+                                        {c.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <Button onClick={() => setDeleteDialogOpen(false)} size="small">Cancel</Button>
-                    <Button onClick={handleConfirmDelete} color="error" variant="contained" size="small">Delete</Button>
+                    <Button
+                        onClick={handleConfirmDelete}
+                        color="error"
+                        variant="contained"
+                        size="small"
+                        disabled={deleteExpenseCount > 0 && !moveTo}
+                    >
+                        Delete
+                    </Button>
                 </DialogActions>
             </Dialog>
 

@@ -345,8 +345,11 @@ helpers/      formatHelpers (Intl; VITE_LOCALE / VITE_CURRENCY), chartHelpers (C
   and theme. `ThemeProvider` defaults to **dark**, persists `themeMode`
   in `localStorage`; the AppBar toggle updates both.
 - **State**: categories are global in `useCategoryStore`
-  (`fetchCategories` is idempotent via `loaded`/`loading`; `addCategory`,
-  `editCategory`, `removeCategory`, `reset`). Expenses, pagination,
+  (`fetchCategories` is idempotent via `loaded`/`loading`;
+  `refreshCategories` always reloads (the Categories page uses it on
+  mount and after a delete, for current `expenseCount`s); `addCategory`,
+  `editCategory` (merges into the stored item), `removeCategory(id,
+  moveTo?)`, `reset`). Expenses, pagination,
   filters and dialogs are local `useState` in each page. The Dashboard
   loads through `fetchDashboardData({ silent })` and refetches silently
   after the inline form saves. Notifications are a local MUI `Snackbar`
@@ -383,7 +386,8 @@ helpers/      formatHelpers (Intl; VITE_LOCALE / VITE_CURRENCY), chartHelpers (C
 ## Shared (`packages/shared`)
 
 `src/types.ts` (barrel `src/index.ts`): `User`, `UserCredentials`,
-`ForgotPasswordInput`, `ResetPasswordInput`, `AuthResponse`, `Category`,
+`ForgotPasswordInput`, `ResetPasswordInput`, `AuthResponse`, `Category`
+(optional `expenseCount`, only from `GET /categories`),
 `Expense`, `ExpenseCreateInput`, `ExpenseUpdateInput`, `ExpenseSummary`,
 `ExpenseByMonth`, `ExpenseByCategory`, `ApiError`, `SUPPORTED_CURRENCIES`
 + `SupportedCurrency`, `ThemeMode`, `UserSettings`, `UserSettingsUpdateInput`.
@@ -448,8 +452,8 @@ Success shapes (JSON, cookie auth unless noted):
 | `GET /expenses/:id` · `POST /expenses` (201) · `PUT /expenses/:id` | `{ expense }` · `{ message, expense }` |
 | `GET /expenses/summary?startDate&endDate` | `{ summary: ExpenseSummary }` |
 | `GET /expenses/by-month?year` | `{ monthlyData: ExpenseByMonth[] }` |
-| `GET /categories` · `GET /categories/:id` · `POST` (201) · `PUT /:id` | `{ categories }` · `{ category }` · `{ message, category }` |
-| `DELETE /expenses/:id` · `DELETE /categories/:id` | `{ message }` |
+| `GET /categories` (each with `expenseCount`) · `GET /categories/:id` · `POST` (201) · `PUT /:id` | `{ categories }` · `{ category }` · `{ message, category }` |
+| `DELETE /expenses/:id` · `DELETE /categories/:id[?moveTo=<id>]` (in one transaction: move the caller's expenses to `moveTo`, then delete; `moveTo` must be another own category, else 400 `validation_error`; without it a category in use is 400 `category_has_expenses`) | `{ message }` |
 | `GET /settings` · `PUT /settings` | `{ settings }` · `{ message, settings }` |
 | `POST /users/register` (201) · `POST /users/login` (no auth) | `{ message, user }` + `Set-Cookie: token=…` |
 | `GET /users/session` (optional auth) | `{ user }` or `{ user: null }`, always 200 |

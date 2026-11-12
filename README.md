@@ -244,8 +244,8 @@ non-browser clients.
 | GET | `/expenses/by-month` | cookie | monthly breakdown for `year` |
 | GET / PUT / DELETE | `/expenses/:id` | cookie | single expense |
 | POST | `/expenses` | cookie | create expense (201) |
-| GET | `/categories` | cookie | list |
-| GET / PUT / DELETE | `/categories/:id` | cookie | single category |
+| GET | `/categories` | cookie | list, each with `expenseCount` |
+| GET / PUT / DELETE | `/categories/:id` | cookie | single category; `DELETE ?moveTo=<id>` first moves its expenses to another of your categories |
 | POST | `/categories` | cookie | create category (201) |
 | GET / PUT | `/settings` | cookie | currency and theme |
 
