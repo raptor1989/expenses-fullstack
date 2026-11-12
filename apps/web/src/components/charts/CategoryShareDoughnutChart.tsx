@@ -26,6 +26,7 @@ export default function CategoryShareDoughnutChart({ monthsData, categories }: C
                 cornerRadius={4}
                 activeOuterRadiusOffset={5}
                 borderWidth={0}
+                arcLinkLabel="label"
                 arcLinkLabelsSkipAngle={12}
                 arcLinkLabelsTextColor={isDark ? '#8a8a94' : '#6e6e78'}
                 arcLinkLabelsThickness={1}

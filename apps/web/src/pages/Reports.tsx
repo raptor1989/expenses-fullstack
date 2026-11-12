@@ -83,7 +83,7 @@ export default function Reports() {
                             <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2 }}>
                                 Monthly Breakdown
                             </Typography>
-                            <ReportsTable monthsData={data} currency={settings.currency} />
+                            <ReportsTable monthsData={data} categories={categories} currency={settings.currency} />
                         </Box>
                     </>
                 )}

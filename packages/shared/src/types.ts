@@ -90,6 +90,7 @@ export interface ExpenseByMonth {
     month: string;
     year: number;
     total: number;
+    /** Keyed by category id (not name): same-named categories stay separate and survive renames. */
     totalByCategory: Record<string, number>;
     topFiveMostExpensive: Expense[];
 }

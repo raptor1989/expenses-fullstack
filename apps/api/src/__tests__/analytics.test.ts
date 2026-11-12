@@ -143,8 +143,9 @@ describe('GET /expenses/by-month', () => {
 
         expect(march).toBeDefined();
         expect(march!.total).toBeCloseTo(210, 1);
-        expect(march!.totalByCategory.Groceries).toBeCloseTo(150, 1);
-        expect(march!.totalByCategory.Fuel).toBeCloseTo(60, 1);
+        expect(Object.keys(march!.totalByCategory).sort()).toEqual([groceriesId, fuelId].sort());
+        expect(march!.totalByCategory[groceriesId]).toBeCloseTo(150, 1);
+        expect(march!.totalByCategory[fuelId]).toBeCloseTo(60, 1);
         expect(march!.topFiveMostExpensive).toHaveLength(3);
         expect(march!.topFiveMostExpensive[0].description).toBe('Big shop');
         expect(march!.topFiveMostExpensive[0].amount).toBeCloseTo(100, 1);
@@ -161,5 +162,38 @@ describe('GET /expenses/by-month', () => {
     it('returns 401 when unauthenticated', async () => {
         const res = await request(app).get('/expenses/by-month?year=2025');
         expect(res.status).toBe(401);
+    });
+});
+
+describe('GET /expenses/by-month category keys', () => {
+    it('keeps two categories with the same name separate', async () => {
+        const auth = await registerAndLogin(userFixture());
+        const first = await request(app)
+            .post('/categories')
+            .set('Cookie', auth.cookie)
+            .send(categoryFixture({ name: 'Home' }));
+        const second = await request(app)
+            .post('/categories')
+            .set('Cookie', auth.cookie)
+            .send(categoryFixture({ name: 'Home' }));
+        const firstId = first.body.category.id as string;
+        const secondId = second.body.category.id as string;
+
+        await request(app)
+            .post('/expenses')
+            .set('Cookie', auth.cookie)
+            .send(expenseFixture(firstId, { amount: 10, date: '2025-05-02' }));
+        await request(app)
+            .post('/expenses')
+            .set('Cookie', auth.cookie)
+            .send(expenseFixture(secondId, { amount: 25, date: '2025-05-20' }));
+
+        const res = await request(app).get('/expenses/by-month?year=2025').set('Cookie', auth.cookie);
+
+        expect(res.status).toBe(200);
+        const may = (res.body.monthlyData as Array<{ month: string; totalByCategory: Record<string, number> }>).find(
+            (m) => m.month === 'May'
+        );
+        expect(may!.totalByCategory).toEqual({ [firstId]: 10, [secondId]: 25 });
     });
 });

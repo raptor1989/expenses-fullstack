@@ -324,7 +324,7 @@ services/     api.ts (axios instance), authService, expenseService, categoryServ
 contexts/     AuthContext, SettingsContext        hooks/   useAuth, useSettings
 store/        categoryStore.ts (Zustand)           theme/   ThemeProvider.tsx (+ useThemeMode)
 helpers/      formatHelpers (Intl; VITE_LOCALE / VITE_CURRENCY), chartHelpers (CHART_COLORS,
-              resolveCategoryColor, …), sxHelpers (shared sx fragments)
+              buildCategoryLabels, …), sxHelpers (shared sx fragments)
 ```
 
 - **Routing** (React Router 7): the protected tree is `/` →
@@ -451,7 +451,7 @@ Success shapes (JSON, cookie auth unless noted):
 | `GET /expenses?page&limit&startDate&endDate&categoryId&search&sort&order` | `{ expenses: Expense[], pagination: { total, page, limit, totalPages } }` |
 | `GET /expenses/:id` · `POST /expenses` (201) · `PUT /expenses/:id` | `{ expense }` · `{ message, expense }` |
 | `GET /expenses/summary?startDate&endDate` | `{ summary: ExpenseSummary }` |
-| `GET /expenses/by-month?year` | `{ monthlyData: ExpenseByMonth[] }` |
+| `GET /expenses/by-month?year` | `{ monthlyData: ExpenseByMonth[] }`; `totalByCategory` is keyed by **category id** (the web resolves names and colors through `buildCategoryLabels`, which suffixes repeated names " (2)") |
 | `GET /categories` (each with `expenseCount`) · `GET /categories/:id` · `POST` (201) · `PUT /:id` | `{ categories }` · `{ category }` · `{ message, category }` |
 | `DELETE /expenses/:id` · `DELETE /categories/:id[?moveTo=<id>]` (in one transaction: move the caller's expenses to `moveTo`, then delete; `moveTo` must be another own category, else 400 `validation_error`; without it a category in use is 400 `category_has_expenses`) | `{ message }` |
 | `GET /settings` · `PUT /settings` | `{ settings }` · `{ message, settings }` |

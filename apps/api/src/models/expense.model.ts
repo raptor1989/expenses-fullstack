@@ -288,12 +288,12 @@ export class ExpenseModel {
             const categoryBreakdownQuery = `
         SELECT
             EXTRACT(MONTH FROM e.date) as month_num,
-            c.name as "categoryName",
+            c.id as "categoryId",
             SUM(e.amount) as "amount"
         FROM expenses e
         JOIN categories c ON e.category_id = c.id
         WHERE e.user_id = $1 AND EXTRACT(YEAR FROM e.date) = $2
-        GROUP BY EXTRACT(MONTH FROM e.date), c.id, c.name
+        GROUP BY EXTRACT(MONTH FROM e.date), c.id
         ORDER BY month_num, "amount" DESC
       `;
 
@@ -326,7 +326,7 @@ export class ExpenseModel {
                 if (!totalByCategoryByMonth.has(monthNum)) {
                     totalByCategoryByMonth.set(monthNum, {});
                 }
-                totalByCategoryByMonth.get(monthNum)![row.categoryName] = parseFloat(row.amount);
+                totalByCategoryByMonth.get(monthNum)![row.categoryId] = parseFloat(row.amount);
             });
 
             const topFiveByMonth = new Map<number, Expense[]>();

@@ -15,9 +15,52 @@ export const CHART_COLORS: readonly string[] = [
     '#60a5fa'  // blue
 ];
 
-export function resolveCategoryColor(categoryName: string, categories: Category[], indexInPalette: number): string {
-    const match = categories.find((c) => c.name === categoryName);
-    return match?.color || CHART_COLORS[indexInPalette % CHART_COLORS.length];
+export interface CategoryLabel {
+    label: string;
+    color: string;
+}
+
+export const UNKNOWN_CATEGORY_LABEL = 'Unknown';
+
+/**
+ * Display label and color per category id. Report data is keyed by id, so a renamed category keeps its data;
+ * repeated names get a " (2)", " (3)" suffix in list order so charts can tell them apart.
+ */
+export function buildCategoryLabels(categories: Category[]): Record<string, CategoryLabel> {
+    const nameCounts = new Map<string, number>();
+    const labels: Record<string, CategoryLabel> = {};
+    categories.forEach((category, index) => {
+        const occurrence = (nameCounts.get(category.name) ?? 0) + 1;
+        nameCounts.set(category.name, occurrence);
+        labels[category.id] = {
+            label: occurrence === 1 ? category.name : `${category.name} (${occurrence})`,
+            color: category.color || CHART_COLORS[index % CHART_COLORS.length]
+        };
+    });
+    return labels;
+}
+
+function resolveCategoryLabel(
+    labels: Record<string, CategoryLabel>,
+    categoryId: string,
+    indexInPalette: number
+): CategoryLabel {
+    return (
+        labels[categoryId] ?? {
+            label: UNKNOWN_CATEGORY_LABEL,
+            color: CHART_COLORS[indexInPalette % CHART_COLORS.length]
+        }
+    );
+}
+
+function sumByCategory(monthsData: ExpenseByMonth[]): Record<string, number> {
+    const totals: Record<string, number> = {};
+    monthsData.forEach((m) => {
+        Object.entries(m.totalByCategory).forEach(([categoryId, amount]) => {
+            totals[categoryId] = (totals[categoryId] || 0) + amount;
+        });
+    });
+    return totals;
 }
 
 // Nivo theme — matches dark premium design tokens
@@ -124,12 +167,14 @@ export function getOptionsChartLineForExpenses(
     categories: Category[],
     mode: 'light' | 'dark'
 ): ChartLineOptions {
-    const series = categories.map((category, index) => ({
-        id: category.name,
-        color: resolveCategoryColor(category.name, categories, index),
+    const labels = buildCategoryLabels(categories);
+    // Nivo shows the series id in the legend and tooltip, so the id is the (unique) display label.
+    const series = categories.map((category) => ({
+        id: labels[category.id].label,
+        color: labels[category.id].color,
         data: monthsData.map((m) => ({
             x: m.month.slice(0, 3),
-            y: m.totalByCategory[category.name] ?? 0
+            y: m.totalByCategory[category.id] ?? 0
         }))
     }));
 
@@ -153,27 +198,21 @@ export function getOptionsDoughnutChartForExpenses(
     monthsData: ExpenseByMonth[],
     categories: Category[]
 ): DoughnutChartDatum[] {
-    const totals: Record<string, number> = {};
-    monthsData.forEach((m) => {
-        Object.entries(m.totalByCategory).forEach(([name, amount]) => {
-            totals[name] = (totals[name] || 0) + (amount as number);
-        });
-    });
+    const labels = buildCategoryLabels(categories);
 
-    return Object.entries(totals)
+    return Object.entries(sumByCategory(monthsData))
         .filter(([, value]) => value > 0)
-        .map(([name, value], index) => ({
-            id: name,
-            label: name,
-            value,
-            color: resolveCategoryColor(name, categories, index)
-        }));
+        .map(([categoryId, value], index) => {
+            const { label, color } = resolveCategoryLabel(labels, categoryId, index);
+            return { id: categoryId, label, value, color };
+        });
 }
 
 // ─── Category ranking ─────────────────────────────────────────────────────────
 
 export interface CategoryRankingRow {
     rank: number;
+    categoryId: string;
     name: string;
     total: number;
     percentage: number;
@@ -184,23 +223,22 @@ export function getCategoryRankingForExpenses(
     monthsData: ExpenseByMonth[],
     categories: Category[]
 ): CategoryRankingRow[] {
-    const totals: Record<string, number> = {};
-    monthsData.forEach((m) => {
-        Object.entries(m.totalByCategory).forEach(([name, amount]) => {
-            totals[name] = (totals[name] || 0) + (amount as number);
-        });
-    });
-
+    const labels = buildCategoryLabels(categories);
+    const totals = sumByCategory(monthsData);
     const grandTotal = Object.values(totals).reduce((sum, v) => sum + v, 0);
 
     return Object.entries(totals)
         .filter(([, value]) => value > 0)
         .sort((a, b) => b[1] - a[1])
-        .map(([name, value], index) => ({
-            rank: index + 1,
-            name,
-            total: value,
-            percentage: grandTotal > 0 ? (value * 100) / grandTotal : 0,
-            color: resolveCategoryColor(name, categories, index)
-        }));
+        .map(([categoryId, value], index) => {
+            const { label, color } = resolveCategoryLabel(labels, categoryId, index);
+            return {
+                rank: index + 1,
+                categoryId,
+                name: label,
+                total: value,
+                percentage: grandTotal > 0 ? (value * 100) / grandTotal : 0,
+                color
+            };
+        });
 }
