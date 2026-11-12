@@ -34,7 +34,7 @@ export default function Categories() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-    const [formData, setFormData] = useState({ name: '', color: '#6c63ff', icon: '' });
+    const [formData, setFormData] = useState({ name: '', color: '#6c63ff' });
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
     const [moveTo, setMoveTo] = useState('');
@@ -56,14 +56,14 @@ export default function Categories() {
 
     const openAdd = () => {
         setDialogMode('add');
-        setFormData({ name: '', color: '#6c63ff', icon: '' });
+        setFormData({ name: '', color: '#6c63ff' });
         setDialogOpen(true);
     };
 
     const openEdit = (cat: Category) => {
         setDialogMode('edit');
         setSelectedCategory(cat);
-        setFormData({ name: cat.name, color: cat.color || '#6c63ff', icon: cat.icon || '' });
+        setFormData({ name: cat.name, color: cat.color || '#6c63ff' });
         setDialogOpen(true);
     };
 
@@ -74,10 +74,10 @@ export default function Categories() {
         }
         try {
             if (dialogMode === 'add') {
-                await addCategory(formData.name, formData.color, formData.icon);
+                await addCategory(formData.name, formData.color);
                 setNotification({ open: true, message: 'Category created!', severity: 'success' });
             } else if (selectedCategory) {
-                await editCategory(selectedCategory.id, formData.name, formData.color, formData.icon);
+                await editCategory(selectedCategory.id, formData.name, formData.color);
                 setNotification({ open: true, message: 'Category updated!', severity: 'success' });
             }
             setDialogOpen(false);
