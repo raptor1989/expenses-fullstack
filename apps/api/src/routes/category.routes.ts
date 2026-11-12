@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 import { CategoryController } from '../controllers/category.controller';
 import { auth } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
@@ -48,7 +48,9 @@ router.get('/', (req: Request, res: Response) => {
     CategoryController.getCategories(req, res);
 });
 
-router.get('/:id', (req: Request, res: Response) => {
+const idParamValidation = [param('id').isUUID().withMessage('Invalid category id')];
+
+router.get('/:id', idParamValidation, validate, (req: Request, res: Response) => {
     CategoryController.getCategoryById(req, res);
 });
 
@@ -56,11 +58,11 @@ router.post('/', categoryBodyValidation, validate, (req: Request, res: Response)
     CategoryController.createCategory(req, res);
 });
 
-router.put('/:id', categoryUpdateValidation, validate, (req: Request, res: Response) => {
+router.put('/:id', idParamValidation, categoryUpdateValidation, validate, (req: Request, res: Response) => {
     CategoryController.updateCategory(req, res);
 });
 
-router.delete('/:id', (req: Request, res: Response) => {
+router.delete('/:id', idParamValidation, validate, (req: Request, res: Response) => {
     CategoryController.deleteCategory(req, res);
 });
 

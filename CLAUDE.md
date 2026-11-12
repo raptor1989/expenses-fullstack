@@ -239,10 +239,15 @@ Routers are mounted **without an `/api` prefix**: `/users`, `/expenses`,
   `details: { field: message }`. A few controllers keep an older manual
   `if (!field)` guard (`missing_required_field`). Limits: expense
   `amount > 0`, `description ≤ 500`, `date` ISO 8601, `categoryId`
-  required; category `name ≤ 50` (matches the `VARCHAR(50)` column),
+  required and a UUID; category `name ≤ 50` (matches the `VARCHAR(50)` column),
   `color` `#RRGGBB`, `icon ≤ 50`; password ≥ 8; settings `currency ∈
   PLN|USD|EUR|GBP`, `theme ∈ light|dark`. The web Yup schema uses the
-  same expense limits.
+  same expense limits. Every `:id` on the expense and category routes
+  and the `categoryId` list filter go through `param()`/`query()`
+  `isUUID()` chains, so a malformed id is a 400, never a Postgres cast
+  error. The expense controller also checks that `categoryId` belongs
+  to the caller (`CategoryModel.findById`) and answers 400
+  `validation_error` with `details.categoryId` otherwise.
 - **Rate limits**: `apiLimiter` 300 req / 15 min on every resource
   router; `authLimiter` 20 / 15 min on register, login, forgot/reset
   password (skipped when `NODE_ENV=test`). Both answer 429

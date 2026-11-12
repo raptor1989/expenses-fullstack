@@ -251,3 +251,71 @@ describe('DELETE /expenses/:id', () => {
         expect(res.status).toBe(404);
     });
 });
+
+describe('identifier and category ownership validation', () => {
+    it('returns 400 and creates nothing when the category belongs to another user', async () => {
+        const { auth: authA } = await setupUserWithCategory();
+        const { categoryId: catB } = await setupUserWithCategory();
+
+        const res = await request(app).post('/expenses').set('Cookie', authA.cookie).send(expenseFixture(catB));
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+        expect(res.body.details.categoryId).toBeDefined();
+
+        const list = await request(app).get('/expenses').set('Cookie', authA.cookie);
+        expect(list.body.pagination.total).toBe(0);
+    });
+
+    it("returns 400 and keeps the category when updating to another user's category", async () => {
+        const { auth: authA, categoryId: catA } = await setupUserWithCategory();
+        const { categoryId: catB } = await setupUserWithCategory();
+        const created = await request(app).post('/expenses').set('Cookie', authA.cookie).send(expenseFixture(catA));
+
+        const res = await request(app)
+            .put(`/expenses/${created.body.expense.id}`)
+            .set('Cookie', authA.cookie)
+            .send({ categoryId: catB });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+        expect(res.body.details.categoryId).toBeDefined();
+
+        const fetched = await request(app).get(`/expenses/${created.body.expense.id}`).set('Cookie', authA.cookie);
+        expect(fetched.body.expense.categoryId).toBe(catA);
+    });
+
+    it('returns 400 when categoryId in the body is not a UUID', async () => {
+        const { auth } = await setupUserWithCategory();
+
+        const res = await request(app).post('/expenses').set('Cookie', auth.cookie).send(expenseFixture('abc'));
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+        expect(res.body.details.categoryId).toBeDefined();
+    });
+
+    it('returns 400 when the categoryId filter is not a UUID', async () => {
+        const { auth } = await setupUserWithCategory();
+
+        const res = await request(app).get('/expenses?categoryId=not-a-uuid').set('Cookie', auth.cookie);
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+        expect(res.body.details.categoryId).toBeDefined();
+    });
+
+    it.each([
+        ['GET', 'get'],
+        ['PUT', 'put'],
+        ['DELETE', 'delete']
+    ] as const)('returns 400 for a malformed id on %s /expenses/:id', async (_, method) => {
+        const { auth } = await setupUserWithCategory();
+
+        const res = await request(app)[method]('/expenses/123').set('Cookie', auth.cookie).send({ amount: 1 });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+        expect(res.body.details.id).toBeDefined();
+    });
+});

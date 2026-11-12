@@ -1,5 +1,14 @@
 import { Request, Response } from 'express';
 import { ExpenseModel } from '../models/expense.model';
+import { CategoryModel } from '../models/category.model';
+
+function categoryNotFound(res: Response) {
+    return res.status(400).json({
+        message: 'Validation failed',
+        code: 'validation_error',
+        details: { categoryId: 'Category not found' }
+    });
+}
 
 export class ExpenseController {
     static async createExpense(req: Request, res: Response) {
@@ -12,6 +21,10 @@ export class ExpenseController {
             }
 
             const { amount, description, date, categoryId } = req.body;
+
+            if (!(await CategoryModel.findById(categoryId, req.user.id))) {
+                return categoryNotFound(res);
+            }
 
             const expense = await ExpenseModel.create(req.user.id, {
                 amount,
@@ -127,6 +140,10 @@ export class ExpenseController {
 
             const { id } = req.params as { id: string };
             const { amount, description, date, categoryId } = req.body;
+
+            if (categoryId !== undefined && !(await CategoryModel.findById(categoryId, req.user.id))) {
+                return categoryNotFound(res);
+            }
 
             const updatedExpense = await ExpenseModel.update(id, req.user.id, {
                 amount,

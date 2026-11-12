@@ -193,3 +193,19 @@ describe('DELETE /categories/:id', () => {
         expect(res.status).toBe(404);
     });
 });
+
+describe('category identifier validation', () => {
+    it.each([
+        ['GET', 'get'],
+        ['PUT', 'put'],
+        ['DELETE', 'delete']
+    ] as const)('returns 400 for a malformed id on %s /categories/:id', async (_, method) => {
+        const { cookie } = await registerAndLogin(userFixture());
+
+        const res = await request(app)[method]('/categories/xyz').set('Cookie', cookie).send({ name: 'X' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+        expect(res.body.details.id).toBeDefined();
+    });
+});
