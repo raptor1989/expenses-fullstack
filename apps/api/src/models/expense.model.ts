@@ -1,4 +1,12 @@
-import { Expense, ExpenseByMonth, ExpenseCreateInput, ExpenseSummary, ExpenseUpdateInput } from '@expenses/shared';
+import {
+    Expense,
+    ExpenseByMonth,
+    ExpenseCreateInput,
+    ExpenseSortField,
+    ExpenseSummary,
+    ExpenseUpdateInput,
+    SortOrder
+} from '@expenses/shared';
 import pool from '../db/index';
 
 export interface ExpenseListOptions {
@@ -8,7 +16,20 @@ export interface ExpenseListOptions {
     endDate?: Date;
     categoryId?: string;
     search?: string;
+    sort?: ExpenseSortField;
+    order?: SortOrder;
 }
+
+// Whitelists: only these values are ever interpolated into ORDER BY.
+const SORT_COLUMNS = new Map<string, string>([
+    ['date', 'date'],
+    ['amount', 'amount'],
+    ['createdAt', 'created_at']
+]);
+const SORT_DIRECTIONS = new Map<string, string>([
+    ['asc', 'ASC'],
+    ['desc', 'DESC']
+]);
 
 // The search term is matched literally: LIKE wildcards and the escape character are escaped.
 function toLikePattern(term: string): string {
@@ -41,7 +62,9 @@ export class ExpenseModel {
         userId: string,
         options: ExpenseListOptions = {}
     ): Promise<{ expenses: Expense[]; total: number }> {
-        const { limit = 50, offset = 0, startDate, endDate, categoryId, search } = options;
+        const { limit = 50, offset = 0, startDate, endDate, categoryId, search, sort, order } = options;
+        const sortColumn = SORT_COLUMNS.get(sort ?? 'date') ?? 'date';
+        const sortDirection = SORT_DIRECTIONS.get(order ?? 'desc') ?? 'DESC';
         const client = await pool.connect();
 
         try {
@@ -83,7 +106,7 @@ export class ExpenseModel {
                created_at as "createdAt", updated_at as "updatedAt"
         FROM expenses
         ${whereClause}
-        ORDER BY created_at DESC
+        ORDER BY ${sortColumn} ${sortDirection}, created_at DESC, id DESC
         LIMIT $${paramCounter++} OFFSET $${paramCounter++}
       `;
 

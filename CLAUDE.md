@@ -256,8 +256,13 @@ Routers are mounted **without an `/api` prefix**: `/users`, `/expenses`,
   (API default 50, the web service sends 10), optional `startDate`,
   `endDate`, `categoryId`, `search` (trimmed, blank ignored;
   `description ILIKE` with `%`/`_`/`\` escaped, so the term matches
-  literally); ordered by `created_at DESC`; count query first, then
-  `LIMIT/OFFSET` (both share one `WHERE`). The model takes an options
+  literally); `sort` (`date` | `amount` | `createdAt`, default `date`)
+  and `order` (`asc` | `desc`, default `desc`), anything else is 400;
+  `ORDER BY` comes from a whitelist map, never from the request, with
+  `created_at DESC, id DESC` as tie-breakers; count query first, then
+  `LIMIT/OFFSET` (both share one `WHERE`). The Expenses table shows
+  `expense.date` and sorts by the Date and Amount headers; the
+  Dashboard "Last 10" asks for `sort=createdAt`. The model takes an options
   object (`findByUserId(userId, { limit, offset, ... })`), the web
   service `getExpenses({ page, limit, ... })`. The Expenses page keeps
   the typed search text apart from the applied term; Enter, the search
@@ -434,7 +439,7 @@ Success shapes (JSON, cookie auth unless noted):
 
 | Endpoint | Body |
 |---|---|
-| `GET /expenses?page&limit&startDate&endDate&categoryId&search` | `{ expenses: Expense[], pagination: { total, page, limit, totalPages } }` |
+| `GET /expenses?page&limit&startDate&endDate&categoryId&search&sort&order` | `{ expenses: Expense[], pagination: { total, page, limit, totalPages } }` |
 | `GET /expenses/:id` · `POST /expenses` (201) · `PUT /expenses/:id` | `{ expense }` · `{ message, expense }` |
 | `GET /expenses/summary?startDate&endDate` | `{ summary: ExpenseSummary }` |
 | `GET /expenses/by-month?year` | `{ monthlyData: ExpenseByMonth[] }` |

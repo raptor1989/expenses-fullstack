@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { ExpenseSortField, SortOrder } from '@expenses/shared';
 import { ExpenseModel } from '../models/expense.model';
 import { CategoryModel } from '../models/category.model';
 
@@ -72,6 +73,8 @@ export class ExpenseController {
 
             const categoryId = req.query.categoryId as string | undefined;
             const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+            const sort = req.query.sort as ExpenseSortField | undefined;
+            const order = req.query.order as SortOrder | undefined;
 
             const { expenses, total } = await ExpenseModel.findByUserId(req.user.id, {
                 limit,
@@ -79,7 +82,9 @@ export class ExpenseController {
                 startDate,
                 endDate,
                 categoryId,
-                search: search || undefined
+                search: search || undefined,
+                sort,
+                order
             });
 
             res.status(200).json({

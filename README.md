@@ -239,7 +239,7 @@ non-browser clients.
 | PUT | `/users/password` | cookie | change password; signs out the other sessions and re-issues the caller's cookie |
 | POST | `/users/forgot-password` | – | e-mail a reset link, or log it without SMTP (always 200) |
 | POST | `/users/reset-password` | – | set a new password with the token; revokes every existing session |
-| GET | `/expenses` | cookie | paginated list: `page`, `limit` (≤ 100), `startDate`, `endDate`, `categoryId`, `search` (case-insensitive description fragment) |
+| GET | `/expenses` | cookie | paginated list: `page`, `limit` (≤ 100), `startDate`, `endDate`, `categoryId`, `search` (case-insensitive description fragment), `sort` (`date` \| `amount` \| `createdAt`, default `date`), `order` (`asc` \| `desc`, default `desc`) |
 | GET | `/expenses/summary` | cookie | totals per category for `startDate`–`endDate` |
 | GET | `/expenses/by-month` | cookie | monthly breakdown for `year` |
 | GET / PUT / DELETE | `/expenses/:id` | cookie | single expense |

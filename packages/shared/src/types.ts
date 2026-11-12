@@ -59,6 +59,10 @@ export interface ExpenseUpdateInput {
     categoryId?: string;
 }
 
+export type ExpenseSortField = 'date' | 'amount' | 'createdAt';
+
+export type SortOrder = 'asc' | 'desc';
+
 export interface ExpenseSummary {
     totalAmount: number;
     categoryBreakdown: Array<{

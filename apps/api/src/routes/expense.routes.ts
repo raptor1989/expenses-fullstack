@@ -58,7 +58,13 @@ const listQueryValidation = [
     query('search')
         .optional()
         .custom((value) => typeof value === 'string')
-        .withMessage('Search must be a single text value')
+        .withMessage('Search must be a single text value'),
+    // Kept in sync by hand with ExpenseSortField / SortOrder in @expenses/shared (types only reach the API).
+    query('sort')
+        .optional()
+        .isIn(['date', 'amount', 'createdAt'])
+        .withMessage('Sort must be one of: date, amount, createdAt'),
+    query('order').optional().isIn(['asc', 'desc']).withMessage('Order must be asc or desc')
 ];
 
 router.get('/', listQueryValidation, validate, (req: Request, res: Response) => {

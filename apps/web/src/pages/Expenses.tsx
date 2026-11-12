@@ -30,7 +30,7 @@ import ExpenseTable from '../components/expenses/ExpenseTable';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import { getExpenses, deleteExpense, createExpense, updateExpense } from '../services/expenseService';
 import { useCategoryStore } from '@/store/categoryStore';
-import { Expense, ExpenseCreateInput } from '@expenses/shared';
+import { Expense, ExpenseCreateInput, ExpenseSortField, SortOrder } from '@expenses/shared';
 
 export default function Expenses() {
     const [loading, setLoading] = useState(true);
@@ -46,6 +46,10 @@ export default function Expenses() {
         endDate: dayjs()
     });
     const [refreshKey, setRefreshKey] = useState(0);
+    const [sorting, setSorting] = useState<{ sort: ExpenseSortField; order: SortOrder }>({
+        sort: 'date',
+        order: 'desc'
+    });
     const [showFilters, setShowFilters] = useState(false);
     const [formOpen, setFormOpen] = useState(false);
     const [editExpense, setEditExpense] = useState<Expense | null>(null);
@@ -62,7 +66,9 @@ export default function Expenses() {
                 startDate: filters.startDate.format('YYYY-MM-DD'),
                 endDate: filters.endDate.format('YYYY-MM-DD'),
                 categoryId: filters.categoryId || undefined,
-                search: filters.search || undefined
+                search: filters.search || undefined,
+                sort: sorting.sort,
+                order: sorting.order
             });
             setExpenses(response.expenses);
             setPagination((prev) => ({ ...prev, total: response.pagination.total, totalPages: response.pagination.totalPages }));
@@ -71,7 +77,15 @@ export default function Expenses() {
         } finally {
             setLoading(false);
         }
-    }, [pagination.page, pagination.limit, filters.startDate, filters.endDate, filters.categoryId, filters.search]);
+    }, [
+        pagination.page,
+        pagination.limit,
+        filters.startDate,
+        filters.endDate,
+        filters.categoryId,
+        filters.search,
+        sorting
+    ]);
 
     useEffect(() => { fetchCategories(); }, [fetchCategories]);
     // `refreshKey` forces a refetch even when no filter value changed (e.g. Apply with the same term).
@@ -85,6 +99,12 @@ export default function Expenses() {
 
     const handleFilterChange = (field: 'categoryId' | 'startDate' | 'endDate', value: unknown) => {
         setFilters((prev) => ({ ...prev, [field]: value }));
+        setPagination((prev) => ({ ...prev, page: 1 }));
+    };
+
+    // Clicking the active column flips the direction; a new column starts newest/largest first.
+    const handleSortChange = (field: ExpenseSortField) => {
+        setSorting((prev) => ({ sort: field, order: prev.sort === field && prev.order === 'desc' ? 'asc' : 'desc' }));
         setPagination((prev) => ({ ...prev, page: 1 }));
     };
 
@@ -233,6 +253,9 @@ export default function Expenses() {
                     <ExpenseTable
                         expenses={expenses}
                         categories={categoriesMap}
+                        sort={sorting.sort}
+                        order={sorting.order}
+                        onSortChange={handleSortChange}
                         onEdit={(exp) => { setEditExpense(exp); setFormOpen(true); }}
                         onDelete={(exp) => { setExpenseToDelete(exp); setDeleteDialogOpen(true); }}
                     />

@@ -386,3 +386,82 @@ describe('GET /expenses?search', () => {
         expect(res.body.details.search).toBeDefined();
     });
 });
+
+describe('GET /expenses sorting', () => {
+    async function create(
+        cookie: string,
+        categoryId: string,
+        overrides: { amount?: number; date?: string; description: string }
+    ) {
+        await request(app).post('/expenses').set('Cookie', cookie).send(expenseFixture(categoryId, overrides));
+    }
+
+    function descriptions(res: request.Response) {
+        return res.body.expenses.map((e: { description: string }) => e.description);
+    }
+
+    it('orders by expense date, newest first, by default', async () => {
+        const { auth, categoryId } = await setupUserWithCategory();
+        await create(auth.cookie, categoryId, { date: '2025-01-16', description: 'yesterday' });
+        // Created last but dated earlier: must not jump to the top.
+        await create(auth.cookie, categoryId, { date: '2025-01-10', description: 'week ago' });
+
+        const res = await request(app).get('/expenses').set('Cookie', auth.cookie);
+
+        expect(res.status).toBe(200);
+        expect(descriptions(res)).toEqual(['yesterday', 'week ago']);
+    });
+
+    it('orders by date ascending', async () => {
+        const { auth, categoryId } = await setupUserWithCategory();
+        await create(auth.cookie, categoryId, { date: '2025-01-16', description: 'later' });
+        await create(auth.cookie, categoryId, { date: '2025-01-10', description: 'earlier' });
+
+        const res = await request(app).get('/expenses?sort=date&order=asc').set('Cookie', auth.cookie);
+
+        expect(descriptions(res)).toEqual(['earlier', 'later']);
+    });
+
+    it('orders by amount in both directions', async () => {
+        const { auth, categoryId } = await setupUserWithCategory();
+        await create(auth.cookie, categoryId, { amount: 30, description: 'thirty' });
+        await create(auth.cookie, categoryId, { amount: 10, description: 'ten' });
+        await create(auth.cookie, categoryId, { amount: 20, description: 'twenty' });
+
+        const asc = await request(app).get('/expenses?sort=amount&order=asc').set('Cookie', auth.cookie);
+        const desc = await request(app).get('/expenses?sort=amount&order=desc').set('Cookie', auth.cookie);
+
+        expect(descriptions(asc)).toEqual(['ten', 'twenty', 'thirty']);
+        expect(descriptions(desc)).toEqual(['thirty', 'twenty', 'ten']);
+    });
+
+    it('orders by creation time with sort=createdAt', async () => {
+        const { auth, categoryId } = await setupUserWithCategory();
+        await create(auth.cookie, categoryId, { date: '2025-01-16', description: 'created first' });
+        await create(auth.cookie, categoryId, { date: '2025-01-10', description: 'created second' });
+
+        const res = await request(app).get('/expenses?sort=createdAt').set('Cookie', auth.cookie);
+
+        expect(descriptions(res)).toEqual(['created second', 'created first']);
+    });
+
+    it('returns 400 for an unknown sort column', async () => {
+        const { auth } = await setupUserWithCategory();
+
+        const res = await request(app).get('/expenses?sort=description').set('Cookie', auth.cookie);
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+        expect(res.body.details.sort).toBeDefined();
+    });
+
+    it('returns 400 for an unknown order', async () => {
+        const { auth } = await setupUserWithCategory();
+
+        const res = await request(app).get('/expenses?order=up').set('Cookie', auth.cookie);
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+        expect(res.body.details.order).toBeDefined();
+    });
+});

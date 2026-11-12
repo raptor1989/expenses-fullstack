@@ -7,24 +7,36 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    TableSortLabel,
     Chip,
     IconButton,
     Box,
     Tooltip
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { Expense } from '@expenses/shared';
-import { formatCurrency, formatDateTime } from '@/helpers/formatHelpers';
+import { Expense, ExpenseSortField, SortOrder } from '@expenses/shared';
+import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
 import { useSettings } from '@/hooks/useSettings';
 
 interface ExpenseTableProps {
     expenses: Expense[];
     categories: { [id: string]: { name: string; color: string } };
+    sort: ExpenseSortField;
+    order: SortOrder;
+    onSortChange: (field: ExpenseSortField) => void;
     onEdit?: (expense: Expense) => void;
     onDelete?: (expense: Expense) => void;
 }
 
-export default function ExpenseTable({ expenses, categories, onEdit, onDelete }: ExpenseTableProps) {
+export default function ExpenseTable({
+    expenses,
+    categories,
+    sort,
+    order,
+    onSortChange,
+    onEdit,
+    onDelete
+}: ExpenseTableProps) {
     const { settings } = useSettings();
 
     if (!expenses || expenses.length === 0) {
@@ -40,10 +52,26 @@ export default function ExpenseTable({ expenses, categories, onEdit, onDelete }:
             <Table sx={{ minWidth: 650 }} aria-label="expenses table">
                 <TableHead>
                     <TableRow>
-                        <TableCell>Date</TableCell>
+                        <TableCell sortDirection={sort === 'date' ? order : false}>
+                            <TableSortLabel
+                                active={sort === 'date'}
+                                direction={sort === 'date' ? order : 'desc'}
+                                onClick={() => onSortChange('date')}
+                            >
+                                Date
+                            </TableSortLabel>
+                        </TableCell>
                         <TableCell>Description</TableCell>
                         <TableCell>Category</TableCell>
-                        <TableCell align="right">Amount</TableCell>
+                        <TableCell align="right" sortDirection={sort === 'amount' ? order : false}>
+                            <TableSortLabel
+                                active={sort === 'amount'}
+                                direction={sort === 'amount' ? order : 'desc'}
+                                onClick={() => onSortChange('amount')}
+                            >
+                                Amount
+                            </TableSortLabel>
+                        </TableCell>
                         <TableCell align="right">Actions</TableCell>
                     </TableRow>
                 </TableHead>
@@ -57,7 +85,7 @@ export default function ExpenseTable({ expenses, categories, onEdit, onDelete }:
                             }}
                         >
                             <TableCell sx={{ fontSize: 13, whiteSpace: 'nowrap', color: 'text.secondary' }}>
-                                {formatDateTime(expense.createdAt)}
+                                {formatDate(expense.date)}
                             </TableCell>
                             <TableCell sx={{ fontSize: 13 }}>{expense.description}</TableCell>
                             <TableCell>

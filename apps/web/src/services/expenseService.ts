@@ -1,4 +1,12 @@
-import { Expense, ExpenseCreateInput, ExpenseUpdateInput, ExpenseSummary, ExpenseByMonth } from '@expenses/shared';
+import {
+    Expense,
+    ExpenseCreateInput,
+    ExpenseUpdateInput,
+    ExpenseSummary,
+    ExpenseByMonth,
+    ExpenseSortField,
+    SortOrder
+} from '@expenses/shared';
 import api from './api';
 
 interface ExpensesResponse {
@@ -18,6 +26,8 @@ export interface ExpenseListQuery {
     endDate?: string;
     categoryId?: string;
     search?: string;
+    sort?: ExpenseSortField;
+    order?: SortOrder;
 }
 
 export const getExpenses = async ({
@@ -26,7 +36,9 @@ export const getExpenses = async ({
     startDate,
     endDate,
     categoryId,
-    search
+    search,
+    sort,
+    order
 }: ExpenseListQuery = {}): Promise<ExpensesResponse> => {
     const params = new URLSearchParams();
     params.append('page', page.toString());
@@ -36,6 +48,8 @@ export const getExpenses = async ({
     if (endDate) params.append('endDate', endDate);
     if (categoryId) params.append('categoryId', categoryId);
     if (search?.trim()) params.append('search', search.trim());
+    if (sort) params.append('sort', sort);
+    if (order) params.append('order', order);
 
     const response = await api.get<ExpensesResponse>(`/expenses?${params.toString()}`);
     return response.data;

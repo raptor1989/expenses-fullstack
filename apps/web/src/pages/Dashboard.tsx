@@ -24,7 +24,7 @@ import { ResponsivePie } from '@nivo/pie';
 import { getExpenses, getExpenseSummary } from '../services/expenseService';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { formatCurrency, formatDateTime } from '@/helpers/formatHelpers';
+import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
 import { CHART_COLORS } from '@/helpers/chartHelpers';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { useSettings } from '@/hooks/useSettings';
@@ -77,7 +77,8 @@ export default function Dashboard() {
             setExpensesByCategory(categoryData);
 
             try {
-                const recentData = await getExpenses();
+                // "Last 10" means most recently added, not most recent expense date.
+                const recentData = await getExpenses({ limit: 10, sort: 'createdAt' });
                 setRecentExpenses(recentData.expenses);
             } catch {
                 setRecentExpenses([]);
@@ -289,7 +290,7 @@ export default function Dashboard() {
                                         recentExpenses.map((expense) => (
                                             <TableRow key={expense.id}>
                                                 <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>
-                                                    {formatDateTime(expense.createdAt)}
+                                                    {formatDate(expense.date)}
                                                 </TableCell>
                                                 <TableCell sx={{ fontSize: 12 }}>{expense.description}</TableCell>
                                                 <TableCell>

@@ -52,6 +52,14 @@ describe('expenseService', () => {
         expect(apiMock.get).toHaveBeenCalledWith('/expenses?page=1&limit=10');
     });
 
+    it('getExpenses appends sort and order after the filters', async () => {
+        apiMock.get.mockResolvedValue({ data: { expenses: [], pagination: {} } });
+
+        await getExpenses({ limit: 10, sort: 'createdAt', order: 'asc' });
+
+        expect(apiMock.get).toHaveBeenCalledWith('/expenses?page=1&limit=10&sort=createdAt&order=asc');
+    });
+
     it('getExpenses omits a blank search term', async () => {
         apiMock.get.mockResolvedValue({ data: { expenses: [], pagination: {} } });
 
