@@ -53,7 +53,13 @@ const expenseUpdateValidation = [
 
 const idParamValidation = [param('id').isUUID().withMessage('Invalid expense id')];
 
-const listQueryValidation = [query('categoryId').optional().isUUID().withMessage('Category must be a valid id')];
+const listQueryValidation = [
+    query('categoryId').optional().isUUID().withMessage('Category must be a valid id'),
+    query('search')
+        .optional()
+        .custom((value) => typeof value === 'string')
+        .withMessage('Search must be a single text value')
+];
 
 router.get('/', listQueryValidation, validate, (req: Request, res: Response) => {
     ExpenseController.getExpenses(req, res);

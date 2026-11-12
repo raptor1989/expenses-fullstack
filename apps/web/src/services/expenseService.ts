@@ -11,13 +11,23 @@ interface ExpensesResponse {
     };
 }
 
-export const getExpenses = async (
+export interface ExpenseListQuery {
+    page?: number;
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+    categoryId?: string;
+    search?: string;
+}
+
+export const getExpenses = async ({
     page = 1,
     limit = 10,
-    startDate?: string,
-    endDate?: string,
-    categoryId?: string
-): Promise<ExpensesResponse> => {
+    startDate,
+    endDate,
+    categoryId,
+    search
+}: ExpenseListQuery = {}): Promise<ExpensesResponse> => {
     const params = new URLSearchParams();
     params.append('page', page.toString());
     params.append('limit', limit.toString());
@@ -25,6 +35,7 @@ export const getExpenses = async (
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
     if (categoryId) params.append('categoryId', categoryId);
+    if (search?.trim()) params.append('search', search.trim());
 
     const response = await api.get<ExpensesResponse>(`/expenses?${params.toString()}`);
     return response.data;

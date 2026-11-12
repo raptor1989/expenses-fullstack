@@ -37,12 +37,15 @@ export default function Expenses() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const { categories, fetchCategories } = useCategoryStore();
     const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, totalPages: 0 });
+    // `searchInput` is what the user types; `filters.search` is the applied term sent to the API.
+    const [searchInput, setSearchInput] = useState('');
     const [filters, setFilters] = useState({
         search: '',
         categoryId: '',
         startDate: dayjs().subtract(30, 'day'),
         endDate: dayjs()
     });
+    const [refreshKey, setRefreshKey] = useState(0);
     const [showFilters, setShowFilters] = useState(false);
     const [formOpen, setFormOpen] = useState(false);
     const [editExpense, setEditExpense] = useState<Expense | null>(null);
@@ -53,12 +56,14 @@ export default function Expenses() {
     const fetchExpenses = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await getExpenses(
-                pagination.page, pagination.limit,
-                filters.startDate.format('YYYY-MM-DD'),
-                filters.endDate.format('YYYY-MM-DD'),
-                filters.categoryId || undefined
-            );
+            const response = await getExpenses({
+                page: pagination.page,
+                limit: pagination.limit,
+                startDate: filters.startDate.format('YYYY-MM-DD'),
+                endDate: filters.endDate.format('YYYY-MM-DD'),
+                categoryId: filters.categoryId || undefined,
+                search: filters.search || undefined
+            });
             setExpenses(response.expenses);
             setPagination((prev) => ({ ...prev, total: response.pagination.total, totalPages: response.pagination.totalPages }));
         } catch {
@@ -66,10 +71,11 @@ export default function Expenses() {
         } finally {
             setLoading(false);
         }
-    }, [pagination.page, pagination.limit, filters.startDate, filters.endDate, filters.categoryId]);
+    }, [pagination.page, pagination.limit, filters.startDate, filters.endDate, filters.categoryId, filters.search]);
 
     useEffect(() => { fetchCategories(); }, [fetchCategories]);
-    useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
+    // `refreshKey` forces a refetch even when no filter value changed (e.g. Apply with the same term).
+    useEffect(() => { fetchExpenses(); }, [fetchExpenses, refreshKey]);
 
     const categoriesMap = useMemo(() => {
         const map: Record<string, { name: string; color: string }> = {};
@@ -77,12 +83,16 @@ export default function Expenses() {
         return map;
     }, [categories]);
 
-    const handleFilterChange = (field: keyof typeof filters, value: unknown) =>
+    const handleFilterChange = (field: 'categoryId' | 'startDate' | 'endDate', value: unknown) => {
         setFilters((prev) => ({ ...prev, [field]: value }));
-
-    const handleApplyFilters = () => {
         setPagination((prev) => ({ ...prev, page: 1 }));
-        fetchExpenses();
+    };
+
+    // All three updates are batched into one render, so the effect fetches exactly once.
+    const handleApplyFilters = () => {
+        setFilters((prev) => ({ ...prev, search: searchInput.trim() }));
+        setPagination((prev) => ({ ...prev, page: 1 }));
+        setRefreshKey((key) => key + 1);
     };
 
     const handleSubmitExpense = async (expenseData: ExpenseCreateInput) => {
@@ -138,8 +148,8 @@ export default function Expenses() {
                         placeholder="Search expenses…"
                         variant="outlined"
                         size="small"
-                        value={filters.search}
-                        onChange={(e) => handleFilterChange('search', e.target.value)}
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                         sx={{ flexGrow: 1 }}
                         slotProps={{

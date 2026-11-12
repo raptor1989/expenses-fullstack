@@ -71,15 +71,16 @@ export class ExpenseController {
             }
 
             const categoryId = req.query.categoryId as string | undefined;
+            const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
 
-            const { expenses, total } = await ExpenseModel.findByUserId(
-                req.user.id,
+            const { expenses, total } = await ExpenseModel.findByUserId(req.user.id, {
                 limit,
                 offset,
                 startDate,
                 endDate,
-                categoryId
-            );
+                categoryId,
+                search: search || undefined
+            });
 
             res.status(200).json({
                 expenses,

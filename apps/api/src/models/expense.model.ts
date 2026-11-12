@@ -1,6 +1,20 @@
 import { Expense, ExpenseByMonth, ExpenseCreateInput, ExpenseSummary, ExpenseUpdateInput } from '@expenses/shared';
 import pool from '../db/index';
 
+export interface ExpenseListOptions {
+    limit?: number;
+    offset?: number;
+    startDate?: Date;
+    endDate?: Date;
+    categoryId?: string;
+    search?: string;
+}
+
+// The search term is matched literally: LIKE wildcards and the escape character are escaped.
+function toLikePattern(term: string): string {
+    return `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+}
+
 export class ExpenseModel {
     static async create(userId: string, expense: ExpenseCreateInput): Promise<Expense> {
         const client = await pool.connect();
@@ -25,12 +39,9 @@ export class ExpenseModel {
 
     static async findByUserId(
         userId: string,
-        limit = 50,
-        offset = 0,
-        startDate?: Date,
-        endDate?: Date,
-        categoryId?: string
+        options: ExpenseListOptions = {}
     ): Promise<{ expenses: Expense[]; total: number }> {
+        const { limit = 50, offset = 0, startDate, endDate, categoryId, search } = options;
         const client = await pool.connect();
 
         try {
@@ -51,6 +62,11 @@ export class ExpenseModel {
             if (categoryId) {
                 whereClause += ` AND category_id = $${paramCounter++}`;
                 values.push(categoryId);
+            }
+
+            if (search) {
+                whereClause += ` AND description ILIKE $${paramCounter++} ESCAPE '\\'`;
+                values.push(toLikePattern(search));
             }
 
             const countQuery = `

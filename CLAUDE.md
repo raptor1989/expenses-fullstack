@@ -254,8 +254,14 @@ Routers are mounted **without an `/api` prefix**: `/users`, `/expenses`,
   `rate_limit_exceeded`. Limits are in memory (restart resets them).
 - **Pagination** (`GET /expenses`): `page ≥ 1`, `limit` clamped 1–100
   (API default 50, the web service sends 10), optional `startDate`,
-  `endDate`, `categoryId`; ordered by `created_at DESC`; count query
-  first, then `LIMIT/OFFSET`.
+  `endDate`, `categoryId`, `search` (trimmed, blank ignored;
+  `description ILIKE` with `%`/`_`/`\` escaped, so the term matches
+  literally); ordered by `created_at DESC`; count query first, then
+  `LIMIT/OFFSET` (both share one `WHERE`). The model takes an options
+  object (`findByUserId(userId, { limit, offset, ... })`), the web
+  service `getExpenses({ page, limit, ... })`. The Expenses page keeps
+  the typed search text apart from the applied term; Enter, the search
+  icon and Apply set it, go to page 1 and fetch once (`refreshKey`).
 - **Database** (`src/db/index.ts`): one `pg.Pool` with an `error`
   listener (a dropped idle connection is logged, not fatal), no SSL
   option. Schema = `src/db/migrate.ts`: idempotent DDL in one
@@ -428,7 +434,7 @@ Success shapes (JSON, cookie auth unless noted):
 
 | Endpoint | Body |
 |---|---|
-| `GET /expenses?page&limit&startDate&endDate&categoryId` | `{ expenses: Expense[], pagination: { total, page, limit, totalPages } }` |
+| `GET /expenses?page&limit&startDate&endDate&categoryId&search` | `{ expenses: Expense[], pagination: { total, page, limit, totalPages } }` |
 | `GET /expenses/:id` · `POST /expenses` (201) · `PUT /expenses/:id` | `{ expense }` · `{ message, expense }` |
 | `GET /expenses/summary?startDate&endDate` | `{ summary: ExpenseSummary }` |
 | `GET /expenses/by-month?year` | `{ monthlyData: ExpenseByMonth[] }` |

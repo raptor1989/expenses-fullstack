@@ -319,3 +319,70 @@ describe('identifier and category ownership validation', () => {
         expect(res.body.details.id).toBeDefined();
     });
 });
+
+describe('GET /expenses?search', () => {
+    async function createWithDescriptions(cookie: string, categoryId: string, descriptions: string[]) {
+        for (const description of descriptions) {
+            await request(app)
+                .post('/expenses')
+                .set('Cookie', cookie)
+                .send(expenseFixture(categoryId, { description }));
+        }
+    }
+
+    it('matches a description fragment case-insensitively and filters the total', async () => {
+        const { auth, categoryId } = await setupUserWithCategory();
+        await createWithDescriptions(auth.cookie, categoryId, ['Weekly GROCERIES', 'Fuel']);
+
+        const res = await request(app).get('/expenses?search=groceries').set('Cookie', auth.cookie);
+
+        expect(res.status).toBe(200);
+        expect(res.body.expenses.map((e: { description: string }) => e.description)).toEqual(['Weekly GROCERIES']);
+        expect(res.body.pagination.total).toBe(1);
+        expect(res.body.pagination.totalPages).toBe(1);
+    });
+
+    it("never matches another user's expenses", async () => {
+        const { auth: authA, categoryId: catA } = await setupUserWithCategory();
+        const { auth: authB, categoryId: catB } = await setupUserWithCategory();
+        await createWithDescriptions(authB.cookie, catB, ['groceries']);
+        await createWithDescriptions(authA.cookie, catA, ['Fuel']);
+
+        const res = await request(app).get('/expenses?search=groceries').set('Cookie', authA.cookie);
+
+        expect(res.status).toBe(200);
+        expect(res.body.expenses).toHaveLength(0);
+        expect(res.body.pagination.total).toBe(0);
+    });
+
+    it('treats % and _ as literal characters', async () => {
+        const { auth, categoryId } = await setupUserWithCategory();
+        await createWithDescriptions(auth.cookie, categoryId, ['50% off', '500 PLN', 'a_b', 'axb']);
+
+        const percent = await request(app).get('/expenses?search=50%25').set('Cookie', auth.cookie);
+        const underscore = await request(app).get('/expenses?search=a_b').set('Cookie', auth.cookie);
+
+        expect(percent.body.expenses.map((e: { description: string }) => e.description)).toEqual(['50% off']);
+        expect(underscore.body.expenses.map((e: { description: string }) => e.description)).toEqual(['a_b']);
+    });
+
+    it('ignores a blank search term', async () => {
+        const { auth, categoryId } = await setupUserWithCategory();
+        await createWithDescriptions(auth.cookie, categoryId, ['One', 'Two']);
+
+        const res = await request(app).get('/expenses?search=%20%20').set('Cookie', auth.cookie);
+
+        expect(res.status).toBe(200);
+        expect(res.body.pagination.total).toBe(2);
+    });
+
+    it('returns 400 when search is repeated', async () => {
+        const { auth } = await setupUserWithCategory();
+
+        const res = await request(app).get('/expenses?search=a&search=b').set('Cookie', auth.cookie);
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+        expect(res.body.details.search).toBeDefined();
+    });
+});

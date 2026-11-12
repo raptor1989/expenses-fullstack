@@ -101,6 +101,22 @@ test('lists the expense on the Expenses page', async ({ page }) => {
     await expect(table.getByRole('cell', { name: expenseDescription })).toBeVisible();
 });
 
+test('searches expenses by a description fragment', async ({ page }) => {
+    await login(page);
+    await page.goto('/expenses');
+
+    const search = page.getByPlaceholder('Search expenses…');
+    // Upper-cased run id: a fragment of the description, matched case-insensitively.
+    await search.fill(runId.toUpperCase());
+    await search.press('Enter');
+    const table = page.getByRole('table', { name: 'expenses table' });
+    await expect(table.getByRole('cell', { name: expenseDescription })).toBeVisible();
+
+    await search.fill(`no-such-expense-${runId}`);
+    await search.press('Enter');
+    await expect(page.getByText(/No expenses found/)).toBeVisible();
+});
+
 test('creates and deletes a category', async ({ page }) => {
     await login(page);
     await page.goto('/categories');
