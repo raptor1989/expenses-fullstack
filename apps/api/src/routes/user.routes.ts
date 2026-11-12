@@ -26,6 +26,10 @@ const loginValidation = [
     body('password').notEmpty().withMessage('Password is required')
 ];
 
+const updateProfileValidation = [
+    body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail()
+];
+
 const changePasswordValidation = [
     body('currentPassword').notEmpty().withMessage('Current password is required'),
     body('newPassword').isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
@@ -79,6 +83,8 @@ router.put(
     (req: Request, res: Response, next: NextFunction) => {
         auth(req, res, next);
     },
+    updateProfileValidation,
+    validate,
     (req: Request, res: Response) => {
         UserController.updateProfile(req, res);
     }

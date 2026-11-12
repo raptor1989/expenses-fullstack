@@ -235,7 +235,7 @@ non-browser clients.
 | POST | `/users/login` | – | sign in, sets cookie |
 | POST | `/users/logout` | cookie | clear cookie |
 | GET | `/users/session` | optional | `{ user }` or `{ user: null }`, always 200 |
-| GET / PUT | `/users/profile` | cookie | read / update e-mail |
+| GET / PUT | `/users/profile` | cookie | read / update e-mail (validated and normalized; 400 `email_in_use` when another account has it; re-issues the cookie) |
 | PUT | `/users/password` | cookie | change password; signs out the other sessions and re-issues the caller's cookie |
 | POST | `/users/forgot-password` | – | e-mail a reset link, or log it without SMTP (always 200) |
 | POST | `/users/reset-password` | – | set a new password with the token; revokes every existing session |

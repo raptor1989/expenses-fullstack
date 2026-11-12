@@ -248,6 +248,11 @@ Routers are mounted **without an `/api` prefix**: `/users`, `/expenses`,
   error. The expense controller also checks that `categoryId` belongs
   to the caller (`CategoryModel.findById`) and answers 400
   `validation_error` with `details.categoryId` otherwise.
+  `PUT /users/profile` runs the register e-mail chain (`trim`,
+  `isEmail`, `normalizeEmail`), answers 400 `email_in_use` when another
+  account has the address, and re-issues the cookie through
+  `issueAuthCookie` (shared with register/login) because the token
+  carries the e-mail.
 - **Rate limits**: `apiLimiter` 300 req / 15 min on every resource
   router; `authLimiter` 20 / 15 min on register, login, forgot/reset
   password (skipped when `NODE_ENV=test`). Both answer 429

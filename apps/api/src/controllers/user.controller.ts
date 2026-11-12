@@ -226,6 +226,15 @@ export class UserController {
 
             const { email } = req.body;
 
+            const existingUser = await UserModel.findByEmail(email);
+
+            if (existingUser && existingUser.id !== req.user.id) {
+                return res.status(400).json({
+                    message: 'User with this email already exists',
+                    code: 'email_in_use'
+                });
+            }
+
             const updatedUser = await UserModel.update(req.user.id, { email });
 
             if (!updatedUser) {
@@ -234,6 +243,11 @@ export class UserController {
                     code: 'user_not_found'
                 });
             }
+
+            // The token carries the e-mail, so a fresh cookie keeps the session consistent with the profile.
+            // It must keep the current token_version, or the new cookie would be revoked on arrival.
+            const tokenVersion = (await UserModel.findTokenVersion(req.user.id)) ?? 0;
+            issueAuthCookie(res, { id: updatedUser.id, email: updatedUser.email, tokenVersion });
 
             res.status(200).json({
                 message: 'Profile updated successfully',
