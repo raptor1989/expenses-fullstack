@@ -106,7 +106,7 @@ Express 5 API, PostgreSQL 17, JWT in an httpOnly cookie.
 | `npm run build` | Turbo: `shared` (`tsc`, emits `dist/*.d.ts`) → `api` (`tsc` → `dist/`) + `web` (`tsc && vite build` → `dist/`) |
 | `npm run lint` | ESLint 10 flat config per workspace; web runs with `--max-warnings 0`; `e2e` also runs `tsc --noEmit` |
 | `npm test` | Turbo `test` (depends on `build`): API Jest suites against PostgreSQL, web Vitest, shared `--passWithNoTests`. `e2e` is not part of it |
-| `npm run test:e2e` | Turbo `test:e2e` (never cached): Playwright smoke suite — see "Smoke tests". `dependsOn: ["build"]` only covers the `e2e` package, so the web/api builds run **in parallel** with Playwright; with a cold Turbo cache Vite empties `apps/web/dist` mid-run. Run `npm run build` first (or `npm run build` + `npx playwright test` in `e2e/`) |
+| `npm run test:e2e` | Turbo `test:e2e` (depends on the `api` and `web` builds, never cached): Playwright smoke suite — see "Smoke tests" |
 | `npm run dev` | `predev` kills whatever **listens** on 5173/4000 (`netstat`/`taskkill` on Windows, `lsof`/`kill` elsewhere), then Turbo starts `shared` (`tsc --watch`), `api` (`ts-node src/index.ts`), `web` (`vite`) |
 | `npm start` | `pm2 start pm2.config.js` — production process model, see `DEPLOYMENT.md` |
 | `npm run format` | Prettier over every `*.ts`/`*.tsx` in the repo — prefer `npx prettier --write <files>` on the files you touched |
@@ -118,15 +118,15 @@ Turbo runs in strict env mode: a task only sees the variables listed in
 its `passThroughEnv` (`test:e2e`: `CI`, `E2E_*`, `DB_*`). Anything else
 you export is invisible to the task.
 
-### Verification baseline (2026-11-12, Node 22, PostgreSQL 17 on 5432)
+### Verification baseline (2026-11-13, Node 22, PostgreSQL 17 on 5432)
 
 | Check | Result |
 |---|---|
 | `npm run build` | 3/3 tasks |
 | `npm run lint` | 4/4 tasks, 0 warnings |
-| `npm test` → `@expenses/api` | 6 suites, 115 tests (`app`, `auth`, `categories`, `expenses`, `analytics`, `settings`) |
+| `npm test` → `@expenses/api` | 6 suites, 124 tests (`app`, `auth`, `categories`, `expenses`, `analytics`, `settings`) |
 | `npm test` → `@expenses/web` | 8 files, 56 tests (4 service tests, `api.test.ts` error helpers, `chartHelpers.test.ts`, `periodHelpers.test.ts`, `ExpenseForm.test.ts` Yup schema) |
-| `npm run test:e2e` | 13 smoke tests, `e2e/tests/smoke.spec.ts` (run locally on system Edge, `E2E_BROWSER_CHANNEL=msedge`) |
+| `npm run test:e2e` | 15 smoke tests, `e2e/tests/smoke.spec.ts` (downloaded Playwright Chromium) |
 | `npm audit --omit=dev` | 0 vulnerabilities (remaining dev-only advisories: `glob`/`minimatch` pulled by jest and eslint, no upstream fix yet) |
 
 What a change needs before it is "done":
@@ -251,7 +251,7 @@ Routers are mounted **without an `/api` prefix**: `/users`, `/expenses`,
   `PUT /users/profile` runs the register e-mail chain (`trim`,
   `isEmail`, `normalizeEmail`), answers 400 `email_in_use` when another
   account has the address, and re-issues the cookie through
-  `issueAuthCookie` (shared with register/login) because the token
+  `issueAuthCookie` with the current `token_version` because the token
   carries the e-mail.
 - **Rate limits**: `apiLimiter` 300 req / 15 min on every resource
   router; `authLimiter` 20 / 15 min on register, login, forgot/reset
@@ -441,8 +441,10 @@ Procedure and conventions: skill `e2e-smoke`.
   `assets/index-*.js` and a blank page.
 - Flows covered: `/health` + anonymous session, redirect to login,
   register, wrong password → API message, inline expense add + dashboard
-  refresh, Expenses table, category create/delete, currency change
-  persisted, password reset (forgot form → planted token → reset → old
+  refresh, dashboard period toggle, Expenses table and description
+  search, category create/delete, category delete with its expense
+  moved to another category, API validation message for a too-long
+  category name, currency change persisted, password reset (forgot form → planted token → reset → old
   session revoked → token single-use → sign in), password change in
   Settings (this session survives a reload, another one is signed out),
   logout. The reset test
@@ -554,8 +556,6 @@ free.
   web app, express-validator in the API); the category dialog has no
   client-side length check, the API's `≤ 50` is the only guard.
 - `apps/api` still compiles with `strict: false`.
-- `npm run test:e2e` races the web/api builds (see Commands); CI is
-  unaffected only because it runs `npm run build` first.
 - Malformed `startDate`/`endDate` on `GET /expenses`, `/summary` and
   `/by-month` still end in a 500 (`new Date('x').toISOString()`).
 - The Dashboard pie still keys slices by category name, so two
