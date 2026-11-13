@@ -55,8 +55,12 @@ export default function MonthlyTotalWithAverageChart({ monthsData, currency }: M
                             fontFamily: '"Inter", sans-serif'
                         }}
                     >
-                        <Box component="span" sx={{ color: 'text.secondary', mr: 1 }}>{indexValue}</Box>
-                        <Box component="span" sx={{ fontWeight: 600 }}>{formatCurrency(value, currency)}</Box>
+                        <Box component="span" sx={{ color: 'text.secondary', mr: 1 }}>
+                            {indexValue}
+                        </Box>
+                        <Box component="span" sx={{ fontWeight: 600 }}>
+                            {formatCurrency(value, currency)}
+                        </Box>
                     </Box>
                 )}
             />

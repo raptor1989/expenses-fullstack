@@ -152,7 +152,10 @@ describe('PUT /users/profile', () => {
         const data = userFixture();
         const { cookie } = await registerAndLogin(data);
 
-        const res = await request(app).put('/users/profile').set('Cookie', cookie).send({ email: 'updated@example.com' });
+        const res = await request(app)
+            .put('/users/profile')
+            .set('Cookie', cookie)
+            .send({ email: 'updated@example.com' });
 
         expect(res.status).toBe(200);
         expect(res.body.user.email).toBe('updated@example.com');
@@ -427,9 +430,10 @@ describe('POST /users/reset-password', () => {
         const token = extractToken(logSpy);
         logSpy.mockRestore();
 
-        await getTestPool().query("UPDATE users SET reset_token_expires_at = NOW() - INTERVAL '1 hour' WHERE email = $1", [
-            data.email
-        ]);
+        await getTestPool().query(
+            "UPDATE users SET reset_token_expires_at = NOW() - INTERVAL '1 hour' WHERE email = $1",
+            [data.email]
+        );
 
         const res = await request(app).post('/users/reset-password').send({ token, newPassword: 'NewPassword123!' });
 
@@ -456,7 +460,9 @@ describe('POST /users/reset-password', () => {
         logSpy.mockRestore();
 
         await request(app).post('/users/reset-password').send({ token, newPassword: 'NewPassword123!' });
-        const res = await request(app).post('/users/reset-password').send({ token, newPassword: 'AnotherPassword456!' });
+        const res = await request(app)
+            .post('/users/reset-password')
+            .send({ token, newPassword: 'AnotherPassword456!' });
 
         expect(res.status).toBe(400);
         expect(res.body.code).toBe('reset_token_invalid');
@@ -518,5 +524,77 @@ describe('POST /users/logout', () => {
         expect(res.status).toBe(200);
         const setCookie = res.headers['set-cookie'] as unknown as string[] | undefined;
         expect(setCookie?.some((c) => c.startsWith('token=;') || c.includes('token=; '))).toBe(true);
+    });
+});
+
+describe('PUT /users/profile validation', () => {
+    it('returns 400 with details.email for an invalid address', async () => {
+        const data = userFixture();
+        const { cookie } = await registerAndLogin(data);
+
+        const res = await request(app).put('/users/profile').set('Cookie', cookie).send({ email: 'not-an-email' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_error');
+        expect(res.body.details.email).toBeDefined();
+
+        const profile = await request(app).get('/users/profile').set('Cookie', cookie);
+        expect(profile.body.user.email).toBe(data.email);
+    });
+
+    it("returns 400 email_in_use for another account's address and changes nothing", async () => {
+        const dataA = userFixture();
+        const dataB = userFixture();
+        const { cookie: cookieA } = await registerAndLogin(dataA);
+        const { cookie: cookieB } = await registerAndLogin(dataB);
+
+        const res = await request(app).put('/users/profile').set('Cookie', cookieA).send({ email: dataB.email });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('email_in_use');
+        expect(res.body.message).toBe('User with this email already exists');
+
+        const profileA = await request(app).get('/users/profile').set('Cookie', cookieA);
+        const profileB = await request(app).get('/users/profile').set('Cookie', cookieB);
+        expect(profileA.body.user.email).toBe(dataA.email);
+        expect(profileB.body.user.email).toBe(dataB.email);
+    });
+
+    it('accepts the current address of the same account', async () => {
+        const data = userFixture();
+        const { cookie } = await registerAndLogin(data);
+
+        const res = await request(app).put('/users/profile').set('Cookie', cookie).send({ email: data.email });
+
+        expect(res.status).toBe(200);
+        expect(res.body.user.email).toBe(data.email);
+    });
+
+    it('trims and normalizes the address like registration does', async () => {
+        const { cookie } = await registerAndLogin(userFixture());
+
+        const res = await request(app)
+            .put('/users/profile')
+            .set('Cookie', cookie)
+            .send({ email: '  New.Address@Example.COM ' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.user.email).toBe('new.address@example.com');
+    });
+
+    it('re-issues the auth cookie so the session carries the new address', async () => {
+        const { cookie } = await registerAndLogin(userFixture());
+
+        const res = await request(app)
+            .put('/users/profile')
+            .set('Cookie', cookie)
+            .send({ email: 'changed@example.com' });
+
+        expect(res.status).toBe(200);
+        const newCookie = (res.headers['set-cookie'] as unknown as string[] | undefined)?.[0] ?? '';
+        expect(newCookie).toMatch(/^token=/);
+
+        const session = await request(app).get('/users/session').set('Cookie', newCookie);
+        expect(session.body.user.email).toBe('changed@example.com');
     });
 });

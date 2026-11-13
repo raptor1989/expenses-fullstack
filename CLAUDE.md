@@ -106,7 +106,7 @@ Express 5 API, PostgreSQL 17, JWT in an httpOnly cookie.
 | `npm run build` | Turbo: `shared` (`tsc`, emits `dist/*.d.ts`) → `api` (`tsc` → `dist/`) + `web` (`tsc && vite build` → `dist/`) |
 | `npm run lint` | ESLint 10 flat config per workspace; web runs with `--max-warnings 0`; `e2e` also runs `tsc --noEmit` |
 | `npm test` | Turbo `test` (depends on `build`): API Jest suites against PostgreSQL, web Vitest, shared `--passWithNoTests`. `e2e` is not part of it |
-| `npm run test:e2e` | Turbo `test:e2e` (depends on `build`, never cached): Playwright smoke suite — see "Smoke tests" |
+| `npm run test:e2e` | Turbo `test:e2e` (depends on the `api` and `web` builds, never cached): Playwright smoke suite — see "Smoke tests" |
 | `npm run dev` | `predev` kills whatever **listens** on 5173/4000 (`netstat`/`taskkill` on Windows, `lsof`/`kill` elsewhere), then Turbo starts `shared` (`tsc --watch`), `api` (`ts-node src/index.ts`), `web` (`vite`) |
 | `npm start` | `pm2 start pm2.config.js` — production process model, see `DEPLOYMENT.md` |
 | `npm run format` | Prettier over every `*.ts`/`*.tsx` in the repo — prefer `npx prettier --write <files>` on the files you touched |
@@ -118,15 +118,15 @@ Turbo runs in strict env mode: a task only sees the variables listed in
 its `passThroughEnv` (`test:e2e`: `CI`, `E2E_*`, `DB_*`). Anything else
 you export is invisible to the task.
 
-### Verification baseline (2026-11-10, Node 22, PostgreSQL 17 on 5432)
+### Verification baseline (2026-11-13, Node 22, PostgreSQL 17 on 5432)
 
 | Check | Result |
 |---|---|
 | `npm run build` | 3/3 tasks |
 | `npm run lint` | 4/4 tasks, 0 warnings |
-| `npm test` → `@expenses/api` | 6 suites, 87 tests (`app`, `auth`, `categories`, `expenses`, `analytics`, `settings`) |
-| `npm test` → `@expenses/web` | 5 files, 29 tests (4 service tests + `ExpenseForm.test.ts` Yup schema) |
-| `npm run test:e2e` | 11 smoke tests, `e2e/tests/smoke.spec.ts` |
+| `npm test` → `@expenses/api` | 6 suites, 124 tests (`app`, `auth`, `categories`, `expenses`, `analytics`, `settings`) |
+| `npm test` → `@expenses/web` | 8 files, 56 tests (4 service tests, `api.test.ts` error helpers, `chartHelpers.test.ts`, `periodHelpers.test.ts`, `ExpenseForm.test.ts` Yup schema) |
+| `npm run test:e2e` | 15 smoke tests, `e2e/tests/smoke.spec.ts` (downloaded Playwright Chromium) |
 | `npm audit --omit=dev` | 0 vulnerabilities (remaining dev-only advisories: `glob`/`minimatch` pulled by jest and eslint, no upstream fix yet) |
 
 What a change needs before it is "done":
@@ -239,18 +239,39 @@ Routers are mounted **without an `/api` prefix**: `/users`, `/expenses`,
   `details: { field: message }`. A few controllers keep an older manual
   `if (!field)` guard (`missing_required_field`). Limits: expense
   `amount > 0`, `description ≤ 500`, `date` ISO 8601, `categoryId`
-  required; category `name ≤ 50` (matches the `VARCHAR(50)` column),
+  required and a UUID; category `name ≤ 50` (matches the `VARCHAR(50)` column),
   `color` `#RRGGBB`, `icon ≤ 50`; password ≥ 8; settings `currency ∈
   PLN|USD|EUR|GBP`, `theme ∈ light|dark`. The web Yup schema uses the
-  same expense limits.
+  same expense limits. Every `:id` on the expense and category routes
+  and the `categoryId` list filter go through `param()`/`query()`
+  `isUUID()` chains, so a malformed id is a 400, never a Postgres cast
+  error. The expense controller also checks that `categoryId` belongs
+  to the caller (`CategoryModel.findById`) and answers 400
+  `validation_error` with `details.categoryId` otherwise.
+  `PUT /users/profile` runs the register e-mail chain (`trim`,
+  `isEmail`, `normalizeEmail`), answers 400 `email_in_use` when another
+  account has the address, and re-issues the cookie through
+  `issueAuthCookie` with the current `token_version` because the token
+  carries the e-mail.
 - **Rate limits**: `apiLimiter` 300 req / 15 min on every resource
   router; `authLimiter` 20 / 15 min on register, login, forgot/reset
   password (skipped when `NODE_ENV=test`). Both answer 429
   `rate_limit_exceeded`. Limits are in memory (restart resets them).
 - **Pagination** (`GET /expenses`): `page ≥ 1`, `limit` clamped 1–100
   (API default 50, the web service sends 10), optional `startDate`,
-  `endDate`, `categoryId`; ordered by `created_at DESC`; count query
-  first, then `LIMIT/OFFSET`.
+  `endDate`, `categoryId`, `search` (trimmed, blank ignored;
+  `description ILIKE` with `%`/`_`/`\` escaped, so the term matches
+  literally); `sort` (`date` | `amount` | `createdAt`, default `date`)
+  and `order` (`asc` | `desc`, default `desc`), anything else is 400;
+  `ORDER BY` comes from a whitelist map, never from the request, with
+  `created_at DESC, id DESC` as tie-breakers; count query first, then
+  `LIMIT/OFFSET` (both share one `WHERE`). The Expenses table shows
+  `expense.date` and sorts by the Date and Amount headers; the
+  Dashboard "Last 10" asks for `sort=createdAt`. The model takes an options
+  object (`findByUserId(userId, { limit, offset, ... })`), the web
+  service `getExpenses({ page, limit, ... })`. The Expenses page keeps
+  the typed search text apart from the applied term; Enter, the search
+  icon and Apply set it, go to page 1 and fetch once (`refreshKey`).
 - **Database** (`src/db/index.ts`): one `pg.Pool` with an `error`
   listener (a dropped idle connection is logged, not fatal), no SSL
   option. Schema = `src/db/migrate.ts`: idempotent DDL in one
@@ -303,7 +324,7 @@ services/     api.ts (axios instance), authService, expenseService, categoryServ
 contexts/     AuthContext, SettingsContext        hooks/   useAuth, useSettings
 store/        categoryStore.ts (Zustand)           theme/   ThemeProvider.tsx (+ useThemeMode)
 helpers/      formatHelpers (Intl; VITE_LOCALE / VITE_CURRENCY), chartHelpers (CHART_COLORS,
-              resolveCategoryColor, …), sxHelpers (shared sx fragments)
+              buildCategoryLabels, …), sxHelpers (shared sx fragments)
 ```
 
 - **Routing** (React Router 7): the protected tree is `/` →
@@ -324,11 +345,22 @@ helpers/      formatHelpers (Intl; VITE_LOCALE / VITE_CURRENCY), chartHelpers (C
   and theme. `ThemeProvider` defaults to **dark**, persists `themeMode`
   in `localStorage`; the AppBar toggle updates both.
 - **State**: categories are global in `useCategoryStore`
-  (`fetchCategories` is idempotent via `loaded`/`loading`; `addCategory`,
-  `editCategory`, `removeCategory`, `reset`). Expenses, pagination,
-  filters and dialogs are local `useState` in each page. The Dashboard
-  loads through `fetchDashboardData({ silent })` and refetches silently
-  after the inline form saves. Notifications are a local MUI `Snackbar`
+  (`fetchCategories` is idempotent via `loaded`/`loading`;
+  `refreshCategories` always reloads (the Categories page uses it on
+  mount and after a delete, for current `expenseCount`s); `addCategory`,
+  `editCategory` (merges into the stored item), `removeCategory(id,
+  moveTo?)`, `reset`). Expenses, pagination,
+  filters and dialogs are local `useState` in each page; the Expenses
+  page refetches the current page after add/edit/delete (`refreshKey`)
+  instead of patching the list, and steps back when a page empties. The
+  Dashboard has a period toggle (this month / last 30 days / last 3
+  months, `helpers/periodHelpers.ts`); the daily average divides by the
+  period's inclusive day count. It loads through
+  `fetchDashboardData({ silent })`: the first load shows the spinner,
+  period changes and inline-form saves refetch silently. The Reports
+  year selector spans `GET /expenses/years` up to the current year.
+  `ProtectedRoute` shows a centered `CircularProgress` while the session
+  check is pending. Notifications are a local MUI `Snackbar`
   per page or component.
 - **MUI 9** (`@mui/material` 9.5, `@mui/x-date-pickers` 9.17): `Grid`
   from `@mui/material` with the `size={{ xs: 12, md: 6 }}` prop (there
@@ -362,7 +394,8 @@ helpers/      formatHelpers (Intl; VITE_LOCALE / VITE_CURRENCY), chartHelpers (C
 ## Shared (`packages/shared`)
 
 `src/types.ts` (barrel `src/index.ts`): `User`, `UserCredentials`,
-`ForgotPasswordInput`, `ResetPasswordInput`, `AuthResponse`, `Category`,
+`ForgotPasswordInput`, `ResetPasswordInput`, `AuthResponse`, `Category`
+(optional `expenseCount`, only from `GET /categories`),
 `Expense`, `ExpenseCreateInput`, `ExpenseUpdateInput`, `ExpenseSummary`,
 `ExpenseByMonth`, `ExpenseByCategory`, `ApiError`, `SUPPORTED_CURRENCIES`
 + `SupportedCurrency`, `ThemeMode`, `UserSettings`, `UserSettingsUpdateInput`.
@@ -408,8 +441,10 @@ Procedure and conventions: skill `e2e-smoke`.
   `assets/index-*.js` and a blank page.
 - Flows covered: `/health` + anonymous session, redirect to login,
   register, wrong password → API message, inline expense add + dashboard
-  refresh, Expenses table, category create/delete, currency change
-  persisted, password reset (forgot form → planted token → reset → old
+  refresh, dashboard period toggle, Expenses table and description
+  search, category create/delete, category delete with its expense
+  moved to another category, API validation message for a too-long
+  category name, currency change persisted, password reset (forgot form → planted token → reset → old
   session revoked → token single-use → sign in), password change in
   Settings (this session survives a reload, another one is signed out),
   logout. The reset test
@@ -423,12 +458,13 @@ Success shapes (JSON, cookie auth unless noted):
 
 | Endpoint | Body |
 |---|---|
-| `GET /expenses?page&limit&startDate&endDate&categoryId` | `{ expenses: Expense[], pagination: { total, page, limit, totalPages } }` |
+| `GET /expenses?page&limit&startDate&endDate&categoryId&search&sort&order` | `{ expenses: Expense[], pagination: { total, page, limit, totalPages } }` |
 | `GET /expenses/:id` · `POST /expenses` (201) · `PUT /expenses/:id` | `{ expense }` · `{ message, expense }` |
 | `GET /expenses/summary?startDate&endDate` | `{ summary: ExpenseSummary }` |
-| `GET /expenses/by-month?year` | `{ monthlyData: ExpenseByMonth[] }` |
-| `GET /categories` · `GET /categories/:id` · `POST` (201) · `PUT /:id` | `{ categories }` · `{ category }` · `{ message, category }` |
-| `DELETE /expenses/:id` · `DELETE /categories/:id` | `{ message }` |
+| `GET /expenses/years` | `{ years: number[] }` — distinct years of the caller's expense dates, newest first (`[]` without expenses) |
+| `GET /expenses/by-month?year` | `{ monthlyData: ExpenseByMonth[] }`; `totalByCategory` is keyed by **category id** (the web resolves names and colors through `buildCategoryLabels`, which suffixes repeated names " (2)") |
+| `GET /categories` (each with `expenseCount`) · `GET /categories/:id` · `POST` (201) · `PUT /:id` | `{ categories }` · `{ category }` · `{ message, category }` |
+| `DELETE /expenses/:id` · `DELETE /categories/:id[?moveTo=<id>]` (in one transaction: move the caller's expenses to `moveTo`, then delete; `moveTo` must be another own category, else 400 `validation_error`; without it a category in use is 400 `category_has_expenses`) | `{ message }` |
 | `GET /settings` · `PUT /settings` | `{ settings }` · `{ message, settings }` |
 | `POST /users/register` (201) · `POST /users/login` (no auth) | `{ message, user }` + `Set-Cookie: token=…` |
 | `GET /users/session` (optional auth) | `{ user }` or `{ user: null }`, always 200 |
@@ -448,7 +484,12 @@ Error codes in use: `auth_required`, `invalid_token`, `validation_error`,
 `settings_not_found`, `not_found`, `rate_limit_exceeded`, `server_error`,
 and `<feature>_<action>_failed` for 500s. The web layer handles 401
 globally (redirect, with the login/register exception above) and
-everything else per call (`Snackbar` or form error).
+everything else per call (`Snackbar` or form error) through
+`getApiErrorMessage(error, fallback)` and `getApiFieldErrors(error)` in
+`services/api.ts`: a 4xx shows the `details` messages (else `message`),
+a 400's `details` go to Formik `setErrors`, and a 5xx, a network error or
+a non-axios error shows the caller's generic fallback. The expense
+dialog stays open on a failed save (the page rethrows to the form).
 
 Contract changes are additive where possible. When you rename or remove
 a field: shared type → API model/controller → API tests → web service +
@@ -504,7 +545,7 @@ free.
   proxy that strips the `/api` prefix. Manual steps and pitfalls:
   `DEPLOYMENT.md`.
 
-## Known gaps / direction (true as of 2026-11-07)
+## Known gaps / direction (true as of 2026-11-12)
 
 - No request/response logging middleware; no repository layer (raw SQL
   per model method); the DB connection has no SSL option.
@@ -515,5 +556,9 @@ free.
   web app, express-validator in the API); the category dialog has no
   client-side length check, the API's `≤ 50` is the only guard.
 - `apps/api` still compiles with `strict: false`.
+- Malformed `startDate`/`endDate` on `GET /expenses`, `/summary` and
+  `/by-month` still end in a 500 (`new Date('x').toISOString()`).
+- The Dashboard pie still keys slices by category name, so two
+  categories with the same name merge there (Reports keys by id).
 - Dev-only `npm audit` advisories remain for `glob`/`minimatch` pulled in
   by jest 30 and eslint 10 (the suggested "fix" is a downgrade).

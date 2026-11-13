@@ -81,11 +81,9 @@ export default function MainLayout() {
     ];
     const accountItems = [{ text: 'Settings', icon: <SettingsIcon />, path: '/settings' }];
 
-    const isActive = (path: string) =>
-        path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+    const isActive = (path: string) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
 
-    const currentTitle =
-        [...navItems, ...accountItems].find((item) => isActive(item.path))?.text || 'Expense Manager';
+    const currentTitle = [...navItems, ...accountItems].find((item) => isActive(item.path))?.text || 'Expense Manager';
 
     const renderNavList = (items: typeof navItems) =>
         items.map((item) => (
@@ -182,10 +180,7 @@ export default function MainLayout() {
 
             {/* User footer */}
             <Box sx={{ p: 1, borderTop: '0.5px solid', borderColor: 'divider', flexShrink: 0 }}>
-                <ListItemButton
-                    onClick={handleMenuOpen}
-                    sx={{ borderRadius: 2, py: 1, px: 1.25 }}
-                >
+                <ListItemButton onClick={handleMenuOpen} sx={{ borderRadius: 2, py: 1, px: 1.25 }}>
                     <Avatar
                         sx={{
                             width: 28,

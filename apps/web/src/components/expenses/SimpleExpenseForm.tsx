@@ -14,10 +14,11 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
-import { Formik, Field, FieldProps, Form } from 'formik';
+import { Formik, Field, FieldProps, Form, FormikHelpers } from 'formik';
 import { ExpenseSchema } from './expenseSchema';
 import { useState } from 'react';
 import { createExpense } from '@/services/expenseService';
+import { getApiErrorMessage, getApiFieldErrors } from '@/services/api';
 
 interface SimpleExpenseFormProps {
     categories: Category[];
@@ -42,7 +43,7 @@ const SimpleExpenseForm = ({ categories, onCreated }: SimpleExpenseFormProps) =>
 
     const handleFormSubmit = async (
         values: ExpenseCreateInput,
-        { setSubmitting, resetForm }: { setSubmitting: (isSubmitting: boolean) => void; resetForm: () => void }
+        { setSubmitting, resetForm, setErrors }: FormikHelpers<ExpenseCreateInput>
     ) => {
         try {
             await createExpense(values);
@@ -53,12 +54,13 @@ const SimpleExpenseForm = ({ categories, onCreated }: SimpleExpenseFormProps) =>
             });
             resetForm();
             onCreated?.();
-        } catch {
+        } catch (err) {
             setNotification({
                 open: true,
-                message: 'Failed to create expense. Please try again.',
+                message: getApiErrorMessage(err, 'Failed to create expense. Please try again.'),
                 severity: 'error'
             });
+            setErrors(getApiFieldErrors(err));
         } finally {
             setSubmitting(false);
         }

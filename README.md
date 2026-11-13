@@ -235,17 +235,18 @@ non-browser clients.
 | POST | `/users/login` | – | sign in, sets cookie |
 | POST | `/users/logout` | cookie | clear cookie |
 | GET | `/users/session` | optional | `{ user }` or `{ user: null }`, always 200 |
-| GET / PUT | `/users/profile` | cookie | read / update e-mail |
+| GET / PUT | `/users/profile` | cookie | read / update e-mail (validated and normalized; 400 `email_in_use` when another account has it; re-issues the cookie) |
 | PUT | `/users/password` | cookie | change password; signs out the other sessions and re-issues the caller's cookie |
 | POST | `/users/forgot-password` | – | e-mail a reset link, or log it without SMTP (always 200) |
 | POST | `/users/reset-password` | – | set a new password with the token; revokes every existing session |
-| GET | `/expenses` | cookie | paginated list: `page`, `limit` (≤ 100), `startDate`, `endDate`, `categoryId` |
+| GET | `/expenses` | cookie | paginated list: `page`, `limit` (≤ 100), `startDate`, `endDate`, `categoryId`, `search` (case-insensitive description fragment), `sort` (`date` \| `amount` \| `createdAt`, default `date`), `order` (`asc` \| `desc`, default `desc`) |
 | GET | `/expenses/summary` | cookie | totals per category for `startDate`–`endDate` |
-| GET | `/expenses/by-month` | cookie | monthly breakdown for `year` |
+| GET | `/expenses/by-month` | cookie | monthly breakdown for `year` (`totalByCategory` keyed by category id) |
+| GET | `/expenses/years` | cookie | distinct years that have expenses, newest first |
 | GET / PUT / DELETE | `/expenses/:id` | cookie | single expense |
 | POST | `/expenses` | cookie | create expense (201) |
-| GET | `/categories` | cookie | list |
-| GET / PUT / DELETE | `/categories/:id` | cookie | single category |
+| GET | `/categories` | cookie | list, each with `expenseCount` |
+| GET / PUT / DELETE | `/categories/:id` | cookie | single category; `DELETE ?moveTo=<id>` first moves its expenses to another of your categories |
 | POST | `/categories` | cookie | create category (201) |
 | GET / PUT | `/settings` | cookie | currency and theme |
 

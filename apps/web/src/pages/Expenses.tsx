@@ -29,76 +29,136 @@ import dayjs from 'dayjs';
 import ExpenseTable from '../components/expenses/ExpenseTable';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import { getExpenses, deleteExpense, createExpense, updateExpense } from '../services/expenseService';
+import { getApiErrorMessage } from '../services/api';
 import { useCategoryStore } from '@/store/categoryStore';
-import { Expense, ExpenseCreateInput } from '@expenses/shared';
+import { Expense, ExpenseCreateInput, ExpenseSortField, SortOrder } from '@expenses/shared';
 
 export default function Expenses() {
     const [loading, setLoading] = useState(true);
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const { categories, fetchCategories } = useCategoryStore();
     const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, totalPages: 0 });
+    // `searchInput` is what the user types; `filters.search` is the applied term sent to the API.
+    const [searchInput, setSearchInput] = useState('');
     const [filters, setFilters] = useState({
         search: '',
         categoryId: '',
         startDate: dayjs().subtract(30, 'day'),
         endDate: dayjs()
     });
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [sorting, setSorting] = useState<{ sort: ExpenseSortField; order: SortOrder }>({
+        sort: 'date',
+        order: 'desc'
+    });
     const [showFilters, setShowFilters] = useState(false);
     const [formOpen, setFormOpen] = useState(false);
     const [editExpense, setEditExpense] = useState<Expense | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
-    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+    const [notification, setNotification] = useState({
+        open: false,
+        message: '',
+        severity: 'success' as 'success' | 'error'
+    });
 
     const fetchExpenses = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await getExpenses(
-                pagination.page, pagination.limit,
-                filters.startDate.format('YYYY-MM-DD'),
-                filters.endDate.format('YYYY-MM-DD'),
-                filters.categoryId || undefined
-            );
+            const response = await getExpenses({
+                page: pagination.page,
+                limit: pagination.limit,
+                startDate: filters.startDate.format('YYYY-MM-DD'),
+                endDate: filters.endDate.format('YYYY-MM-DD'),
+                categoryId: filters.categoryId || undefined,
+                search: filters.search || undefined,
+                sort: sorting.sort,
+                order: sorting.order
+            });
+            if (response.expenses.length === 0 && pagination.page > 1) {
+                // The page no longer exists (e.g. its last expense was deleted): show the new last page.
+                setPagination((prev) => ({ ...prev, page: Math.max(1, response.pagination.totalPages) }));
+                return;
+            }
             setExpenses(response.expenses);
-            setPagination((prev) => ({ ...prev, total: response.pagination.total, totalPages: response.pagination.totalPages }));
-        } catch {
-            setNotification({ open: true, message: 'Failed to load expenses. Please try again later.', severity: 'error' });
+            setPagination((prev) => ({
+                ...prev,
+                total: response.pagination.total,
+                totalPages: response.pagination.totalPages
+            }));
+        } catch (err) {
+            setNotification({
+                open: true,
+                message: getApiErrorMessage(err, 'Failed to load expenses. Please try again later.'),
+                severity: 'error'
+            });
         } finally {
             setLoading(false);
         }
-    }, [pagination.page, pagination.limit, filters.startDate, filters.endDate, filters.categoryId]);
+    }, [
+        pagination.page,
+        pagination.limit,
+        filters.startDate,
+        filters.endDate,
+        filters.categoryId,
+        filters.search,
+        sorting
+    ]);
 
-    useEffect(() => { fetchCategories(); }, [fetchCategories]);
-    useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+    // `refreshKey` forces a refetch even when no filter value changed (e.g. Apply with the same term).
+    useEffect(() => {
+        fetchExpenses();
+    }, [fetchExpenses, refreshKey]);
 
     const categoriesMap = useMemo(() => {
         const map: Record<string, { name: string; color: string }> = {};
-        categories.forEach((c) => { map[c.id] = { name: c.name, color: c.color || '#9e9e9e' }; });
+        categories.forEach((c) => {
+            map[c.id] = { name: c.name, color: c.color || '#9e9e9e' };
+        });
         return map;
     }, [categories]);
 
-    const handleFilterChange = (field: keyof typeof filters, value: unknown) =>
+    const handleFilterChange = (field: 'categoryId' | 'startDate' | 'endDate', value: unknown) => {
         setFilters((prev) => ({ ...prev, [field]: value }));
-
-    const handleApplyFilters = () => {
         setPagination((prev) => ({ ...prev, page: 1 }));
-        fetchExpenses();
+    };
+
+    // Clicking the active column flips the direction; a new column starts newest/largest first.
+    const handleSortChange = (field: ExpenseSortField) => {
+        setSorting((prev) => ({ sort: field, order: prev.sort === field && prev.order === 'desc' ? 'asc' : 'desc' }));
+        setPagination((prev) => ({ ...prev, page: 1 }));
+    };
+
+    // All three updates are batched into one render, so the effect fetches exactly once.
+    const handleApplyFilters = () => {
+        setFilters((prev) => ({ ...prev, search: searchInput.trim() }));
+        setPagination((prev) => ({ ...prev, page: 1 }));
+        setRefreshKey((key) => key + 1);
     };
 
     const handleSubmitExpense = async (expenseData: ExpenseCreateInput) => {
         try {
             if (editExpense) {
-                const updated = await updateExpense(editExpense.id, expenseData);
-                setExpenses(expenses.map((e) => (e.id === editExpense.id ? updated : e)));
+                await updateExpense(editExpense.id, expenseData);
                 setNotification({ open: true, message: 'Expense updated successfully!', severity: 'success' });
             } else {
-                const newExp = await createExpense(expenseData);
-                setExpenses([newExp, ...expenses]);
+                await createExpense(expenseData);
                 setNotification({ open: true, message: 'Expense added successfully!', severity: 'success' });
             }
             setFormOpen(false);
-        } catch {
-            setNotification({ open: true, message: `Failed to ${editExpense ? 'update' : 'create'} expense.`, severity: 'error' });
+            // Reload the page from the server: the saved expense may fall outside the filters or move the page count.
+            setRefreshKey((key) => key + 1);
+        } catch (err) {
+            setNotification({
+                open: true,
+                message: getApiErrorMessage(err, `Failed to ${editExpense ? 'update' : 'create'} expense.`),
+                severity: 'error'
+            });
+            // Rethrown so the dialog stays open and maps field errors.
+            throw err;
         }
     };
 
@@ -106,10 +166,14 @@ export default function Expenses() {
         if (!expenseToDelete) return;
         try {
             await deleteExpense(expenseToDelete.id);
-            setExpenses(expenses.filter((e) => e.id !== expenseToDelete.id));
             setNotification({ open: true, message: 'Expense deleted successfully!', severity: 'success' });
-        } catch {
-            setNotification({ open: true, message: 'Failed to delete expense.', severity: 'error' });
+            setRefreshKey((key) => key + 1);
+        } catch (err) {
+            setNotification({
+                open: true,
+                message: getApiErrorMessage(err, 'Failed to delete expense.'),
+                severity: 'error'
+            });
         } finally {
             setDeleteDialogOpen(false);
             setExpenseToDelete(null);
@@ -124,7 +188,10 @@ export default function Expenses() {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={() => { setEditExpense(null); setFormOpen(true); }}
+                    onClick={() => {
+                        setEditExpense(null);
+                        setFormOpen(true);
+                    }}
                     size="small"
                 >
                     Add Expense
@@ -138,8 +205,8 @@ export default function Expenses() {
                         placeholder="Search expenses…"
                         variant="outlined"
                         size="small"
-                        value={filters.search}
-                        onChange={(e) => handleFilterChange('search', e.target.value)}
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                         sx={{ flexGrow: 1 }}
                         slotProps={{
@@ -193,13 +260,21 @@ export default function Expenses() {
                                 >
                                     <MenuItem value="">All Categories</MenuItem>
                                     {categories.map((c) => (
-                                        <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                                        <MenuItem key={c.id} value={c.id}>
+                                            {c.name}
+                                        </MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                            <Button variant="contained" fullWidth onClick={handleApplyFilters} size="small" sx={{ height: 40 }}>
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                onClick={handleApplyFilters}
+                                size="small"
+                                sx={{ height: 40 }}
+                            >
                                 Apply
                             </Button>
                         </Grid>
@@ -223,8 +298,17 @@ export default function Expenses() {
                     <ExpenseTable
                         expenses={expenses}
                         categories={categoriesMap}
-                        onEdit={(exp) => { setEditExpense(exp); setFormOpen(true); }}
-                        onDelete={(exp) => { setExpenseToDelete(exp); setDeleteDialogOpen(true); }}
+                        sort={sorting.sort}
+                        order={sorting.order}
+                        onSortChange={handleSortChange}
+                        onEdit={(exp) => {
+                            setEditExpense(exp);
+                            setFormOpen(true);
+                        }}
+                        onDelete={(exp) => {
+                            setExpenseToDelete(exp);
+                            setDeleteDialogOpen(true);
+                        }}
                     />
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2.5 }}>
                         <Pagination
@@ -259,7 +343,9 @@ export default function Expenses() {
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={() => setDeleteDialogOpen(false)} size="small">Cancel</Button>
+                    <Button onClick={() => setDeleteDialogOpen(false)} size="small">
+                        Cancel
+                    </Button>
                     <Button onClick={handleConfirmDelete} color="error" variant="contained" size="small" autoFocus>
                         Delete
                     </Button>

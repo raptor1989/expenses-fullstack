@@ -29,6 +29,18 @@ describe('ExpenseSchema', () => {
         );
     });
 
+    it('rejects an empty description', async () => {
+        await expect(ExpenseSchema.validate({ ...validExpense, description: '' })).rejects.toThrow(
+            'Description is required'
+        );
+    });
+
+    it('rejects a whitespace-only description', async () => {
+        await expect(ExpenseSchema.validate({ ...validExpense, description: '   ' })).rejects.toThrow(
+            'Description is required'
+        );
+    });
+
     it('rejects a description longer than 500 characters', async () => {
         await expect(ExpenseSchema.validate({ ...validExpense, description: 'a'.repeat(501) })).rejects.toThrow(
             'Description is too long'

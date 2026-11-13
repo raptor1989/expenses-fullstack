@@ -1,6 +1,7 @@
 import { Box, Typography, Paper, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { getExpensesByMonth } from '../services/expenseService';
+import { getExpensesByMonth, getExpenseYears } from '../services/expenseService';
+import { getReportYears } from '@/helpers/periodHelpers';
 import { ExpenseByMonth } from '@expenses/shared';
 import { useSettings } from '@/hooks/useSettings';
 import { useCategoryStore } from '@/store/categoryStore';
@@ -16,11 +17,21 @@ export default function Reports() {
     const { settings } = useSettings();
     const { categories, fetchCategories } = useCategoryStore();
     const [year, setYear] = useState(currentYear);
+    const [yearOptions, setYearOptions] = useState<number[]>([currentYear]);
     const [data, setData] = useState<ExpenseByMonth[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => { fetchCategories(); }, [fetchCategories]);
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
+    useEffect(() => {
+        getExpenseYears()
+            .then((years) => setYearOptions(getReportYears(years, currentYear)))
+            // On failure the selector keeps the current-year-only fallback; the report itself still loads.
+            .catch(() => undefined);
+    }, []);
 
     useEffect(() => {
         setLoading(true);
@@ -38,10 +49,11 @@ export default function Reports() {
                 <FormControl size="small" sx={{ minWidth: 100 }}>
                     <InputLabel>Year</InputLabel>
                     <Select value={year} label="Year" onChange={(e) => setYear(Number(e.target.value))}>
-                        {[...Array(5)].map((_, i) => {
-                            const y = currentYear - i;
-                            return <MenuItem key={y} value={y}>{y}</MenuItem>;
-                        })}
+                        {yearOptions.map((y) => (
+                            <MenuItem key={y} value={y}>
+                                {y}
+                            </MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
             </Box>
@@ -52,38 +64,89 @@ export default function Reports() {
                         <CircularProgress />
                     </Box>
                 ) : error ? (
-                    <Typography color="error" sx={{ py: 4, textAlign: 'center' }}>{error}</Typography>
+                    <Typography color="error" sx={{ py: 4, textAlign: 'center' }}>
+                        {error}
+                    </Typography>
                 ) : (
                     <>
                         <Box sx={{ mb: 4 }}>
-                            <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2 }}>
+                            <Typography
+                                sx={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    color: 'text.secondary',
+                                    mb: 2
+                                }}
+                            >
                                 Monthly Totals
                             </Typography>
                             <MonthlyTotalWithAverageChart monthsData={data} currency={settings.currency} />
                         </Box>
                         <Box sx={{ mb: 4 }}>
-                            <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2 }}>
+                            <Typography
+                                sx={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    color: 'text.secondary',
+                                    mb: 2
+                                }}
+                            >
                                 Category Trends
                             </Typography>
                             <MonthlyCategoryLineChart monthsData={data} categories={categories} />
                         </Box>
                         <Box sx={{ mb: 4 }}>
-                            <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2 }}>
+                            <Typography
+                                sx={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    color: 'text.secondary',
+                                    mb: 2
+                                }}
+                            >
                                 Category Share
                             </Typography>
                             <CategoryShareDoughnutChart monthsData={data} categories={categories} />
                         </Box>
                         <Box sx={{ mb: 4 }}>
-                            <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2 }}>
+                            <Typography
+                                sx={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    color: 'text.secondary',
+                                    mb: 2
+                                }}
+                            >
                                 Category Ranking
                             </Typography>
-                            <CategoryRankingTable monthsData={data} categories={categories} currency={settings.currency} />
+                            <CategoryRankingTable
+                                monthsData={data}
+                                categories={categories}
+                                currency={settings.currency}
+                            />
                         </Box>
                         <Box>
-                            <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2 }}>
+                            <Typography
+                                sx={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    color: 'text.secondary',
+                                    mb: 2
+                                }}
+                            >
                                 Monthly Breakdown
                             </Typography>
-                            <ReportsTable monthsData={data} currency={settings.currency} />
+                            <ReportsTable monthsData={data} categories={categories} currency={settings.currency} />
                         </Box>
                     </>
                 )}

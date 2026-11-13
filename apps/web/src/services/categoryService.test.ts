@@ -77,4 +77,12 @@ describe('categoryService', () => {
 
         expect(apiMock.delete).toHaveBeenCalledWith('/categories/1');
     });
+
+    it('deleteCategory passes the move target as moveTo', async () => {
+        apiMock.delete.mockResolvedValue({});
+
+        await deleteCategory('1', 'target-2');
+
+        expect(apiMock.delete).toHaveBeenCalledWith('/categories/1?moveTo=target-2');
+    });
 });

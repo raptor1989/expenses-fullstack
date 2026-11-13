@@ -9,17 +9,21 @@ import {
     TableRow,
     Typography
 } from '@mui/material';
-import { ExpenseByMonth } from '@expenses/shared';
+import { Category, ExpenseByMonth } from '@expenses/shared';
 import { formatCurrency } from '@/helpers/formatHelpers';
+import { buildCategoryLabels, UNKNOWN_CATEGORY_LABEL } from '@/helpers/chartHelpers';
 
 export interface ReportsTableProps {
     monthsData: ExpenseByMonth[];
+    categories: Category[];
     currency: string;
 }
 
 const cellSx = { py: 0.5 };
 
-export default function ReportsTable({ monthsData, currency }: ReportsTableProps) {
+export default function ReportsTable({ monthsData, categories, currency }: ReportsTableProps) {
+    const labels = buildCategoryLabels(categories);
+
     return (
         <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
             <Table size="small" sx={{ minWidth: 900 }}>
@@ -48,18 +52,9 @@ export default function ReportsTable({ monthsData, currency }: ReportsTableProps
                             const topCat = Object.entries(m.totalByCategory).sort((a, b) => b[1] - a[1])[0];
                             return (
                                 <TableCell key={m.month} sx={cellSx}>
-                                    {topCat ? `${topCat[0]} (${formatCurrency(topCat[1], currency)})` : '-'}
-                                </TableCell>
-                            );
-                        })}
-                    </TableRow>
-                    <TableRow>
-                        <TableCell sx={cellSx}>Fuel Expenses</TableCell>
-                        {monthsData.map((m) => {
-                            const fuelTotal = m.totalByCategory['Fuel'];
-                            return (
-                                <TableCell key={m.month} sx={cellSx}>
-                                    {fuelTotal !== undefined ? formatCurrency(fuelTotal, currency) : '-'}
+                                    {topCat
+                                        ? `${labels[topCat[0]]?.label ?? UNKNOWN_CATEGORY_LABEL} (${formatCurrency(topCat[1], currency)})`
+                                        : '-'}
                                 </TableCell>
                             );
                         })}

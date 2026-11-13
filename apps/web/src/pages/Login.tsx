@@ -41,14 +41,21 @@ export default function Login() {
 
     return (
         <Box sx={{ width: '100%' }}>
-            <Typography component="h1" sx={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em', mb: 0.5, textAlign: 'center' }}>
+            <Typography
+                component="h1"
+                sx={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em', mb: 0.5, textAlign: 'center' }}
+            >
                 Sign in
             </Typography>
             <Typography sx={{ fontSize: 13, color: 'text.secondary', textAlign: 'center', mb: 2.5 }}>
                 Welcome back to Expense Manager
             </Typography>
 
-            {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
+            {error && (
+                <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+                    {error}
+                </Alert>
+            )}
             {passwordReset && !error && (
                 <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>
                     Your password has been reset and you have been signed out on all devices. Sign in with your new
@@ -87,7 +94,13 @@ export default function Login() {
                     error={formik.touched.password && Boolean(formik.errors.password)}
                     helperText={formik.touched.password && formik.errors.password}
                 />
-                <Button type="submit" fullWidth variant="contained" sx={{ mt: 2.5, mb: 2 }} disabled={formik.isSubmitting}>
+                <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{ mt: 2.5, mb: 2 }}
+                    disabled={formik.isSubmitting}
+                >
                     Sign In
                 </Button>
                 <Grid container sx={{ justifyContent: 'space-between' }}>

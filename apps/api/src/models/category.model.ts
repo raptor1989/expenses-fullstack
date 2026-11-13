@@ -10,6 +10,15 @@ export class CategoryHasExpensesError extends Error {
     }
 }
 
+export class InvalidMoveTargetError extends Error {
+    code = 'validation_error';
+
+    constructor() {
+        super('Target category not found');
+        this.name = 'InvalidMoveTargetError';
+    }
+}
+
 export class CategoryModel {
     static async create(userId: string, name: string, color?: string, icon?: string): Promise<Category> {
         const client = await pool.connect();
@@ -35,10 +44,13 @@ export class CategoryModel {
 
         try {
             const query = `
-        SELECT id, name, color, icon, user_id as "userId", created_at as "createdAt", updated_at as "updatedAt"
-        FROM categories
-        WHERE user_id = $1
-        ORDER BY name ASC
+        SELECT c.id, c.name, c.color, c.icon, c.user_id as "userId", c.created_at as "createdAt",
+               c.updated_at as "updatedAt", COUNT(e.id)::int as "expenseCount"
+        FROM categories c
+        LEFT JOIN expenses e ON e.category_id = c.id AND e.user_id = c.user_id
+        WHERE c.user_id = $1
+        GROUP BY c.id
+        ORDER BY c.name ASC, c.created_at ASC
       `;
 
             const result = await client.query(query, [userId]);
@@ -122,31 +134,57 @@ export class CategoryModel {
         }
     }
 
-    static async delete(id: string, userId: string): Promise<boolean> {
+    // Without `moveTo` a category that still has expenses is refused; with it, the user's expenses are
+    // reassigned first. Both paths run in one transaction, so a failure never leaves a partial move.
+    static async delete(id: string, userId: string, moveTo?: string): Promise<boolean> {
         const client = await pool.connect();
 
         try {
-            const checkQuery = `
-        SELECT COUNT(*) as count
-        FROM expenses
-        WHERE category_id = $1 AND user_id = $2
-      `;
+            await client.query('BEGIN');
 
-            const checkResult = await client.query(checkQuery, [id, userId]);
-            const expenseCount = parseInt(checkResult.rows[0].count);
+            const source = await client.query('SELECT id FROM categories WHERE id = $1 AND user_id = $2 FOR UPDATE', [
+                id,
+                userId
+            ]);
 
-            if (expenseCount > 0) {
-                throw new CategoryHasExpensesError();
+            if (source.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return false;
             }
 
-            const query = `
-        DELETE FROM categories
-        WHERE id = $1 AND user_id = $2
-        RETURNING id
-      `;
+            if (moveTo) {
+                // `id <> $3` also guards against moving onto the deleted category, whose expenses would cascade.
+                const target = await client.query(
+                    'SELECT id FROM categories WHERE id = $1 AND user_id = $2 AND id <> $3',
+                    [moveTo, userId, id]
+                );
 
-            const result = await client.query(query, [id, userId]);
-            return (result.rowCount ?? 0) > 0;
+                if (target.rows.length === 0) {
+                    throw new InvalidMoveTargetError();
+                }
+
+                await client.query('UPDATE expenses SET category_id = $1 WHERE category_id = $2 AND user_id = $3', [
+                    moveTo,
+                    id,
+                    userId
+                ]);
+            } else {
+                const checkResult = await client.query(
+                    'SELECT COUNT(*) as count FROM expenses WHERE category_id = $1 AND user_id = $2',
+                    [id, userId]
+                );
+
+                if (parseInt(checkResult.rows[0].count) > 0) {
+                    throw new CategoryHasExpensesError();
+                }
+            }
+
+            await client.query('DELETE FROM categories WHERE id = $1 AND user_id = $2', [id, userId]);
+            await client.query('COMMIT');
+            return true;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
         } finally {
             client.release();
         }

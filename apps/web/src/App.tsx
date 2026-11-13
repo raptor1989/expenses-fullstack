@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Box, CircularProgress } from '@mui/material';
 import { useAuth } from './hooks/useAuth';
 
 // Layouts
@@ -22,7 +23,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const { isAuthenticated, isLoading } = useAuth();
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+                <CircularProgress />
+            </Box>
+        );
     }
 
     if (!isAuthenticated) {

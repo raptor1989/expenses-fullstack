@@ -9,6 +9,8 @@ const runId = Date.now().toString(36);
 const account = { email: `smoke-${runId}@example.com`, password: 'Password123!' };
 const expenseDescription = `Smoke expense ${runId}`;
 const categoryName = `Smoke category ${runId}`;
+const movedCategoryName = `Smoke move ${runId}`;
+const movedExpenseDescription = `Smoke moved expense ${runId}`;
 
 // The flows build on each other (register → add data → read it back → log out).
 test.describe.configure({ mode: 'serial' });
@@ -93,12 +95,38 @@ test('adds an expense from the dashboard and sees it in the recent list', async 
     await expect(page.getByRole('cell', { name: expenseDescription })).toBeVisible();
 });
 
+test('switches the dashboard summary period', async ({ page }) => {
+    await login(page);
+
+    await expect(page.getByText('Total Expenses (Last 30 days)')).toBeVisible();
+    await page.getByRole('button', { name: 'This month' }).click();
+    await expect(page.getByText('Total Expenses (This month)')).toBeVisible();
+    // The expense added today still counts, so the page stays populated after the silent refetch.
+    await expect(page.getByRole('cell', { name: expenseDescription })).toBeVisible();
+});
+
 test('lists the expense on the Expenses page', async ({ page }) => {
     await login(page);
     await page.goto('/expenses');
 
     const table = page.getByRole('table', { name: 'expenses table' });
     await expect(table.getByRole('cell', { name: expenseDescription })).toBeVisible();
+});
+
+test('searches expenses by a description fragment', async ({ page }) => {
+    await login(page);
+    await page.goto('/expenses');
+
+    const search = page.getByPlaceholder('Search expenses…');
+    // Upper-cased run id: a fragment of the description, matched case-insensitively.
+    await search.fill(runId.toUpperCase());
+    await search.press('Enter');
+    const table = page.getByRole('table', { name: 'expenses table' });
+    await expect(table.getByRole('cell', { name: expenseDescription })).toBeVisible();
+
+    await search.fill(`no-such-expense-${runId}`);
+    await search.press('Enter');
+    await expect(page.getByText(/No expenses found/)).toBeVisible();
 });
 
 test('creates and deletes a category', async ({ page }) => {
@@ -117,6 +145,58 @@ test('creates and deletes a category', async ({ page }) => {
     await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click();
     await expect(page.getByText('Category deleted!')).toBeVisible();
     await expect(page.getByText(categoryName, { exact: true })).toHaveCount(0);
+});
+
+test('deletes a category with an expense by moving the expense to another category', async ({ page }) => {
+    await login(page);
+    await page.goto('/categories');
+    await page.getByRole('button', { name: 'Add Category' }).click();
+    const addDialog = page.getByRole('dialog');
+    await addDialog.getByLabel('Name').fill(movedCategoryName);
+    await addDialog.getByRole('button', { name: 'Add', exact: true }).click();
+    await expect(page.getByText('Category created!')).toBeVisible();
+
+    // Give the new category one expense through the dashboard form.
+    await page.goto('/');
+    await page.locator('#mui-component-select-categoryId').click();
+    await page.getByRole('option', { name: movedCategoryName, exact: true }).click();
+    await page.locator('input[name="amount"]').fill('5');
+    await page.locator('input[name="description"]').fill(movedExpenseDescription);
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Expense added successfully!')).toBeVisible();
+
+    await page.goto('/categories');
+    const card = page.getByText(movedCategoryName, { exact: true }).locator('..');
+    await card.getByRole('button', { name: 'Delete' }).click();
+    const deleteDialog = page.getByRole('dialog');
+    await expect(deleteDialog).toContainText('has 1 expense');
+    await expect(deleteDialog.getByRole('button', { name: 'Delete' })).toBeDisabled();
+    await deleteDialog.getByRole('combobox').click();
+    await page.getByRole('option', { name: 'General', exact: true }).click();
+    await deleteDialog.getByRole('button', { name: 'Delete' }).click();
+    await expect(page.getByText('Category deleted!')).toBeVisible();
+    await expect(page.getByText(movedCategoryName, { exact: true })).toHaveCount(0);
+
+    await page.goto('/expenses');
+    const row = page
+        .getByRole('table', { name: 'expenses table' })
+        .getByRole('row', { name: new RegExp(movedExpenseDescription) });
+    await expect(row).toContainText('General');
+});
+
+test('shows the API validation message when a category name is too long', async ({ page }) => {
+    await login(page);
+    await page.goto('/categories');
+
+    await page.getByRole('button', { name: 'Add Category' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Name').fill('x'.repeat(51));
+    await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+
+    // The server's details message, not the generic "Failed to add category.". getByText, not getByRole:
+    // the open dialog marks the rest of the page (the Snackbar too) aria-hidden.
+    await expect(page.getByText('Name too long', { exact: true })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
 });
 
 test('changes the currency in settings and keeps it after a reload', async ({ page }) => {

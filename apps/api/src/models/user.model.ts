@@ -177,7 +177,9 @@ export class UserModel {
         }
     }
 
-    static async findByResetTokenHash(tokenHash: string): Promise<(User & { resetTokenExpiresAt: Date | null }) | null> {
+    static async findByResetTokenHash(
+        tokenHash: string
+    ): Promise<(User & { resetTokenExpiresAt: Date | null }) | null> {
         const client = await pool.connect();
 
         try {

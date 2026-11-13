@@ -17,39 +17,57 @@ import {
     Tooltip,
     DialogContentText,
     Grid,
-    Chip
+    Chip,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useCategoryStore } from '@/store/categoryStore';
+import { getApiErrorMessage } from '@/services/api';
 import { Category } from '@expenses/shared';
 
 export default function Categories() {
-    const { categories, loading, fetchCategories, addCategory, editCategory, removeCategory } = useCategoryStore();
+    const { categories, loading, refreshCategories, addCategory, editCategory, removeCategory } = useCategoryStore();
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-    const [formData, setFormData] = useState({ name: '', color: '#6c63ff', icon: '' });
+    const [formData, setFormData] = useState({ name: '', color: '#6c63ff' });
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
-    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+    const [moveTo, setMoveTo] = useState('');
+    const [notification, setNotification] = useState({
+        open: false,
+        message: '',
+        severity: 'success' as 'success' | 'error'
+    });
 
     useEffect(() => {
-        fetchCategories().catch(() =>
-            setNotification({ open: true, message: 'Failed to load categories.', severity: 'error' })
+        // Always reload here: the delete dialog relies on current expense counts.
+        refreshCategories().catch((err) =>
+            setNotification({
+                open: true,
+                message: getApiErrorMessage(err, 'Failed to load categories.'),
+                severity: 'error'
+            })
         );
-    }, [fetchCategories]);
+    }, [refreshCategories]);
+
+    const deleteExpenseCount = categoryToDelete?.expenseCount ?? 0;
+    const moveTargets = categories.filter((c) => c.id !== categoryToDelete?.id);
 
     const openAdd = () => {
         setDialogMode('add');
-        setFormData({ name: '', color: '#6c63ff', icon: '' });
+        setFormData({ name: '', color: '#6c63ff' });
         setDialogOpen(true);
     };
 
     const openEdit = (cat: Category) => {
         setDialogMode('edit');
         setSelectedCategory(cat);
-        setFormData({ name: cat.name, color: cat.color || '#6c63ff', icon: cat.icon || '' });
+        setFormData({ name: cat.name, color: cat.color || '#6c63ff' });
         setDialogOpen(true);
     };
 
@@ -60,25 +78,33 @@ export default function Categories() {
         }
         try {
             if (dialogMode === 'add') {
-                await addCategory(formData.name, formData.color, formData.icon);
+                await addCategory(formData.name, formData.color);
                 setNotification({ open: true, message: 'Category created!', severity: 'success' });
             } else if (selectedCategory) {
-                await editCategory(selectedCategory.id, formData.name, formData.color, formData.icon);
+                await editCategory(selectedCategory.id, formData.name, formData.color);
                 setNotification({ open: true, message: 'Category updated!', severity: 'success' });
             }
             setDialogOpen(false);
-        } catch {
-            setNotification({ open: true, message: `Failed to ${dialogMode} category.`, severity: 'error' });
+        } catch (err) {
+            setNotification({
+                open: true,
+                message: getApiErrorMessage(err, `Failed to ${dialogMode} category.`),
+                severity: 'error'
+            });
         }
     };
 
     const handleConfirmDelete = async () => {
         if (!categoryToDelete) return;
         try {
-            await removeCategory(categoryToDelete.id);
+            await removeCategory(categoryToDelete.id, deleteExpenseCount > 0 ? moveTo : undefined);
             setNotification({ open: true, message: 'Category deleted!', severity: 'success' });
-        } catch {
-            setNotification({ open: true, message: 'Failed to delete category — it may still be in use.', severity: 'error' });
+        } catch (err) {
+            setNotification({
+                open: true,
+                message: getApiErrorMessage(err, 'Failed to delete category.'),
+                severity: 'error'
+            });
         } finally {
             setDeleteDialogOpen(false);
             setCategoryToDelete(null);
@@ -146,7 +172,11 @@ export default function Categories() {
                                         <IconButton
                                             size="small"
                                             color="error"
-                                            onClick={() => { setCategoryToDelete(cat); setDeleteDialogOpen(true); }}
+                                            onClick={() => {
+                                                setCategoryToDelete(cat);
+                                                setMoveTo('');
+                                                setDeleteDialogOpen(true);
+                                            }}
                                             sx={{ p: 0.5 }}
                                         >
                                             <DeleteIcon sx={{ fontSize: 15 }} />
@@ -189,7 +219,16 @@ export default function Categories() {
                             input: {
                                 startAdornment: (
                                     <InputAdornment position="start">
-                                        <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: formData.color, border: '1px solid', borderColor: 'divider' }} />
+                                        <Box
+                                            sx={{
+                                                width: 18,
+                                                height: 18,
+                                                borderRadius: '50%',
+                                                bgcolor: formData.color,
+                                                border: '1px solid',
+                                                borderColor: 'divider'
+                                            }}
+                                        />
                                     </InputAdornment>
                                 ),
                                 endAdornment: (
@@ -198,7 +237,14 @@ export default function Categories() {
                                             type="color"
                                             value={formData.color}
                                             onChange={(e) => setFormData((p) => ({ ...p, color: e.target.value }))}
-                                            style={{ width: 24, height: 24, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                                            style={{
+                                                width: 24,
+                                                height: 24,
+                                                border: 'none',
+                                                background: 'none',
+                                                cursor: 'pointer',
+                                                padding: 0
+                                            }}
                                         />
                                     </InputAdornment>
                                 )
@@ -207,7 +253,9 @@ export default function Categories() {
                     />
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2.5 }}>
-                    <Button onClick={() => setDialogOpen(false)} size="small">Cancel</Button>
+                    <Button onClick={() => setDialogOpen(false)} size="small">
+                        Cancel
+                    </Button>
                     <Button onClick={handleSubmit} variant="contained" size="small">
                         {dialogMode === 'add' ? 'Add' : 'Update'}
                     </Button>
@@ -223,12 +271,44 @@ export default function Categories() {
                 <DialogTitle sx={{ fontSize: 16, fontWeight: 600 }}>Delete Category</DialogTitle>
                 <DialogContent>
                     <DialogContentText sx={{ fontSize: 14 }}>
-                        Delete "{categoryToDelete?.name}"? This will remove it from associated expenses.
+                        {deleteExpenseCount > 0
+                            ? `"${categoryToDelete?.name}" has ${deleteExpenseCount} ${deleteExpenseCount === 1 ? 'expense' : 'expenses'}. ` +
+                              (moveTargets.length > 0
+                                  ? 'Choose a category to move them to; then the category is deleted.'
+                                  : 'Create another category to move them to first.')
+                            : `Delete "${categoryToDelete?.name}"? It has no expenses.`}
                     </DialogContentText>
+                    {deleteExpenseCount > 0 && moveTargets.length > 0 && (
+                        <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+                            <InputLabel id="move-to-label">Move expenses to</InputLabel>
+                            <Select
+                                labelId="move-to-label"
+                                label="Move expenses to"
+                                value={moveTo}
+                                onChange={(e) => setMoveTo(e.target.value)}
+                            >
+                                {moveTargets.map((c) => (
+                                    <MenuItem key={c.id} value={c.id}>
+                                        {c.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={() => setDeleteDialogOpen(false)} size="small">Cancel</Button>
-                    <Button onClick={handleConfirmDelete} color="error" variant="contained" size="small">Delete</Button>
+                    <Button onClick={() => setDeleteDialogOpen(false)} size="small">
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleConfirmDelete}
+                        color="error"
+                        variant="contained"
+                        size="small"
+                        disabled={deleteExpenseCount > 0 && !moveTo}
+                    >
+                        Delete
+                    </Button>
                 </DialogActions>
             </Dialog>
 

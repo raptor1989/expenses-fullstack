@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { body } from 'express-validator';
+import { body, param, query } from 'express-validator';
 import { ExpenseController } from '../controllers/expense.controller';
 import { auth } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
@@ -22,7 +22,13 @@ const expenseBodyValidation = [
         .isLength({ max: 500 })
         .withMessage('Description too long'),
     body('date').isISO8601().withMessage('Date must be a valid ISO 8601 date'),
-    body('categoryId').trim().notEmpty().withMessage('Category is required')
+    body('categoryId')
+        .trim()
+        .notEmpty()
+        .withMessage('Category is required')
+        .bail()
+        .isUUID()
+        .withMessage('Category must be a valid id')
 ];
 
 const expenseUpdateValidation = [
@@ -35,10 +41,33 @@ const expenseUpdateValidation = [
         .isLength({ max: 500 })
         .withMessage('Description too long'),
     body('date').optional().isISO8601().withMessage('Date must be a valid ISO 8601 date'),
-    body('categoryId').optional().trim().notEmpty().withMessage('Category cannot be empty')
+    body('categoryId')
+        .optional()
+        .trim()
+        .notEmpty()
+        .withMessage('Category cannot be empty')
+        .bail()
+        .isUUID()
+        .withMessage('Category must be a valid id')
 ];
 
-router.get('/', (req: Request, res: Response) => {
+const idParamValidation = [param('id').isUUID().withMessage('Invalid expense id')];
+
+const listQueryValidation = [
+    query('categoryId').optional().isUUID().withMessage('Category must be a valid id'),
+    query('search')
+        .optional()
+        .custom((value) => typeof value === 'string')
+        .withMessage('Search must be a single text value'),
+    // Kept in sync by hand with ExpenseSortField / SortOrder in @expenses/shared (types only reach the API).
+    query('sort')
+        .optional()
+        .isIn(['date', 'amount', 'createdAt'])
+        .withMessage('Sort must be one of: date, amount, createdAt'),
+    query('order').optional().isIn(['asc', 'desc']).withMessage('Order must be asc or desc')
+];
+
+router.get('/', listQueryValidation, validate, (req: Request, res: Response) => {
     ExpenseController.getExpenses(req, res);
 });
 
@@ -50,7 +79,12 @@ router.get('/by-month', (req: Request, res: Response) => {
     ExpenseController.getExpensesByMonth(req, res);
 });
 
-router.get('/:id', (req: Request, res: Response) => {
+// Registered before '/:id', whose UUID check would otherwise reject 'years'.
+router.get('/years', (req: Request, res: Response) => {
+    ExpenseController.getExpenseYears(req, res);
+});
+
+router.get('/:id', idParamValidation, validate, (req: Request, res: Response) => {
     ExpenseController.getExpenseById(req, res);
 });
 
@@ -58,11 +92,11 @@ router.post('/', expenseBodyValidation, validate, (req: Request, res: Response) 
     ExpenseController.createExpense(req, res);
 });
 
-router.put('/:id', expenseUpdateValidation, validate, (req: Request, res: Response) => {
+router.put('/:id', idParamValidation, expenseUpdateValidation, validate, (req: Request, res: Response) => {
     ExpenseController.updateExpense(req, res);
 });
 
-router.delete('/:id', (req: Request, res: Response) => {
+router.delete('/:id', idParamValidation, validate, (req: Request, res: Response) => {
     ExpenseController.deleteExpense(req, res);
 });
 

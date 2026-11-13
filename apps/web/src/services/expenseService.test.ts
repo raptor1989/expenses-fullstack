@@ -17,7 +17,8 @@ import {
     updateExpense,
     deleteExpense,
     getExpenseSummary,
-    getExpensesByMonth
+    getExpensesByMonth,
+    getExpenseYears
 } from './expenseService';
 
 beforeEach(() => {
@@ -29,10 +30,17 @@ describe('expenseService', () => {
         const payload = { expenses: [], pagination: { total: 0, page: 2, limit: 5, totalPages: 0 } };
         apiMock.get.mockResolvedValue({ data: payload });
 
-        const result = await getExpenses(2, 5, '2025-01-01', '2025-01-31', 'cat-1');
+        const result = await getExpenses({
+            page: 2,
+            limit: 5,
+            startDate: '2025-01-01',
+            endDate: '2025-01-31',
+            categoryId: 'cat-1',
+            search: ' fuel & food '
+        });
 
         expect(apiMock.get).toHaveBeenCalledWith(
-            '/expenses?page=2&limit=5&startDate=2025-01-01&endDate=2025-01-31&categoryId=cat-1'
+            '/expenses?page=2&limit=5&startDate=2025-01-01&endDate=2025-01-31&categoryId=cat-1&search=fuel+%26+food'
         );
         expect(result).toEqual(payload);
     });
@@ -41,6 +49,22 @@ describe('expenseService', () => {
         apiMock.get.mockResolvedValue({ data: { expenses: [], pagination: {} } });
 
         await getExpenses();
+
+        expect(apiMock.get).toHaveBeenCalledWith('/expenses?page=1&limit=10');
+    });
+
+    it('getExpenses appends sort and order after the filters', async () => {
+        apiMock.get.mockResolvedValue({ data: { expenses: [], pagination: {} } });
+
+        await getExpenses({ limit: 10, sort: 'createdAt', order: 'asc' });
+
+        expect(apiMock.get).toHaveBeenCalledWith('/expenses?page=1&limit=10&sort=createdAt&order=asc');
+    });
+
+    it('getExpenses omits a blank search term', async () => {
+        apiMock.get.mockResolvedValue({ data: { expenses: [], pagination: {} } });
+
+        await getExpenses({ search: '   ' });
 
         expect(apiMock.get).toHaveBeenCalledWith('/expenses?page=1&limit=10');
     });
@@ -110,5 +134,14 @@ describe('expenseService', () => {
 
         expect(apiMock.get).toHaveBeenCalledWith('/expenses/by-month?year=2025');
         expect(result).toEqual(monthlyData);
+    });
+
+    it('getExpenseYears unwraps the years list', async () => {
+        apiMock.get.mockResolvedValue({ data: { years: [2025, 2023] } });
+
+        const result = await getExpenseYears();
+
+        expect(apiMock.get).toHaveBeenCalledWith('/expenses/years');
+        expect(result).toEqual([2025, 2023]);
     });
 });

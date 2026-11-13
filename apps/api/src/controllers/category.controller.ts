@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { CategoryModel, CategoryHasExpensesError } from '../models/category.model';
+import { CategoryModel, CategoryHasExpensesError, InvalidMoveTargetError } from '../models/category.model';
 
 export class CategoryController {
     static async createCategory(req: Request, res: Response) {
@@ -130,9 +130,19 @@ export class CategoryController {
             }
 
             const { id } = req.params as { id: string };
+            const moveTo = req.query.moveTo as string | undefined;
+
+            // UUIDs compare case-insensitively in Postgres, so compare them the same way here.
+            if (moveTo !== undefined && moveTo.toLowerCase() === id.toLowerCase()) {
+                return res.status(400).json({
+                    message: 'Validation failed',
+                    code: 'validation_error',
+                    details: { moveTo: 'Target category must differ from the deleted category' }
+                });
+            }
 
             try {
-                const deleted = await CategoryModel.delete(id, req.user.id);
+                const deleted = await CategoryModel.delete(id, req.user.id, moveTo);
 
                 if (!deleted) {
                     return res.status(404).json({
@@ -149,6 +159,13 @@ export class CategoryController {
                     return res.status(400).json({
                         message: error.message,
                         code: error.code
+                    });
+                }
+                if (error instanceof InvalidMoveTargetError) {
+                    return res.status(400).json({
+                        message: 'Validation failed',
+                        code: error.code,
+                        details: { moveTo: error.message }
                     });
                 }
                 throw error;

@@ -1,5 +1,40 @@
-import { Expense, ExpenseByMonth, ExpenseCreateInput, ExpenseSummary, ExpenseUpdateInput } from '@expenses/shared';
+import {
+    Expense,
+    ExpenseByMonth,
+    ExpenseCreateInput,
+    ExpenseSortField,
+    ExpenseSummary,
+    ExpenseUpdateInput,
+    SortOrder
+} from '@expenses/shared';
 import pool from '../db/index';
+
+export interface ExpenseListOptions {
+    limit?: number;
+    offset?: number;
+    startDate?: Date;
+    endDate?: Date;
+    categoryId?: string;
+    search?: string;
+    sort?: ExpenseSortField;
+    order?: SortOrder;
+}
+
+// Whitelists: only these values are ever interpolated into ORDER BY.
+const SORT_COLUMNS = new Map<string, string>([
+    ['date', 'date'],
+    ['amount', 'amount'],
+    ['createdAt', 'created_at']
+]);
+const SORT_DIRECTIONS = new Map<string, string>([
+    ['asc', 'ASC'],
+    ['desc', 'DESC']
+]);
+
+// The search term is matched literally: LIKE wildcards and the escape character are escaped.
+function toLikePattern(term: string): string {
+    return `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+}
 
 export class ExpenseModel {
     static async create(userId: string, expense: ExpenseCreateInput): Promise<Expense> {
@@ -25,12 +60,11 @@ export class ExpenseModel {
 
     static async findByUserId(
         userId: string,
-        limit = 50,
-        offset = 0,
-        startDate?: Date,
-        endDate?: Date,
-        categoryId?: string
+        options: ExpenseListOptions = {}
     ): Promise<{ expenses: Expense[]; total: number }> {
+        const { limit = 50, offset = 0, startDate, endDate, categoryId, search, sort, order } = options;
+        const sortColumn = SORT_COLUMNS.get(sort ?? 'date') ?? 'date';
+        const sortDirection = SORT_DIRECTIONS.get(order ?? 'desc') ?? 'DESC';
         const client = await pool.connect();
 
         try {
@@ -53,6 +87,11 @@ export class ExpenseModel {
                 values.push(categoryId);
             }
 
+            if (search) {
+                whereClause += ` AND description ILIKE $${paramCounter++} ESCAPE '\\'`;
+                values.push(toLikePattern(search));
+            }
+
             const countQuery = `
         SELECT COUNT(*) as total
         FROM expenses
@@ -67,7 +106,7 @@ export class ExpenseModel {
                created_at as "createdAt", updated_at as "updatedAt"
         FROM expenses
         ${whereClause}
-        ORDER BY created_at DESC
+        ORDER BY ${sortColumn} ${sortDirection}, created_at DESC, id DESC
         LIMIT $${paramCounter++} OFFSET $${paramCounter++}
       `;
 
@@ -176,6 +215,24 @@ export class ExpenseModel {
         }
     }
 
+    static async getExpenseYears(userId: string): Promise<number[]> {
+        const client = await pool.connect();
+
+        try {
+            const query = `
+        SELECT DISTINCT EXTRACT(YEAR FROM date)::int as year
+        FROM expenses
+        WHERE user_id = $1
+        ORDER BY year DESC
+      `;
+
+            const result = await client.query(query, [userId]);
+            return result.rows.map((row) => row.year);
+        } finally {
+            client.release();
+        }
+    }
+
     static async getSummaryByCategory(userId: string, startDate: Date, endDate: Date): Promise<ExpenseSummary> {
         const client = await pool.connect();
 
@@ -249,12 +306,12 @@ export class ExpenseModel {
             const categoryBreakdownQuery = `
         SELECT
             EXTRACT(MONTH FROM e.date) as month_num,
-            c.name as "categoryName",
+            c.id as "categoryId",
             SUM(e.amount) as "amount"
         FROM expenses e
         JOIN categories c ON e.category_id = c.id
         WHERE e.user_id = $1 AND EXTRACT(YEAR FROM e.date) = $2
-        GROUP BY EXTRACT(MONTH FROM e.date), c.id, c.name
+        GROUP BY EXTRACT(MONTH FROM e.date), c.id
         ORDER BY month_num, "amount" DESC
       `;
 
@@ -287,7 +344,7 @@ export class ExpenseModel {
                 if (!totalByCategoryByMonth.has(monthNum)) {
                     totalByCategoryByMonth.set(monthNum, {});
                 }
-                totalByCategoryByMonth.get(monthNum)![row.categoryName] = parseFloat(row.amount);
+                totalByCategoryByMonth.get(monthNum)![row.categoryId] = parseFloat(row.amount);
             });
 
             const topFiveByMonth = new Map<number, Expense[]>();

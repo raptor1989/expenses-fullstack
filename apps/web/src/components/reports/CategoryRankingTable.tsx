@@ -38,7 +38,7 @@ export default function CategoryRankingTable({ monthsData, categories, currency 
                         </TableRow>
                     ) : (
                         ranking.map((row) => (
-                            <TableRow key={row.name}>
+                            <TableRow key={row.categoryId}>
                                 <TableCell sx={cellSx}>{row.rank}</TableCell>
                                 <TableCell sx={cellSx}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

@@ -1,5 +1,15 @@
 import { Request, Response } from 'express';
+import { ExpenseSortField, SortOrder } from '@expenses/shared';
 import { ExpenseModel } from '../models/expense.model';
+import { CategoryModel } from '../models/category.model';
+
+function categoryNotFound(res: Response) {
+    return res.status(400).json({
+        message: 'Validation failed',
+        code: 'validation_error',
+        details: { categoryId: 'Category not found' }
+    });
+}
 
 export class ExpenseController {
     static async createExpense(req: Request, res: Response) {
@@ -12,6 +22,10 @@ export class ExpenseController {
             }
 
             const { amount, description, date, categoryId } = req.body;
+
+            if (!(await CategoryModel.findById(categoryId, req.user.id))) {
+                return categoryNotFound(res);
+            }
 
             const expense = await ExpenseModel.create(req.user.id, {
                 amount,
@@ -58,15 +72,20 @@ export class ExpenseController {
             }
 
             const categoryId = req.query.categoryId as string | undefined;
+            const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+            const sort = req.query.sort as ExpenseSortField | undefined;
+            const order = req.query.order as SortOrder | undefined;
 
-            const { expenses, total } = await ExpenseModel.findByUserId(
-                req.user.id,
+            const { expenses, total } = await ExpenseModel.findByUserId(req.user.id, {
                 limit,
                 offset,
                 startDate,
                 endDate,
-                categoryId
-            );
+                categoryId,
+                search: search || undefined,
+                sort,
+                order
+            });
 
             res.status(200).json({
                 expenses,
@@ -128,6 +147,10 @@ export class ExpenseController {
             const { id } = req.params as { id: string };
             const { amount, description, date, categoryId } = req.body;
 
+            if (categoryId !== undefined && !(await CategoryModel.findById(categoryId, req.user.id))) {
+                return categoryNotFound(res);
+            }
+
             const updatedExpense = await ExpenseModel.update(id, req.user.id, {
                 amount,
                 description,
@@ -183,6 +206,27 @@ export class ExpenseController {
             res.status(500).json({
                 message: 'Failed to delete expense',
                 code: 'expense_delete_failed'
+            });
+        }
+    }
+
+    static async getExpenseYears(req: Request, res: Response) {
+        try {
+            if (!req.user) {
+                return res.status(401).json({
+                    message: 'Authentication required',
+                    code: 'auth_required'
+                });
+            }
+
+            const years = await ExpenseModel.getExpenseYears(req.user.id);
+
+            res.status(200).json({ years });
+        } catch (error) {
+            console.error('Get expense years error:', error);
+            res.status(500).json({
+                message: 'Failed to get expense years',
+                code: 'expense_years_fetch_failed'
             });
         }
     }

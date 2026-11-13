@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
     Box,
     Typography,
@@ -17,15 +17,17 @@ import {
     TableHead,
     TableRow,
     Chip,
-    LinearProgress
+    LinearProgress,
+    ToggleButton,
+    ToggleButtonGroup
 } from '@mui/material';
 import { AttachMoney as MoneyIcon, Receipt as ReceiptIcon, Category as CategoryIcon } from '@mui/icons-material';
 import { ResponsivePie } from '@nivo/pie';
 import { getExpenses, getExpenseSummary } from '../services/expenseService';
 import { useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
-import { formatCurrency, formatDateTime } from '@/helpers/formatHelpers';
+import { formatCurrency, formatDate } from '@/helpers/formatHelpers';
 import { CHART_COLORS } from '@/helpers/chartHelpers';
+import { DASHBOARD_PERIOD_LABELS, DashboardPeriod, getDashboardPeriod } from '@/helpers/periodHelpers';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { useSettings } from '@/hooks/useSettings';
 import { useCategoryStore } from '@/store/categoryStore';
@@ -43,54 +45,63 @@ export default function Dashboard() {
     const [expensesByCategory, setExpensesByCategory] = useState<PieSlice[]>([]);
     const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
     const { categories, fetchCategories } = useCategoryStore();
+    const [period, setPeriod] = useState<DashboardPeriod>('last30Days');
+    const {
+        startDate,
+        endDate,
+        days: periodDays,
+        label: periodLabel
+    } = useMemo(() => getDashboardPeriod(period), [period]);
+    const initialLoad = useRef(true);
 
-    const fetchDashboardData = useCallback(async ({ silent = false } = {}) => {
-        // A refetch triggered by the inline form keeps the page visible (no full-page spinner).
-        if (!silent) {
-            setLoading(true);
-        }
-        try {
-            const today = dayjs();
-            const startDate = today.subtract(30, 'day').format('YYYY-MM-DD');
-            const endDate = today.format('YYYY-MM-DD');
-
-            const summaryData = await getExpenseSummary(startDate, endDate);
-            setSummary(summaryData);
-
-            const categoryData = summaryData.categoryBreakdown.map(
-                (
-                    item: {
-                        categoryId: string;
-                        categoryName: string;
-                        totalAmount: number;
-                        percentage: number;
-                        color: string;
-                    },
-                    index: number
-                ) => ({
-                    id: item.categoryName,
-                    label: item.categoryName,
-                    value: item.totalAmount,
-                    color: item.color || CHART_COLORS[index % CHART_COLORS.length]
-                })
-            );
-            setExpensesByCategory(categoryData);
-
-            try {
-                const recentData = await getExpenses();
-                setRecentExpenses(recentData.expenses);
-            } catch {
-                setRecentExpenses([]);
+    const fetchDashboardData = useCallback(
+        async ({ silent = false } = {}) => {
+            // A refetch triggered by the inline form or a period change keeps the page visible (no spinner).
+            if (!silent) {
+                setLoading(true);
             }
-        } catch {
-            // summary unavailable — UI shows zeroed state
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+            try {
+                const summaryData = await getExpenseSummary(startDate, endDate);
+                setSummary(summaryData);
+
+                const categoryData = summaryData.categoryBreakdown.map(
+                    (
+                        item: {
+                            categoryId: string;
+                            categoryName: string;
+                            totalAmount: number;
+                            percentage: number;
+                            color: string;
+                        },
+                        index: number
+                    ) => ({
+                        id: item.categoryName,
+                        label: item.categoryName,
+                        value: item.totalAmount,
+                        color: item.color || CHART_COLORS[index % CHART_COLORS.length]
+                    })
+                );
+                setExpensesByCategory(categoryData);
+
+                try {
+                    // "Last 10" means most recently added, not most recent expense date.
+                    const recentData = await getExpenses({ limit: 10, sort: 'createdAt' });
+                    setRecentExpenses(recentData.expenses);
+                } catch {
+                    setRecentExpenses([]);
+                }
+            } catch {
+                // summary unavailable — UI shows zeroed state
+            } finally {
+                setLoading(false);
+            }
+        },
+        [startDate, endDate]
+    );
 
     useEffect(() => {
-        fetchDashboardData();
+        fetchDashboardData({ silent: !initialLoad.current });
+        initialLoad.current = false;
     }, [fetchDashboardData]);
 
     useEffect(() => {
@@ -120,13 +131,13 @@ export default function Dashboard() {
 
     const statCards = [
         {
-            label: 'Total Expenses (30 days)',
+            label: `Total Expenses (${periodLabel})`,
             value: formatCurrency(totalExpenses, settings.currency),
             icon: <MoneyIcon sx={{ fontSize: 16 }} />
         },
         {
             label: 'Average Daily Spend',
-            value: formatCurrency(totalExpenses / 30, settings.currency),
+            value: formatCurrency(totalExpenses / periodDays, settings.currency),
             icon: <ReceiptIcon sx={{ fontSize: 16 }} />
         },
         {
@@ -138,6 +149,23 @@ export default function Dashboard() {
 
     return (
         <Box>
+            {/* Summary period */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
+                <ToggleButtonGroup
+                    size="small"
+                    exclusive
+                    value={period}
+                    onChange={(_, value: DashboardPeriod | null) => value && setPeriod(value)}
+                    aria-label="Summary period"
+                >
+                    {(Object.keys(DASHBOARD_PERIOD_LABELS) as DashboardPeriod[]).map((p) => (
+                        <ToggleButton key={p} value={p}>
+                            {DASHBOARD_PERIOD_LABELS[p]}
+                        </ToggleButton>
+                    ))}
+                </ToggleButtonGroup>
+            </Box>
+
             {/* Stat Cards */}
             <Grid container spacing={1.5} sx={{ mb: 2 }}>
                 {statCards.map((stat) => (
@@ -289,7 +317,7 @@ export default function Dashboard() {
                                         recentExpenses.map((expense) => (
                                             <TableRow key={expense.id}>
                                                 <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>
-                                                    {formatDateTime(expense.createdAt)}
+                                                    {formatDate(expense.date)}
                                                 </TableCell>
                                                 <TableCell sx={{ fontSize: 12 }}>{expense.description}</TableCell>
                                                 <TableCell>

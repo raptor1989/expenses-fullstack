@@ -15,10 +15,11 @@ import {
     CircularProgress
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { Formik, Form, Field, FieldProps } from 'formik';
+import { Formik, Form, Field, FieldProps, FormikHelpers } from 'formik';
 import { Expense, ExpenseCreateInput, Category } from '@expenses/shared';
 import dayjs from 'dayjs';
 import { ExpenseSchema } from './expenseSchema';
+import { getApiFieldErrors } from '@/services/api';
 
 interface ExpenseFormProps {
     open: boolean;
@@ -29,7 +30,14 @@ interface ExpenseFormProps {
     title?: string;
 }
 
-export default function ExpenseForm({ open, onClose, onSubmit, categories, initialValues, title = 'Add Expense' }: ExpenseFormProps) {
+export default function ExpenseForm({
+    open,
+    onClose,
+    onSubmit,
+    categories,
+    initialValues,
+    title = 'Add Expense'
+}: ExpenseFormProps) {
     const today = dayjs();
 
     const defaultValues: ExpenseCreateInput = {
@@ -41,13 +49,23 @@ export default function ExpenseForm({ open, onClose, onSubmit, categories, initi
 
     const [formValues, setFormValues] = useState<ExpenseCreateInput>(
         initialValues
-            ? { amount: initialValues.amount, description: initialValues.description, categoryId: initialValues.categoryId, date: dayjs(initialValues.date).format('YYYY-MM-DD') }
+            ? {
+                  amount: initialValues.amount,
+                  description: initialValues.description,
+                  categoryId: initialValues.categoryId,
+                  date: dayjs(initialValues.date).format('YYYY-MM-DD')
+              }
             : defaultValues
     );
 
     useEffect(() => {
         if (initialValues) {
-            setFormValues({ amount: initialValues.amount, description: initialValues.description, categoryId: initialValues.categoryId, date: dayjs(initialValues.date).format('YYYY-MM-DD') });
+            setFormValues({
+                amount: initialValues.amount,
+                description: initialValues.description,
+                categoryId: initialValues.categoryId,
+                date: dayjs(initialValues.date).format('YYYY-MM-DD')
+            });
         } else {
             setFormValues(defaultValues);
         }
@@ -56,12 +74,15 @@ export default function ExpenseForm({ open, onClose, onSubmit, categories, initi
 
     const handleFormSubmit = async (
         values: ExpenseCreateInput,
-        { setSubmitting, resetForm }: { setSubmitting: (v: boolean) => void; resetForm: () => void }
+        { setSubmitting, resetForm, setErrors }: FormikHelpers<ExpenseCreateInput>
     ) => {
         try {
             await onSubmit(values);
             resetForm();
             onClose();
+        } catch (err) {
+            // The page has already shown the message; keep the dialog open with the entered values.
+            setErrors(getApiFieldErrors(err));
         } finally {
             setSubmitting(false);
         }
@@ -76,7 +97,12 @@ export default function ExpenseForm({ open, onClose, onSubmit, categories, initi
             slotProps={{ paper: { variant: 'outlined', sx: { borderRadius: 3 } } }}
         >
             <DialogTitle sx={{ fontSize: 16, fontWeight: 600 }}>{title}</DialogTitle>
-            <Formik initialValues={formValues} validationSchema={ExpenseSchema} onSubmit={handleFormSubmit} enableReinitialize>
+            <Formik
+                initialValues={formValues}
+                validationSchema={ExpenseSchema}
+                onSubmit={handleFormSubmit}
+                enableReinitialize
+            >
                 {({ isSubmitting, errors, touched }) => (
                     <Form>
                         <DialogContent sx={{ pt: '12px !important' }}>
@@ -86,7 +112,9 @@ export default function ExpenseForm({ open, onClose, onSubmit, categories, initi
                                         <DatePicker
                                             label="Date"
                                             value={dayjs(field.value)}
-                                            onChange={(v) => form.setFieldValue('date', v ? v.format('YYYY-MM-DD') : null)}
+                                            onChange={(v) =>
+                                                form.setFieldValue('date', v ? v.format('YYYY-MM-DD') : null)
+                                            }
                                             format="DD.MM.YYYY"
                                             disableFuture
                                             slotProps={{
@@ -103,11 +131,17 @@ export default function ExpenseForm({ open, onClose, onSubmit, categories, initi
 
                                 <Field name="categoryId">
                                     {({ field }: FieldProps) => (
-                                        <FormControl fullWidth size="small" error={touched.categoryId && Boolean(errors.categoryId)}>
+                                        <FormControl
+                                            fullWidth
+                                            size="small"
+                                            error={touched.categoryId && Boolean(errors.categoryId)}
+                                        >
                                             <InputLabel>Category</InputLabel>
                                             <Select {...field} label="Category">
                                                 {categories.map((cat) => (
-                                                    <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
+                                                    <MenuItem key={cat.id} value={cat.id}>
+                                                        {cat.name}
+                                                    </MenuItem>
                                                 ))}
                                             </Select>
                                             {touched.categoryId && errors.categoryId && (
@@ -151,7 +185,9 @@ export default function ExpenseForm({ open, onClose, onSubmit, categories, initi
                             </Box>
                         </DialogContent>
                         <DialogActions sx={{ px: 3, pb: 2.5 }}>
-                            <Button onClick={onClose} disabled={isSubmitting} size="small">Cancel</Button>
+                            <Button onClick={onClose} disabled={isSubmitting} size="small">
+                                Cancel
+                            </Button>
                             <Button
                                 type="submit"
                                 variant="contained"

@@ -55,8 +55,12 @@ export default function MonthlyCategoryLineChart({ monthsData, categories }: Mon
                     >
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: point.color }} />
-                            <Box component="span" sx={{ color: 'text.secondary' }}>{point.seriesId}</Box>
-                            <Box component="span" sx={{ fontWeight: 600, color: 'text.primary' }}>{String(point.data.yFormatted)}</Box>
+                            <Box component="span" sx={{ color: 'text.secondary' }}>
+                                {point.seriesId}
+                            </Box>
+                            <Box component="span" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                {String(point.data.yFormatted)}
+                            </Box>
                         </Box>
                     </Box>
                 )}

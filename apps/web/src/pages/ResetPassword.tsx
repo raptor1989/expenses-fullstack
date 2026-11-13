@@ -9,7 +9,10 @@ import { resetPassword } from '../services/authService';
 
 // Validation schema
 const validationSchema = yup.object({
-    newPassword: yup.string().min(8, 'Password should be of minimum 8 characters length').required('New password is required'),
+    newPassword: yup
+        .string()
+        .min(8, 'Password should be of minimum 8 characters length')
+        .required('New password is required'),
     confirmPassword: yup
         .string()
         .oneOf([yup.ref('newPassword')], 'Passwords must match')

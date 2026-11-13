@@ -32,6 +32,8 @@ export interface Category {
     userId: string;
     createdAt: Date;
     updatedAt: Date;
+    /** Number of the user's expenses in this category; only `GET /categories` includes it. */
+    expenseCount?: number;
 }
 
 export interface Expense {
@@ -59,6 +61,10 @@ export interface ExpenseUpdateInput {
     categoryId?: string;
 }
 
+export type ExpenseSortField = 'date' | 'amount' | 'createdAt';
+
+export type SortOrder = 'asc' | 'desc';
+
 export interface ExpenseSummary {
     totalAmount: number;
     categoryBreakdown: Array<{
@@ -84,6 +90,7 @@ export interface ExpenseByMonth {
     month: string;
     year: number;
     total: number;
+    /** Keyed by category id (not name): same-named categories stay separate and survive renames. */
     totalByCategory: Record<string, number>;
     topFiveMostExpensive: Expense[];
 }

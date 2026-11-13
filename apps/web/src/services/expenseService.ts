@@ -1,4 +1,12 @@
-import { Expense, ExpenseCreateInput, ExpenseUpdateInput, ExpenseSummary, ExpenseByMonth } from '@expenses/shared';
+import {
+    Expense,
+    ExpenseCreateInput,
+    ExpenseUpdateInput,
+    ExpenseSummary,
+    ExpenseByMonth,
+    ExpenseSortField,
+    SortOrder
+} from '@expenses/shared';
 import api from './api';
 
 interface ExpensesResponse {
@@ -11,13 +19,27 @@ interface ExpensesResponse {
     };
 }
 
-export const getExpenses = async (
+export interface ExpenseListQuery {
+    page?: number;
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+    categoryId?: string;
+    search?: string;
+    sort?: ExpenseSortField;
+    order?: SortOrder;
+}
+
+export const getExpenses = async ({
     page = 1,
     limit = 10,
-    startDate?: string,
-    endDate?: string,
-    categoryId?: string
-): Promise<ExpensesResponse> => {
+    startDate,
+    endDate,
+    categoryId,
+    search,
+    sort,
+    order
+}: ExpenseListQuery = {}): Promise<ExpensesResponse> => {
     const params = new URLSearchParams();
     params.append('page', page.toString());
     params.append('limit', limit.toString());
@@ -25,6 +47,9 @@ export const getExpenses = async (
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
     if (categoryId) params.append('categoryId', categoryId);
+    if (search?.trim()) params.append('search', search.trim());
+    if (sort) params.append('sort', sort);
+    if (order) params.append('order', order);
 
     const response = await api.get<ExpensesResponse>(`/expenses?${params.toString()}`);
     return response.data;
@@ -56,6 +81,11 @@ export const getExpenseSummary = async (startDate: string, endDate: string): Pro
 
     const response = await api.get<{ summary: ExpenseSummary }>(`/expenses/summary?${params.toString()}`);
     return response.data.summary;
+};
+
+export const getExpenseYears = async (): Promise<number[]> => {
+    const response = await api.get<{ years: number[] }>('/expenses/years');
+    return response.data.years;
 };
 
 export const getExpensesByMonth = async (year: number): Promise<ExpenseByMonth[]> => {
