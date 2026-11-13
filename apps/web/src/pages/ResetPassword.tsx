@@ -21,6 +21,7 @@ export default function ResetPassword() {
     const [searchParams] = useSearchParams();
     const token = searchParams.get('token') || '';
     const [error, setError] = useState<string | null>(null);
+    const [tokenRejected, setTokenRejected] = useState(false);
 
     const formik = useFormik({
         initialValues: {
@@ -29,12 +30,16 @@ export default function ResetPassword() {
         },
         validationSchema: validationSchema,
         onSubmit: async (values) => {
+            setError(null);
+            setTokenRejected(false);
             try {
                 await resetPassword(token, values.newPassword);
-                navigate('/login');
+                navigate('/login', { state: { passwordReset: true } });
             } catch (err) {
                 if (axios.isAxiosError(err)) {
+                    const code = err.response?.data?.code;
                     setError(err.response?.data?.message || 'An error occurred resetting your password.');
+                    setTokenRejected(code === 'reset_token_invalid' || code === 'reset_token_expired');
                 } else {
                     setError('An error occurred resetting your password.');
                 }
@@ -42,8 +47,18 @@ export default function ResetPassword() {
         }
     });
 
+    const requestNewLink = (
+        <Link component={RouterLink} to="/forgot-password">
+            Request a new link
+        </Link>
+    );
+
     if (!token) {
-        return <Alert severity="error" sx={{ mt: 2, width: '100%' }}>Missing or invalid reset link.</Alert>;
+        return (
+            <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+                Missing or invalid reset link. {requestNewLink}
+            </Alert>
+        );
     }
 
     return (
@@ -56,7 +71,7 @@ export default function ResetPassword() {
             </Typography>
             {error && (
                 <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
-                    {error}
+                    {error} {tokenRejected && requestNewLink}
                 </Alert>
             )}
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 1, width: '100%' }}>

@@ -4,6 +4,7 @@ import { Avatar, Button, TextField, Link, Box, Typography, Alert } from '@mui/ma
 import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
+import axios from 'axios';
 import { forgotPassword } from '../services/authService';
 
 // Validation schema
@@ -12,27 +13,42 @@ const validationSchema = yup.object({
 });
 
 export default function ForgotPassword() {
-    const [submitted, setSubmitted] = useState(false);
+    // The API's text: it says whether the link was e-mailed or has to be requested from the administrator.
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const formik = useFormik({
         initialValues: {
             email: ''
         },
         validationSchema: validationSchema,
+        // Autofocused field: validating on blur would shift "Back to sign in" and lose the click (see Login).
+        validateOnBlur: false,
         onSubmit: async (values) => {
+            setError(null);
             try {
-                await forgotPassword(values.email);
-            } finally {
-                setSubmitted(true);
+                const { message } = await forgotPassword(values.email);
+                setSuccessMessage(message);
+            } catch (err) {
+                if (axios.isAxiosError(err)) {
+                    setError(err.response?.data?.message || 'An error occurred requesting a reset link.');
+                } else {
+                    setError('An error occurred requesting a reset link.');
+                }
             }
         }
     });
 
-    if (submitted) {
+    if (successMessage) {
         return (
-            <Alert severity="success" sx={{ mt: 2, width: '100%' }}>
-                If that email is registered, a reset link has been logged to the server console.
-            </Alert>
+            <>
+                <Alert severity="success" sx={{ mt: 2, width: '100%' }}>
+                    {successMessage}
+                </Alert>
+                <Link component={RouterLink} to="/login" variant="body2" sx={{ mt: 2 }}>
+                    Back to sign in
+                </Link>
+            </>
         );
     }
 
@@ -44,6 +60,11 @@ export default function ForgotPassword() {
             <Typography component="h1" variant="h5">
                 Forgot password
             </Typography>
+            {error && (
+                <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+                    {error}
+                </Alert>
+            )}
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 1, width: '100%' }}>
                 <TextField
                     margin="normal"

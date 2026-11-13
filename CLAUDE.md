@@ -118,15 +118,15 @@ Turbo runs in strict env mode: a task only sees the variables listed in
 its `passThroughEnv` (`test:e2e`: `CI`, `E2E_*`, `DB_*`). Anything else
 you export is invisible to the task.
 
-### Verification baseline (2026-11-07, Node 22, PostgreSQL 17 on 5432)
+### Verification baseline (2026-11-10, Node 22, PostgreSQL 17 on 5432)
 
 | Check | Result |
 |---|---|
 | `npm run build` | 3/3 tasks |
 | `npm run lint` | 4/4 tasks, 0 warnings |
-| `npm test` → `@expenses/api` | 6 suites, 78 tests (`app`, `auth`, `categories`, `expenses`, `analytics`, `settings`) |
+| `npm test` → `@expenses/api` | 6 suites, 87 tests (`app`, `auth`, `categories`, `expenses`, `analytics`, `settings`) |
 | `npm test` → `@expenses/web` | 5 files, 29 tests (4 service tests + `ExpenseForm.test.ts` Yup schema) |
-| `npm run test:e2e` | 9 smoke tests, `e2e/tests/smoke.spec.ts` |
+| `npm run test:e2e` | 11 smoke tests, `e2e/tests/smoke.spec.ts` |
 | `npm audit --omit=dev` | 0 vulnerabilities (remaining dev-only advisories: `glob`/`minimatch` pulled by jest and eslint, no upstream fix yet) |
 
 What a change needs before it is "done":
@@ -150,6 +150,7 @@ What a change needs before it is "done":
 | `JWT_EXPIRES_IN` | `ms` format, default `7D`; also sets the cookie `maxAge` |
 | `ALLOWED_ORIGINS` | comma-separated exact origins; empty = CORS disabled, so the browser flow fails |
 | `FRONTEND_URL` | base of the password-reset link, default `http://localhost:5173` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` | reset e-mail over SMTP (`nodemailer`); port default `587` (STARTTLS), `465` = TLS; no `SMTP_USER` = no auth; `MAIL_FROM` defaults to `SMTP_USER`. Empty `SMTP_HOST` = the link is only logged. In production the API warns at startup when it is missing |
 | `TRUST_PROXY` | `true` behind nginx/Caddy (`app.set('trust proxy', 1)`), so rate limiting sees the client IP |
 
 `dotenv` is loaded at the top of `src/index.ts` and in `src/db/index.ts`
@@ -199,8 +200,16 @@ Routers are mounted **without an `/api` prefix**: `/users`, `/expenses`,
   and fall back to `findById` when nothing changed. Business errors are
   typed classes carrying `code` (`CategoryHasExpensesError`).
 - **Auth** (`src/middlewares/auth.middleware.ts`): JWT payload
-  `{ id, email }` read from the `token` cookie or `Authorization: Bearer`
-  (fallback for non-browser clients — keep it). `auth` → 401
+  `{ id, email, tokenVersion }` read from the `token` cookie or `Authorization: Bearer`
+  (fallback for non-browser clients — keep it). Both middlewares are
+  async: after `jwt.verify` they compare `tokenVersion` (missing = 0, for
+  tokens issued before the column existed) with `users.token_version`, so
+  every request costs one `SELECT`. A password reset or change bumps the
+  column and thereby revokes all earlier tokens; `PUT /users/password`
+  re-issues the caller's cookie (`issueAuthCookie` in `user.controller.ts`),
+  so only the other sessions end.
+  The routers call them without returning the promise, so they never
+  reject — a DB error goes to `next(error)` (500), not to a 401. `auth` → 401
   `auth_required` / `invalid_token`; `optionalAuth` never rejects and
   backs `GET /users/session`, which answers `200 { user: null }` for
   anonymous callers so the SPA's startup check never trips the 401
@@ -208,11 +217,23 @@ Routers are mounted **without an `/api` prefix**: `/users`, `/expenses`,
   production, `maxAge` from `JWT_EXPIRES_IN`. No CSRF token — relies on
   `sameSite: strict`, valid only while web and API share a site.
   `ms` is a direct dependency because `user.controller.ts` imports it.
-- **Password reset**: `POST /users/forgot-password` always answers 200;
-  when the email exists it stores a SHA-256 hash of a random token (1 h
-  expiry) and writes the reset link to the console and to
-  `apps/api/logs/password-resets.log` (gitignored). No e-mail is sent.
-  `POST /users/reset-password` consumes the token.
+- **Password reset**: `POST /users/forgot-password` always answers 200
+  with the same message for known and unknown emails. The message
+  depends only on `SMTP_HOST` ("check your inbox" vs "ask the
+  administrator for the link"), and the ForgotPassword page shows it
+  as is. When the email exists it stores a SHA-256 hash
+  of a random token (1 h expiry) and, with `SMTP_HOST` set, e-mails the
+  link (`src/services/mail.service.ts`, English text + HTML). The send is
+  not awaited (no timing difference between known and unknown emails);
+  success and failure are only logged. Without `SMTP_HOST` the link goes
+  to the console (`[DEV] Password reset link …`, which the API tests
+  parse) and, outside `NODE_ENV=test`, to
+  `apps/api/logs/password-resets.log` (gitignored).
+  `POST /users/reset-password` consumes the token and bumps
+  `token_version` (signs the user out everywhere). `.env.test` and the
+  e2e `apiEnv` set `SMTP_HOST` to an empty string on purpose:
+  `src/db/index.ts` loads `apps/api/.env` inside the test process too, and
+  a developer's SMTP settings there would otherwise send real mail.
 - **Validation**: `express-validator` chains in `src/routes/*.routes.ts`
   followed by the `validate` middleware → 400 `validation_error` with
   `details: { field: message }`. A few controllers keep an older manual
@@ -236,7 +257,7 @@ Routers are mounted **without an `/api` prefix**: `/users`, `/expenses`,
   transaction (`CREATE TABLE IF NOT EXISTS`, `ADD/DROP COLUMN IF (NOT)
   EXISTS`, `CREATE OR REPLACE FUNCTION`, `DROP TRIGGER IF EXISTS` +
   `CREATE TRIGGER`). Tables: `users` (+ `reset_token_hash`,
-  `reset_token_expires_at`), `categories`, `expenses`, `user_settings`.
+  `reset_token_expires_at`, `token_version`), `categories`, `expenses`, `user_settings`.
   Triggers create 5 default categories and a `user_settings` row for
   each new user and bump `updated_at` on every table. **The same schema
   is duplicated in `src/__tests__/helpers/setup.ts`** — every schema
@@ -318,7 +339,10 @@ helpers/      formatHelpers (Intl; VITE_LOCALE / VITE_CURRENCY), chartHelpers (C
   visible copy.
 - **Forms**: Formik + Yup. Schemas live in plain `.ts` files
   (`components/expenses/expenseSchema.ts`) so Vitest can import them
-  without pulling MUI. Show errors only when `touched`.
+  without pulling MUI. Show errors only when `touched`. `Login` and
+  `ForgotPassword` set `validateOnBlur: false`: their email field is
+  autofocused, and a helper text appearing on blur shifts the links below
+  it, so the first click on "Forgot password?" / "Back to sign in" was lost.
 - **Services**: one file per domain, typed `api.<verb><T>()`, return
   the unwrapped entity (`response.data.expense`, `.categories`, …).
   Query strings via `URLSearchParams`. Paths are relative to
@@ -367,8 +391,8 @@ Procedure and conventions: skill `e2e-smoke`.
 - `globalSetup` creates `expenses_e2e_db` if missing, runs the compiled
   `apps/api/dist/db/migrate.js` against it and truncates all tables.
 - `webServer` starts `node dist/index.js` (API, `NODE_ENV=test`,
-  `JWT_SECRET=e2e-only-secret`, `ALLOWED_ORIGINS=http://localhost:5173`)
-  and `npm run serve:dist` (sirv) on **the same ports as dev**
+  `JWT_SECRET=e2e-only-secret`, `ALLOWED_ORIGINS=http://localhost:5173`,
+  `SMTP_HOST=` empty) and `npm run serve:dist` (sirv) on **the same ports as dev**
   (4000/5173) with `reuseExistingServer: false` — a running `npm run dev`
   makes the suite fail fast instead of touching the dev database.
 - DB credentials: `E2E_DB_*` → `DB_*` → `apps/api/.env` → `postgres`/
@@ -377,10 +401,20 @@ Procedure and conventions: skill `e2e-smoke`.
   chromium`) or `E2E_BROWSER_CHANNEL=msedge|chrome` for a system browser.
 - Needs the build output: run through the root `npm run test:e2e`
   (Turbo builds first) or build before `npx playwright test` in `e2e/`.
+  `test:e2e.dependsOn` names `@expenses/api#build` and
+  `@expenses/web#build` explicitly: `e2e` doesn't depend on those
+  packages, so with plain `build` Turbo ran the web build in parallel
+  with the suite, and after a change in `apps/web` a test got a 404 on
+  `assets/index-*.js` and a blank page.
 - Flows covered: `/health` + anonymous session, redirect to login,
   register, wrong password → API message, inline expense add + dashboard
   refresh, Expenses table, category create/delete, currency change
-  persisted, logout. Failures keep a trace + screenshot in
+  persisted, password reset (forgot form → planted token → reset → old
+  session revoked → token single-use → sign in), password change in
+  Settings (this session survives a reload, another one is signed out),
+  logout. The reset test
+  plants its own token in the DB because without SMTP the link is only
+  logged. Failures keep a trace + screenshot in
   `e2e/test-results/` (gitignored); CI uploads `e2e/playwright-report`.
 
 ## API contract
@@ -474,7 +508,6 @@ free.
 
 - No request/response logging middleware; no repository layer (raw SQL
   per model method); the DB connection has no SSL option.
-- Password reset only logs the link (no mail transport).
 - Expenses list state, filters and pagination are per-page `useState`
   and not reflected in the URL; only categories moved to Zustand.
   Notifications are per-page `Snackbar`.

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { Button, TextField, Link, Box, Typography, Alert, Grid } from '@mui/material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -13,12 +13,18 @@ const validationSchema = yup.object({
 
 export default function Login() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { login } = useAuth();
     const [error, setError] = useState<string | null>(null);
+    // Set by ResetPassword after a successful reset.
+    const passwordReset = (location.state as { passwordReset?: boolean } | null)?.passwordReset === true;
 
     const formik = useFormik({
         initialValues: { email: '', password: '' },
         validationSchema,
+        // The email field is autofocused: validating on blur would show "Email is required" the moment
+        // the user presses a link below it, shifting the link away from the pointer and losing the click.
+        validateOnBlur: false,
         onSubmit: async (values) => {
             try {
                 await login(values.email, values.password);
@@ -43,6 +49,12 @@ export default function Login() {
             </Typography>
 
             {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
+            {passwordReset && !error && (
+                <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>
+                    Your password has been reset and you have been signed out on all devices. Sign in with your new
+                    password.
+                </Alert>
+            )}
 
             <Box component="form" onSubmit={formik.handleSubmit}>
                 <TextField

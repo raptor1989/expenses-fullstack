@@ -39,6 +39,7 @@ Provider order in `main.tsx`: `BrowserRouter` → `ThemeProvider` → `Localizat
 
 - Yup schema as a module-level constant in a plain `.ts` file (`components/expenses/expenseSchema.ts`) so Vitest can import it without MUI.
 - Show errors only when touched: `error={touched.field && Boolean(errors.field)}`.
+- `Login` and `ForgotPassword` use `validateOnBlur: false` (autofocused email; a helper text on blur shifts the links below and swallows the first click).
 - Limits mirror the API (expense `description ≤ 500`, `amount > 0`, date not in the future).
 
 ## Services

@@ -32,6 +32,11 @@ cd e2e && npx playwright test --headed                # after a build; watch the
 cd e2e && npx playwright test --ui                    # Playwright UI mode
 ```
 
+The ordering comes from `turbo.json`: `test:e2e.dependsOn` lists
+`@expenses/api#build` and `@expenses/web#build` explicitly (the `e2e`
+package doesn't depend on them, so plain `build` let the web build run in
+parallel with the suite). Keep them there.
+
 Turbo passes only `CI`, `E2E_*` and `DB_*` into the task
 (`passThroughEnv` in `turbo.json`); other exported variables never reach
 Playwright. Running `npx playwright test` directly inside `e2e/` has no
@@ -61,7 +66,8 @@ What a run does:
 - Locators: prefer `getByRole` / `getByLabel` / `getByText` with the
   exact UI strings. The strings that matter today: buttons `Sign In`,
   `Create Account`, `Save`, `Add Expense`, `Add Category`, `Add`,
-  `Update`, `Delete`, `Cancel`; snackbars `Expense added successfully!`,
+  `Update`, `Delete`, `Cancel`, `Send reset link`, `Reset password`; links
+  `Forgot password?`, `Request a new link`; snackbars `Expense added successfully!`,
   `Category created!`, `Category deleted!`, `Currency updated!`; menu item
   `Logout`; table `aria-label="expenses table"`.
 - MUI quirks that bite:
@@ -112,6 +118,12 @@ What a run does:
   dropped when it is not exported through Turbo's `passThroughEnv`.
 - `... dist/db/migrate.js not found` → build first (root
   `npm run test:e2e` does it).
+- Blank page + 404 on `assets/index-*.js` in the trace → `apps/web/dist`
+  was rebuilt while the suite ran (a build in another terminal, or the
+  `turbo.json` dependency above got lost).
+- A click on a link right under an autofocused, empty field does nothing
+  → the blur shows a helper text that moves the link (fixed on Login and
+  ForgotPassword with `validateOnBlur: false`; check other forms first).
 - `password authentication failed` → wrong `DB_*`; set `E2E_DB_PASSWORD`
   (or fix `apps/api/.env`, which the suite reads as a fallback).
 

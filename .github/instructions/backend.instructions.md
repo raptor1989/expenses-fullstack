@@ -71,11 +71,12 @@ static async getThing(req: Request, res: Response) {
 
 ## Authentication
 
-- JWT `{ id, email }` from the `token` cookie (httpOnly, `sameSite: 'strict'`, `secure` in production) or `Authorization: Bearer` fallback.
+- JWT `{ id, email, tokenVersion }` from the `token` cookie (httpOnly, `sameSite: 'strict'`, `secure` in production) or `Authorization: Bearer` fallback.
+- `auth` / `optionalAuth` are async: they compare `tokenVersion` (missing = 0) with `users.token_version`; a password reset or change bumps it and revokes all earlier tokens (`PUT /users/password` re-issues the caller's cookie). They never reject — DB errors go to `next(error)`.
 - `auth` → 401 `auth_required` / `invalid_token`; `optionalAuth` never rejects (`GET /users/session` answers `{ user: null }` for anonymous callers).
 - `JWT_SECRET` is required at startup; `JWT_EXPIRES_IN` (`ms` format, default `7D`).
 - Rate limits: `authLimiter` 20/15 min on register, login, forgot/reset password (off when `NODE_ENV=test`); `apiLimiter` 300/15 min elsewhere; `TRUST_PROXY=true` behind a reverse proxy.
-- Password reset only logs the link (console + `logs/password-resets.log`); no e-mail.
+- Password reset e-mails the link over SMTP (`src/services/mail.service.ts`, `SMTP_*` + `MAIL_FROM`, send not awaited). With an empty `SMTP_HOST` it only logs the link (console, plus `logs/password-resets.log` outside `NODE_ENV=test`); `.env.test` and the e2e env keep `SMTP_HOST` empty.
 
 ## Response Format
 

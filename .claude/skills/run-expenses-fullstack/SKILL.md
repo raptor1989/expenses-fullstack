@@ -169,8 +169,13 @@ if the local Postgres differs.
 - **Default theme is dark**; `localStorage.themeMode` and the server
   setting both influence it. Screenshots of a fresh profile are dark on
   the auth pages and light after login (server default).
-- **Password reset** writes the link to the API console and to
-  `apps/api/logs/password-resets.log` — read it from there in a test.
+- **Password reset** without `SMTP_HOST` writes the link to the API
+  console and to `apps/api/logs/password-resets.log` — read it from there
+  in a test. With `SMTP_HOST` set it is e-mailed instead and not logged;
+  a local SMTP sink (any server on e.g. `127.0.0.1:2525`, no auth) is
+  enough to see the message. A reset revokes every existing session
+  (cookie jars from before it get 401 `invalid_token`); a password change
+  revokes all but the caller, whose cookie jar gets a fresh token.
 - **Stale `packages/shared/tsconfig.tsbuildinfo`** can leave `dist/`
   without `.d.ts` → consumers fail with `TS7016`. Delete
   `packages/shared/dist` and the buildinfo, rebuild shared.

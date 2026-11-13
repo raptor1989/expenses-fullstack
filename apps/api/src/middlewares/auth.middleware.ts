@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { UserModel } from '../models/user.model';
 
 declare global {
     namespace Express {
@@ -12,65 +13,80 @@ declare global {
     }
 }
 
-export const auth = (req: Request, res: Response, next: NextFunction) => {
+interface TokenPayload {
+    id: string;
+    email: string;
+    tokenVersion?: number;
+}
+
+function readToken(req: Request): string | undefined {
+    const cookieToken = req.cookies?.token;
+    const headerToken = req.header('Authorization')?.replace('Bearer ', '');
+    return cookieToken || headerToken;
+}
+
+// Returns the user behind a token, or null when the token is invalid, expired, or was issued
+// before the user's last password reset (token_version moved on). Database errors propagate.
+async function resolveUser(token: string): Promise<Request['user'] | null> {
+    let decoded: TokenPayload;
     try {
-        const cookieToken = req.cookies?.token;
-        const headerToken = req.header('Authorization')?.replace('Bearer ', '');
-        const token = cookieToken || headerToken;
+        decoded = jwt.verify(token, process.env.JWT_SECRET!) as TokenPayload;
+    } catch {
+        return null;
+    }
 
-        if (!token) {
-            return res.status(401).json({
-                message: 'Authentication required',
-                code: 'auth_required'
-            });
-        }
+    const currentVersion = await UserModel.findTokenVersion(decoded.id);
+    // Tokens issued before token versions existed carry none and count as version 0.
+    if (currentVersion === null || currentVersion !== (decoded.tokenVersion ?? 0)) {
+        return null;
+    }
 
-        const secretKey = process.env.JWT_SECRET!;
+    return { id: decoded.id, email: decoded.email };
+}
 
-        const decoded = jwt.verify(token, secretKey) as {
-            id: string;
-            email: string;
-        };
+// The routers call these without returning the promise, so they must never reject:
+// database errors go to `next(error)` (500), not to a 401 that would log the user out.
+export const auth = async (req: Request, res: Response, next: NextFunction) => {
+    const token = readToken(req);
 
-        req.user = {
-            id: decoded.id,
-            email: decoded.email
-        };
+    if (!token) {
+        return res.status(401).json({
+            message: 'Authentication required',
+            code: 'auth_required'
+        });
+    }
 
-        next();
+    let user: Request['user'] | null;
+    try {
+        user = await resolveUser(token);
     } catch (error) {
-        console.error('Auth middleware error:', error);
+        return next(error);
+    }
+
+    if (!user) {
         return res.status(401).json({
             message: 'Invalid or expired token',
             code: 'invalid_token'
         });
     }
+
+    req.user = user;
+    next();
 };
 
 // Like `auth`, but never rejects: a missing/invalid token just means
 // `req.user` stays undefined. For endpoints where "not logged in" is a
 // normal state to report (e.g. checking for an existing session), not an
 // auth failure.
-export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const cookieToken = req.cookies?.token;
-        const headerToken = req.header('Authorization')?.replace('Bearer ', '');
-        const token = cookieToken || headerToken;
+export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
+    const token = readToken(req);
 
-        if (token) {
-            const secretKey = process.env.JWT_SECRET!;
-            const decoded = jwt.verify(token, secretKey) as {
-                id: string;
-                email: string;
-            };
-
-            req.user = {
-                id: decoded.id,
-                email: decoded.email
-            };
+    if (token) {
+        try {
+            req.user = (await resolveUser(token)) ?? undefined;
+        } catch (error) {
+            return next(error);
         }
-    } catch (error) {
-        console.error('Optional auth middleware error:', error);
     }
 
     next();
