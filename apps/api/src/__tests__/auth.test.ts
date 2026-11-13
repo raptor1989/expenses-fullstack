@@ -295,6 +295,20 @@ describe('POST /users/forgot-password', () => {
 
         expect(createTransport).not.toHaveBeenCalled();
     });
+
+    it('tells the user to ask the administrator instead of promising an e-mail', async () => {
+        const data = userFixture();
+        await request(app).post('/users/register').send(data);
+
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        const registered = await request(app).post('/users/forgot-password').send({ email: data.email });
+        logSpy.mockRestore();
+        const unknown = await request(app).post('/users/forgot-password').send({ email: 'nobody@example.com' });
+
+        expect(registered.body.message).toMatch(/ask the administrator/i);
+        expect(registered.body.message).not.toMatch(/inbox/i);
+        expect(unknown.body.message).toBe(registered.body.message);
+    });
 });
 
 describe('POST /users/forgot-password with SMTP configured', () => {
@@ -342,6 +356,17 @@ describe('POST /users/forgot-password with SMTP configured', () => {
 
         expect(res.status).toBe(200);
         expect(mockSendMail).not.toHaveBeenCalled();
+    });
+
+    it('promises an e-mail with the same message for known and unknown emails', async () => {
+        const data = userFixture();
+        await request(app).post('/users/register').send(data);
+
+        const registered = await request(app).post('/users/forgot-password').send({ email: data.email });
+        const unknown = await request(app).post('/users/forgot-password').send({ email: 'nobody@example.com' });
+
+        expect(registered.body.message).toMatch(/check your inbox/i);
+        expect(unknown.body.message).toBe(registered.body.message);
     });
 
     it('still answers 200 with the generic message when sending fails', async () => {

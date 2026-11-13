@@ -142,7 +142,8 @@ test('resets the password from a reset link and signs out existing sessions', as
         await visitor.getByRole('link', { name: 'Forgot password?' }).click();
         await visitor.locator('#email').fill(account.email);
         await visitor.getByRole('button', { name: 'Send reset link' }).click();
-        await expect(visitor.getByRole('alert')).toContainText('you will receive a password reset link');
+        // No SMTP in the suite: the page must not promise an e-mail.
+        await expect(visitor.getByRole('alert')).toContainText('Ask the administrator for the link');
 
         const newPassword = 'NewPassword456!';
         const token = await plantResetToken(account.email);

@@ -13,7 +13,8 @@ const validationSchema = yup.object({
 });
 
 export default function ForgotPassword() {
-    const [submitted, setSubmitted] = useState(false);
+    // The API's text: it says whether the link was e-mailed or has to be requested from the administrator.
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const formik = useFormik({
@@ -26,8 +27,8 @@ export default function ForgotPassword() {
         onSubmit: async (values) => {
             setError(null);
             try {
-                await forgotPassword(values.email);
-                setSubmitted(true);
+                const { message } = await forgotPassword(values.email);
+                setSuccessMessage(message);
             } catch (err) {
                 if (axios.isAxiosError(err)) {
                     setError(err.response?.data?.message || 'An error occurred requesting a reset link.');
@@ -38,11 +39,11 @@ export default function ForgotPassword() {
         }
     });
 
-    if (submitted) {
+    if (successMessage) {
         return (
             <>
                 <Alert severity="success" sx={{ mt: 2, width: '100%' }}>
-                    If that email is registered, you will receive a password reset link shortly. Check your inbox.
+                    {successMessage}
                 </Alert>
                 <Link component={RouterLink} to="/login" variant="body2" sx={{ mt: 2 }}>
                     Back to sign in

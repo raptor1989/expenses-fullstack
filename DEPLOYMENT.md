@@ -238,7 +238,9 @@ te same kroki build/lint/test/smoke dla pushy i PR-ów do `master` i
   Użytkownik zawsze widzi ten sam komunikat, także gdy wysyłka się nie
   uda. Bez `SMTP_HOST` link trafia tylko do logu procesu i do pliku
   `apps/api/logs/password-resets.log` na VM (katalog `logs/` jest
-  w `.gitignore`). Wtedy przekaż go użytkownikowi ręcznie. Plik zawiera
+  w `.gitignore`), a strona „Forgot password” informuje użytkownika, że
+  ma poprosić administratora o link (nie obiecuje maila). Wtedy przekaż
+  go użytkownikowi ręcznie. Plik zawiera
   działające tokeny, więc po włączeniu SMTP możesz go usunąć. Link jest
   ważny 1 godzinę i działa raz. Ustawienie nowego hasła wylogowuje
   użytkownika na wszystkich urządzeniach. Zmiana hasła w ustawieniach

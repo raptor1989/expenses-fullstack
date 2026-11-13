@@ -293,8 +293,11 @@ export class UserController {
                 }
             }
 
+            // Depends only on the server's mail setup, never on whether the email exists.
             res.status(200).json({
-                message: 'If that email is registered, you will receive a password reset link shortly.'
+                message: isMailConfigured()
+                    ? 'If that email is registered, you will receive a password reset link shortly. Check your inbox.'
+                    : 'If that email is registered, a reset link has been created, but this server does not send e-mail. Ask the administrator for the link.'
             });
         } catch (error) {
             console.error('Forgot password error:', error);

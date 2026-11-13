@@ -124,7 +124,7 @@ you export is invisible to the task.
 |---|---|
 | `npm run build` | 3/3 tasks |
 | `npm run lint` | 4/4 tasks, 0 warnings |
-| `npm test` → `@expenses/api` | 6 suites, 85 tests (`app`, `auth`, `categories`, `expenses`, `analytics`, `settings`) |
+| `npm test` → `@expenses/api` | 6 suites, 87 tests (`app`, `auth`, `categories`, `expenses`, `analytics`, `settings`) |
 | `npm test` → `@expenses/web` | 5 files, 29 tests (4 service tests + `ExpenseForm.test.ts` Yup schema) |
 | `npm run test:e2e` | 11 smoke tests, `e2e/tests/smoke.spec.ts` |
 | `npm audit --omit=dev` | 0 vulnerabilities (remaining dev-only advisories: `glob`/`minimatch` pulled by jest and eslint, no upstream fix yet) |
@@ -218,7 +218,10 @@ Routers are mounted **without an `/api` prefix**: `/users`, `/expenses`,
   `sameSite: strict`, valid only while web and API share a site.
   `ms` is a direct dependency because `user.controller.ts` imports it.
 - **Password reset**: `POST /users/forgot-password` always answers 200
-  with the same message; when the email exists it stores a SHA-256 hash
+  with the same message for known and unknown emails. The message
+  depends only on `SMTP_HOST` ("check your inbox" vs "ask the
+  administrator for the link"), and the ForgotPassword page shows it
+  as is. When the email exists it stores a SHA-256 hash
   of a random token (1 h expiry) and, with `SMTP_HOST` set, e-mails the
   link (`src/services/mail.service.ts`, English text + HTML). The send is
   not awaited (no timing difference between known and unknown emails);
