@@ -109,7 +109,10 @@ describe('authService', () => {
 
         const result = await resetPassword('sometoken', 'newpw');
 
-        expect(apiMock.post).toHaveBeenCalledWith('/users/reset-password', { token: 'sometoken', newPassword: 'newpw' });
+        expect(apiMock.post).toHaveBeenCalledWith('/users/reset-password', {
+            token: 'sometoken',
+            newPassword: 'newpw'
+        });
         expect(result).toEqual({ message: 'ok' });
     });
 });

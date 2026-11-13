@@ -119,7 +119,12 @@ export default function ExpenseTable({
                                     )}
                                     {onDelete && (
                                         <Tooltip title="Delete">
-                                            <IconButton size="small" color="error" onClick={() => onDelete(expense)} sx={{ p: 0.5 }}>
+                                            <IconButton
+                                                size="small"
+                                                color="error"
+                                                onClick={() => onDelete(expense)}
+                                                sx={{ p: 0.5 }}
+                                            >
                                                 <DeleteIcon sx={{ fontSize: 15 }} />
                                             </IconButton>
                                         </Tooltip>

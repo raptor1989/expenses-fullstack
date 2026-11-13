@@ -35,7 +35,9 @@ const changePasswordValidation = [
     body('newPassword').isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
 ];
 
-const forgotPasswordValidation = [body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail()];
+const forgotPasswordValidation = [
+    body('email').trim().isEmail().withMessage('Valid email is required').normalizeEmail()
+];
 
 const resetPasswordValidation = [
     body('token').notEmpty().withMessage('Token is required'),

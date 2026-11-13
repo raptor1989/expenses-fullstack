@@ -22,7 +22,9 @@ export default function Reports() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => { fetchCategories(); }, [fetchCategories]);
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
 
     useEffect(() => {
         getExpenseYears()
@@ -62,35 +64,86 @@ export default function Reports() {
                         <CircularProgress />
                     </Box>
                 ) : error ? (
-                    <Typography color="error" sx={{ py: 4, textAlign: 'center' }}>{error}</Typography>
+                    <Typography color="error" sx={{ py: 4, textAlign: 'center' }}>
+                        {error}
+                    </Typography>
                 ) : (
                     <>
                         <Box sx={{ mb: 4 }}>
-                            <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2 }}>
+                            <Typography
+                                sx={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    color: 'text.secondary',
+                                    mb: 2
+                                }}
+                            >
                                 Monthly Totals
                             </Typography>
                             <MonthlyTotalWithAverageChart monthsData={data} currency={settings.currency} />
                         </Box>
                         <Box sx={{ mb: 4 }}>
-                            <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2 }}>
+                            <Typography
+                                sx={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    color: 'text.secondary',
+                                    mb: 2
+                                }}
+                            >
                                 Category Trends
                             </Typography>
                             <MonthlyCategoryLineChart monthsData={data} categories={categories} />
                         </Box>
                         <Box sx={{ mb: 4 }}>
-                            <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2 }}>
+                            <Typography
+                                sx={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    color: 'text.secondary',
+                                    mb: 2
+                                }}
+                            >
                                 Category Share
                             </Typography>
                             <CategoryShareDoughnutChart monthsData={data} categories={categories} />
                         </Box>
                         <Box sx={{ mb: 4 }}>
-                            <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2 }}>
+                            <Typography
+                                sx={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    color: 'text.secondary',
+                                    mb: 2
+                                }}
+                            >
                                 Category Ranking
                             </Typography>
-                            <CategoryRankingTable monthsData={data} categories={categories} currency={settings.currency} />
+                            <CategoryRankingTable
+                                monthsData={data}
+                                categories={categories}
+                                currency={settings.currency}
+                            />
                         </Box>
                         <Box>
-                            <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2 }}>
+                            <Typography
+                                sx={{
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em',
+                                    color: 'text.secondary',
+                                    mb: 2
+                                }}
+                            >
                                 Monthly Breakdown
                             </Typography>
                             <ReportsTable monthsData={data} categories={categories} currency={settings.currency} />

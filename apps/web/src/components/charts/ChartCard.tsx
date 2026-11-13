@@ -34,9 +34,7 @@ export default function ChartCard({
             <Box sx={{ height }}>
                 {isEmpty ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                        <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
-                            {emptyMessage}
-                        </Typography>
+                        <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{emptyMessage}</Typography>
                     </Box>
                 ) : (
                     children

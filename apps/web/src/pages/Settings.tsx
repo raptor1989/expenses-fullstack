@@ -38,7 +38,16 @@ const PasswordSchema = Yup.object().shape({
 });
 
 const SectionTitle = ({ children }: { children: string }) => (
-    <Typography sx={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 2.5 }}>
+    <Typography
+        sx={{
+            fontSize: 12,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            color: 'text.secondary',
+            mb: 2.5
+        }}
+    >
         {children}
     </Typography>
 );
@@ -47,7 +56,11 @@ export default function Settings() {
     const { user, updateUser } = useAuth();
     const { settings, updateSettings } = useSettings();
     const { mode, setMode } = useThemeMode();
-    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+    const [notification, setNotification] = useState({
+        open: false,
+        message: '',
+        severity: 'success' as 'success' | 'error'
+    });
 
     const notify = (message: string, severity: 'success' | 'error') =>
         setNotification({ open: true, message, severity });
@@ -144,7 +157,11 @@ export default function Settings() {
                                     <Field name="currentPassword">
                                         {({ field }: FieldProps) => (
                                             <TextField
-                                                {...field} type="password" label="Current Password" fullWidth size="small"
+                                                {...field}
+                                                type="password"
+                                                label="Current Password"
+                                                fullWidth
+                                                size="small"
                                                 error={touched.currentPassword && Boolean(errors.currentPassword)}
                                                 helperText={touched.currentPassword && errors.currentPassword}
                                             />
@@ -155,7 +172,11 @@ export default function Settings() {
                                     <Field name="newPassword">
                                         {({ field }: FieldProps) => (
                                             <TextField
-                                                {...field} type="password" label="New Password" fullWidth size="small"
+                                                {...field}
+                                                type="password"
+                                                label="New Password"
+                                                fullWidth
+                                                size="small"
                                                 error={touched.newPassword && Boolean(errors.newPassword)}
                                                 helperText={touched.newPassword && errors.newPassword}
                                             />
@@ -166,7 +187,11 @@ export default function Settings() {
                                     <Field name="confirmPassword">
                                         {({ field }: FieldProps) => (
                                             <TextField
-                                                {...field} type="password" label="Confirm Password" fullWidth size="small"
+                                                {...field}
+                                                type="password"
+                                                label="Confirm Password"
+                                                fullWidth
+                                                size="small"
                                                 error={touched.confirmPassword && Boolean(errors.confirmPassword)}
                                                 helperText={touched.confirmPassword && errors.confirmPassword}
                                             />
@@ -175,7 +200,10 @@ export default function Settings() {
                                 </Grid>
                             </Grid>
                             <Button
-                                type="submit" variant="contained" size="small" disabled={isSubmitting}
+                                type="submit"
+                                variant="contained"
+                                size="small"
+                                disabled={isSubmitting}
                                 startIcon={isSubmitting ? <CircularProgress size={14} /> : null}
                             >
                                 {isSubmitting ? 'Saving…' : 'Change Password'}
@@ -190,18 +218,24 @@ export default function Settings() {
                 <SectionTitle>Preferences</SectionTitle>
                 <Grid container spacing={3}>
                     <Grid size={{ xs: 12, sm: 6 }}>
-                        <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1, fontWeight: 500 }}>Currency</Typography>
+                        <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1, fontWeight: 500 }}>
+                            Currency
+                        </Typography>
                         <FormControl size="small" fullWidth>
                             <InputLabel>Currency</InputLabel>
                             <Select value={settings.currency} label="Currency" onChange={handleCurrencyChange}>
                                 {(SUPPORTED_CURRENCIES as readonly string[]).map((currency: string) => (
-                                    <MenuItem key={currency} value={currency}>{currency}</MenuItem>
+                                    <MenuItem key={currency} value={currency}>
+                                        {currency}
+                                    </MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6 }}>
-                        <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1, fontWeight: 500 }}>Theme</Typography>
+                        <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1, fontWeight: 500 }}>
+                            Theme
+                        </Typography>
                         <Box sx={{ display: 'flex', gap: 1 }}>
                             {(['light', 'dark'] as ThemeMode[]).map((t) => (
                                 <Button
@@ -209,7 +243,13 @@ export default function Settings() {
                                     variant={mode === t ? 'contained' : 'outlined'}
                                     size="small"
                                     onClick={() => handleThemeChange(t)}
-                                    startIcon={t === 'light' ? <LightModeIcon sx={{ fontSize: 16 }} /> : <DarkModeIcon sx={{ fontSize: 16 }} />}
+                                    startIcon={
+                                        t === 'light' ? (
+                                            <LightModeIcon sx={{ fontSize: 16 }} />
+                                        ) : (
+                                            <DarkModeIcon sx={{ fontSize: 16 }} />
+                                        )
+                                    }
                                     color={mode === t ? 'primary' : 'inherit'}
                                     sx={{ textTransform: 'capitalize' }}
                                 >

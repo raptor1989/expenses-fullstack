@@ -152,7 +152,10 @@ describe('PUT /users/profile', () => {
         const data = userFixture();
         const { cookie } = await registerAndLogin(data);
 
-        const res = await request(app).put('/users/profile').set('Cookie', cookie).send({ email: 'updated@example.com' });
+        const res = await request(app)
+            .put('/users/profile')
+            .set('Cookie', cookie)
+            .send({ email: 'updated@example.com' });
 
         expect(res.status).toBe(200);
         expect(res.body.user.email).toBe('updated@example.com');
@@ -427,9 +430,10 @@ describe('POST /users/reset-password', () => {
         const token = extractToken(logSpy);
         logSpy.mockRestore();
 
-        await getTestPool().query("UPDATE users SET reset_token_expires_at = NOW() - INTERVAL '1 hour' WHERE email = $1", [
-            data.email
-        ]);
+        await getTestPool().query(
+            "UPDATE users SET reset_token_expires_at = NOW() - INTERVAL '1 hour' WHERE email = $1",
+            [data.email]
+        );
 
         const res = await request(app).post('/users/reset-password').send({ token, newPassword: 'NewPassword123!' });
 
@@ -456,7 +460,9 @@ describe('POST /users/reset-password', () => {
         logSpy.mockRestore();
 
         await request(app).post('/users/reset-password').send({ token, newPassword: 'NewPassword123!' });
-        const res = await request(app).post('/users/reset-password').send({ token, newPassword: 'AnotherPassword456!' });
+        const res = await request(app)
+            .post('/users/reset-password')
+            .send({ token, newPassword: 'AnotherPassword456!' });
 
         expect(res.status).toBe(400);
         expect(res.body.code).toBe('reset_token_invalid');

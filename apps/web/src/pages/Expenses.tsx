@@ -56,7 +56,11 @@ export default function Expenses() {
     const [editExpense, setEditExpense] = useState<Expense | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
-    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+    const [notification, setNotification] = useState({
+        open: false,
+        message: '',
+        severity: 'success' as 'success' | 'error'
+    });
 
     const fetchExpenses = useCallback(async () => {
         try {
@@ -77,7 +81,11 @@ export default function Expenses() {
                 return;
             }
             setExpenses(response.expenses);
-            setPagination((prev) => ({ ...prev, total: response.pagination.total, totalPages: response.pagination.totalPages }));
+            setPagination((prev) => ({
+                ...prev,
+                total: response.pagination.total,
+                totalPages: response.pagination.totalPages
+            }));
         } catch (err) {
             setNotification({
                 open: true,
@@ -97,13 +105,19 @@ export default function Expenses() {
         sorting
     ]);
 
-    useEffect(() => { fetchCategories(); }, [fetchCategories]);
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
     // `refreshKey` forces a refetch even when no filter value changed (e.g. Apply with the same term).
-    useEffect(() => { fetchExpenses(); }, [fetchExpenses, refreshKey]);
+    useEffect(() => {
+        fetchExpenses();
+    }, [fetchExpenses, refreshKey]);
 
     const categoriesMap = useMemo(() => {
         const map: Record<string, { name: string; color: string }> = {};
-        categories.forEach((c) => { map[c.id] = { name: c.name, color: c.color || '#9e9e9e' }; });
+        categories.forEach((c) => {
+            map[c.id] = { name: c.name, color: c.color || '#9e9e9e' };
+        });
         return map;
     }, [categories]);
 
@@ -155,7 +169,11 @@ export default function Expenses() {
             setNotification({ open: true, message: 'Expense deleted successfully!', severity: 'success' });
             setRefreshKey((key) => key + 1);
         } catch (err) {
-            setNotification({ open: true, message: getApiErrorMessage(err, 'Failed to delete expense.'), severity: 'error' });
+            setNotification({
+                open: true,
+                message: getApiErrorMessage(err, 'Failed to delete expense.'),
+                severity: 'error'
+            });
         } finally {
             setDeleteDialogOpen(false);
             setExpenseToDelete(null);
@@ -170,7 +188,10 @@ export default function Expenses() {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={() => { setEditExpense(null); setFormOpen(true); }}
+                    onClick={() => {
+                        setEditExpense(null);
+                        setFormOpen(true);
+                    }}
                     size="small"
                 >
                     Add Expense
@@ -239,13 +260,21 @@ export default function Expenses() {
                                 >
                                     <MenuItem value="">All Categories</MenuItem>
                                     {categories.map((c) => (
-                                        <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                                        <MenuItem key={c.id} value={c.id}>
+                                            {c.name}
+                                        </MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                            <Button variant="contained" fullWidth onClick={handleApplyFilters} size="small" sx={{ height: 40 }}>
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                onClick={handleApplyFilters}
+                                size="small"
+                                sx={{ height: 40 }}
+                            >
                                 Apply
                             </Button>
                         </Grid>
@@ -272,8 +301,14 @@ export default function Expenses() {
                         sort={sorting.sort}
                         order={sorting.order}
                         onSortChange={handleSortChange}
-                        onEdit={(exp) => { setEditExpense(exp); setFormOpen(true); }}
-                        onDelete={(exp) => { setExpenseToDelete(exp); setDeleteDialogOpen(true); }}
+                        onEdit={(exp) => {
+                            setEditExpense(exp);
+                            setFormOpen(true);
+                        }}
+                        onDelete={(exp) => {
+                            setExpenseToDelete(exp);
+                            setDeleteDialogOpen(true);
+                        }}
                     />
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2.5 }}>
                         <Pagination
@@ -308,7 +343,9 @@ export default function Expenses() {
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={() => setDeleteDialogOpen(false)} size="small">Cancel</Button>
+                    <Button onClick={() => setDeleteDialogOpen(false)} size="small">
+                        Cancel
+                    </Button>
                     <Button onClick={handleConfirmDelete} color="error" variant="contained" size="small" autoFocus>
                         Delete
                     </Button>

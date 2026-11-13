@@ -5,8 +5,25 @@ import { Home as HomeIcon } from '@mui/icons-material';
 export default function NotFound() {
     const navigate = useNavigate();
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center' }}>
-            <Typography sx={{ fontSize: '5rem', fontWeight: 700, color: 'primary.main', letterSpacing: '-0.05em', lineHeight: 1 }}>
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '80vh',
+                textAlign: 'center'
+            }}
+        >
+            <Typography
+                sx={{
+                    fontSize: '5rem',
+                    fontWeight: 700,
+                    color: 'primary.main',
+                    letterSpacing: '-0.05em',
+                    lineHeight: 1
+                }}
+            >
                 404
             </Typography>
             <Typography sx={{ fontSize: 20, fontWeight: 600, mt: 1, mb: 1 }}>Page Not Found</Typography>

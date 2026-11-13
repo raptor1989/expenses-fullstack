@@ -35,7 +35,9 @@ export const changePassword = async (currentPassword: string, newPassword: strin
 };
 
 export const forgotPassword = async (email: string): Promise<{ message: string }> => {
-    const response = await api.post<{ message: string }>('/users/forgot-password', { email } satisfies ForgotPasswordInput);
+    const response = await api.post<{ message: string }>('/users/forgot-password', {
+        email
+    } satisfies ForgotPasswordInput);
     return response.data;
 };
 

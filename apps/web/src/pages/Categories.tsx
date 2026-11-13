@@ -38,7 +38,11 @@ export default function Categories() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
     const [moveTo, setMoveTo] = useState('');
-    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+    const [notification, setNotification] = useState({
+        open: false,
+        message: '',
+        severity: 'success' as 'success' | 'error'
+    });
 
     useEffect(() => {
         // Always reload here: the delete dialog relies on current expense counts.
@@ -168,7 +172,11 @@ export default function Categories() {
                                         <IconButton
                                             size="small"
                                             color="error"
-                                            onClick={() => { setCategoryToDelete(cat); setMoveTo(''); setDeleteDialogOpen(true); }}
+                                            onClick={() => {
+                                                setCategoryToDelete(cat);
+                                                setMoveTo('');
+                                                setDeleteDialogOpen(true);
+                                            }}
                                             sx={{ p: 0.5 }}
                                         >
                                             <DeleteIcon sx={{ fontSize: 15 }} />
@@ -211,7 +219,16 @@ export default function Categories() {
                             input: {
                                 startAdornment: (
                                     <InputAdornment position="start">
-                                        <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: formData.color, border: '1px solid', borderColor: 'divider' }} />
+                                        <Box
+                                            sx={{
+                                                width: 18,
+                                                height: 18,
+                                                borderRadius: '50%',
+                                                bgcolor: formData.color,
+                                                border: '1px solid',
+                                                borderColor: 'divider'
+                                            }}
+                                        />
                                     </InputAdornment>
                                 ),
                                 endAdornment: (
@@ -220,7 +237,14 @@ export default function Categories() {
                                             type="color"
                                             value={formData.color}
                                             onChange={(e) => setFormData((p) => ({ ...p, color: e.target.value }))}
-                                            style={{ width: 24, height: 24, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                                            style={{
+                                                width: 24,
+                                                height: 24,
+                                                border: 'none',
+                                                background: 'none',
+                                                cursor: 'pointer',
+                                                padding: 0
+                                            }}
                                         />
                                     </InputAdornment>
                                 )
@@ -229,7 +253,9 @@ export default function Categories() {
                     />
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2.5 }}>
-                    <Button onClick={() => setDialogOpen(false)} size="small">Cancel</Button>
+                    <Button onClick={() => setDialogOpen(false)} size="small">
+                        Cancel
+                    </Button>
                     <Button onClick={handleSubmit} variant="contained" size="small">
                         {dialogMode === 'add' ? 'Add' : 'Update'}
                     </Button>
@@ -271,7 +297,9 @@ export default function Categories() {
                     )}
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={() => setDeleteDialogOpen(false)} size="small">Cancel</Button>
+                    <Button onClick={() => setDeleteDialogOpen(false)} size="small">
+                        Cancel
+                    </Button>
                     <Button
                         onClick={handleConfirmDelete}
                         color="error"

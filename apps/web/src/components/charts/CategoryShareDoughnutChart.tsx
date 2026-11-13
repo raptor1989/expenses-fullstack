@@ -66,7 +66,9 @@ export default function CategoryShareDoughnutChart({ monthsData, categories }: C
                     >
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: datum.color }} />
-                            <Box component="span" sx={{ color: 'text.secondary' }}>{datum.label}</Box>
+                            <Box component="span" sx={{ color: 'text.secondary' }}>
+                                {datum.label}
+                            </Box>
                             <Box component="span" sx={{ fontWeight: 600, color: 'text.primary' }}>
                                 {datum.value.toLocaleString('pl-PL', { minimumFractionDigits: 2 })}
                             </Box>

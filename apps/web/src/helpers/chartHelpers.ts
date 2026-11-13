@@ -12,7 +12,7 @@ export const CHART_COLORS: readonly string[] = [
     '#34d399', // emerald
     '#fbbf24', // amber
     '#f87171', // red
-    '#60a5fa'  // blue
+    '#60a5fa' // blue
 ];
 
 export interface CategoryLabel {
